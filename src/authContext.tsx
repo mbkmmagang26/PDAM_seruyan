@@ -5,6 +5,8 @@ import {
   createUserWithEmailAndPassword, 
   signOut,
   signInWithPopup,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
   User as FirebaseUser 
 } from 'firebase/auth';
 import { 
@@ -17,18 +19,19 @@ import {
   query,
   where
 } from 'firebase/firestore';
-import { auth, db, googleProvider } from './firebase';
+import { auth, db } from './firebase';
 import { User, UserRole } from './types';
 
 interface AuthContextType {
   user: User | null;
   allUsers: User[];
   login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  loginWithGoogle: (role: UserRole) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, phone: string, password: string, role: UserRole) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
   verifyCode: (emailOrPhone: string, code: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUserStatus: (userId: string, status: 'active' | 'pending' | 'blocked') => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
+  confirmNewPassword: (code: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   isLoading: boolean;
 }
 
@@ -121,59 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (role: UserRole) => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = result.user;
 
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-      
-      if (!userDoc.exists()) {
-        // Create new user profile
-        const isStaff = role === 'staff';
-        const status = isStaff ? 'pending' : 'active';
-        
-        const newUser: User = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Google User',
-          email: firebaseUser.email || '',
-          phone: '', // Google doesn't provide this by default
-          role,
-          status,
-          avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || 'U')}&background=random`
-        };
-
-        await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-        
-        if (status === 'pending') {
-          await signOut(auth);
-          return { success: false, message: 'PENDING_VERIFICATION' };
-        }
-        
-        setUser(newUser);
-      } else {
-        const userData = userDoc.data() as User;
-        if (userData.status === 'blocked') {
-          await signOut(auth);
-          return { success: false, message: 'Account blocked' };
-        }
-        if (userData.status === 'pending') {
-          await signOut(auth);
-          return { success: false, message: 'PENDING_VERIFICATION' };
-        }
-        setUser({ ...userData, id: firebaseUser.uid });
-      }
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        return { success: false, message: 'Login cancelled' };
-      }
-      return { success: false, message: 'Google login failed' };
-    }
-  };
 
   const register = async (name: string, email: string, phone: string, password: string, role: UserRole) => {
     try {
@@ -248,8 +199,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      let message = 'Failed to send reset email';
+      if (error.code === 'auth/user-not-found') message = 'No account found with this email';
+      if (error.code === 'auth/invalid-email') message = 'Invalid email address';
+      return { success: false, message };
+    }
+  };
+
+  const confirmNewPassword = async (code: string, newPassword: string) => {
+    try {
+      await confirmPasswordReset(auth, code, newPassword);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Confirm password error:', error);
+      let message = 'Failed to update password';
+      if (error.code === 'auth/expired-action-code') message = 'Reset link has expired';
+      if (error.code === 'auth/invalid-action-code') message = 'Reset link is invalid or already used';
+      if (error.code === 'auth/weak-password') message = 'Password is too weak';
+      return { success: false, message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, allUsers, login, loginWithGoogle, register, verifyCode, logout, updateUserStatus, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      allUsers, 
+      login, 
+      register, 
+      verifyCode, 
+      logout, 
+      updateUserStatus, 
+      sendPasswordReset,
+      confirmNewPassword,
+      isLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -65,7 +65,7 @@ const translations: Record<Language, Record<string, string>> = {
     'login.label.remember': 'Ingat saya',
     'login.label.forgot': 'Lupa kata sandi?',
     'login.button.signin': 'Masuk Sekarang',
-    'login.button.google': 'Lanjutkan dengan Google',
+
     'login.button.back_role': 'Kembali ke Pemilihan Peran',
     'login.footer.back': 'Kembali ke Gerbang Utama',
     'login.verify.title': 'Verifikasi Akun Petugas',
@@ -73,6 +73,12 @@ const translations: Record<Language, Record<string, string>> = {
     'login.verify.button': 'Verifikasi & Masuk',
     'login.verify.label': 'Kode Verifikasi',
     'login.verify.footer': 'Pendaftaran petugas memerlukan persetujuan manual dari Administrator PDAM.',
+    'login.reset.email_sent': 'Instruksi pemulihan telah dikirim ke email Anda. Silakan cek kotak masuk Anda.',
+    'login.reset.success': 'Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.',
+    'login.reset.new_password': 'Buat Kata Sandi Baru',
+    'login.reset.confirm_button': 'Simpan Kata Sandi',
+    'login.reset.subtitle': 'Silakan masukkan kata sandi baru untuk mengamankan akun Anda.',
+    'login.reset.back': 'Kembali ke Halaman Masuk',
 
     // Admin Dashboard
     'admin.profile.role': 'Administrator Sistem',
@@ -316,7 +322,7 @@ const translations: Record<Language, Record<string, string>> = {
     'login.label.remember': 'Remember me',
     'login.label.forgot': 'Forgot password?',
     'login.button.signin': 'Sign In Now',
-    'login.button.google': 'Continue with Google',
+
     'login.button.back_role': 'Return to Role Selection',
     'login.footer.back': 'Back to Main Gate',
     'login.verify.title': 'Staff Verification',
@@ -324,6 +330,12 @@ const translations: Record<Language, Record<string, string>> = {
     'login.verify.button': 'Verify & Sign In',
     'login.verify.label': 'Verification Code',
     'login.verify.footer': 'Staff registration requires manual approval from the PDAM Administrator.',
+    'login.reset.email_sent': 'Recovery instructions have been sent to your email. Please check your inbox.',
+    'login.reset.success': 'Password updated successfully! Please log in with your new password.',
+    'login.reset.new_password': 'Create New Password',
+    'login.reset.confirm_button': 'Update Password',
+    'login.reset.subtitle': 'Please enter a new password to secure your account.',
+    'login.reset.back': 'Return to Login',
 
     // Admin Dashboard
     'admin.profile.role': 'System Administrator',
