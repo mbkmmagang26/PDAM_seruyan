@@ -138,6 +138,21 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.deadline.urgent': 'Deadline 24 Jam',
     'admin.tasks.deadline.cycle': 'Jadwal Siklus',
 
+    'admin.sidebar.requests': 'Permohonon Baru',
+    'admin.requests.title': 'Permohonan Pasang Baru',
+    'admin.requests.subtitle': 'Tinjau dan proses pendaftaran pelanggan baru.',
+    'admin.requests.table.details': 'Detail Pemohon',
+    'admin.requests.table.contact': 'Kontak',
+    'admin.requests.table.date': 'Tanggal Masuk',
+    'admin.requests.table.status': 'Status',
+    'admin.requests.table.actions': 'Tindakan',
+    'admin.requests.empty': 'Tidak ada permohonan tertunda.',
+    'admin.requests.status.pending': 'Tertunda',
+    'admin.requests.status.approved': 'Disetujui',
+    'admin.requests.status.rejected': 'Ditolak',
+    'admin.requests.approve': 'Setujui',
+    'admin.requests.reject': 'Tolak',
+
     // Admin Sub-components
     'admin.waterflow.title': 'Monitoring Aliran Air',
     'admin.waterflow.subtitle': 'Analisis distribusi dan tekanan real-time di setiap sektor.',
@@ -198,6 +213,8 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.type.reading_prefix': 'Meteran:',
     'admin.tasks.type.disconnection': 'Pemutusan Sambungan',
     'admin.tasks.type.disconnection_prefix': 'Pencabutan:',
+    'admin.tasks.type.new_connection': 'Penyambungan Baru',
+    'admin.tasks.type.new_connection_prefix': 'Sambung Baru:',
     'admin.tasks.select_customer': 'Cari Pelanggan...',
     'admin.tasks.unassigned': 'Tangguhkan Penugasan',
 
@@ -405,6 +422,21 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.deadline.urgent': '24h Deadline',
     'admin.tasks.deadline.cycle': 'Cycle Schedule',
 
+    'admin.sidebar.requests': 'New Requests',
+    'admin.requests.title': 'New Connection Requests',
+    'admin.requests.subtitle': 'Review and process new customer applications.',
+    'admin.requests.table.details': 'Applicant Details',
+    'admin.requests.table.contact': 'Contact Info',
+    'admin.requests.table.date': 'Date Submitted',
+    'admin.requests.table.status': 'Status',
+    'admin.requests.table.actions': 'Actions',
+    'admin.requests.empty': 'No pending requests.',
+    'admin.requests.status.pending': 'Pending',
+    'admin.requests.status.approved': 'Approved',
+    'admin.requests.status.rejected': 'Rejected',
+    'admin.requests.approve': 'Approve',
+    'admin.requests.reject': 'Reject',
+
     // Admin Sub-components
     'admin.waterflow.title': 'Water Flow Monitoring',
     'admin.waterflow.subtitle': 'Real-time distribution and pressure analysis per sector.',
@@ -465,6 +497,8 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.type.reading_prefix': 'Meter:',
     'admin.tasks.type.disconnection': 'Disconnection',
     'admin.tasks.type.disconnection_prefix': 'Disconnection:',
+    'admin.tasks.type.new_connection': 'New Connection',
+    'admin.tasks.type.new_connection_prefix': 'New Conn:',
     'admin.tasks.select_customer': 'Search Customer...',
     'admin.tasks.unassigned': 'Suspend Assignment',
 

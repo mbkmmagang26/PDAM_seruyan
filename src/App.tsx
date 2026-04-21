@@ -10,12 +10,14 @@ import DisconnectionFlow from './pages/staff/DisconnectionFlow';
 
 import { TaskProvider } from './taskContext';
 import { LanguageProvider } from './languageContext';
+import { RequestProvider } from './requestContext';
 
 export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
       <TaskProvider>
+      <RequestProvider>
         <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -59,6 +61,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
+      </RequestProvider>
       </TaskProvider>
       </LanguageProvider>
     </AuthProvider>

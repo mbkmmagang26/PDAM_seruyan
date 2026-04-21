@@ -20,7 +20,7 @@ export interface Task {
   district: string;
   priority: 'high' | 'normal';
   status: 'pending' | 'assigned' | 'in-progress' | 'completed';
-  type: 'repair' | 'reading' | 'disconnection';
+  type: 'repair' | 'reading' | 'disconnection' | 'new_connection';
   assignedTo?: string; // Staff ID
   customerId?: string;
   customerName?: string;
@@ -42,4 +42,13 @@ export interface Bill {
   usage: number;
   paidDate: string;
   status: 'paid' | 'unpaid';
+}
+
+export interface ConnectionRequest {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  status: 'pending' | 'approved' | 'rejected';
+  date: string;
 }

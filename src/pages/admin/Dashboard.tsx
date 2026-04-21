@@ -26,23 +26,26 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  Check
+  Check,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../authContext';
 import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
+import { useRequests } from '../../requestContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import WaterFlow from './WaterFlow';
 import Billing from './Billing';
 import { User, Task, UserRole } from '../../types';
 
-type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users';
+type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests';
 type UserFilter = 'staff' | 'customer';
 
 export default function AdminDashboard() {
   const { user, logout, allUsers, updateUserStatus, register } = useAuth();
   const { tasks, createTask, assignTask, isLoading: tasksLoading } = useTasks();
+  const { requests, approveRequest, rejectRequest } = useRequests();
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
   const [userFilter, setUserFilter] = useState<UserFilter>('staff');
@@ -65,7 +68,7 @@ export default function AdminDashboard() {
     role: 'staff' as UserRole
   });
   const [newTaskForm, setNewTaskForm] = useState({
-    type: 'repair' as 'repair' | 'reading' | 'disconnection',
+    type: 'repair' as 'repair' | 'reading' | 'disconnection' | 'new_connection',
 
     location: '',
     district: '',
@@ -122,7 +125,7 @@ export default function AdminDashboard() {
       priority: newTaskForm.priority,
       reason: newTaskForm.reason,
       assignedTo: newTaskForm.assignedTo || undefined,
-      deadline: newTaskForm.priority === 'high' ? 'URGENT' : 'CYCLE'
+      deadline: 'CYCLE'
     });
     
     showNotification(t('admin.tasks.success'), 'success');
@@ -146,6 +149,98 @@ export default function AdminDashboard() {
   const renderContent = () => {
     if (activeView === 'waterflow') return <WaterFlow />;
     if (activeView === 'billing') return <Billing />;
+
+    if (activeView === 'requests') {
+      return (
+        <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div className="px-8 py-8 flex justify-between items-center bg-white border-b border-slate-100">
+            <div>
+              <h2 className="text-2xl font-headline font-bold text-slate-800">{t('admin.requests.title')}</h2>
+              <p className="text-sm text-slate-500 font-medium">{t('admin.requests.subtitle')}</p>
+            </div>
+          </div>
+          
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5">{t('admin.requests.table.details')}</th>
+                <th className="px-8 py-5">{t('admin.requests.table.contact')}</th>
+                <th className="px-8 py-5">{t('admin.requests.table.date')}</th>
+                <th className="px-8 py-5">{t('admin.requests.table.status')}</th>
+                <th className="px-8 py-5 text-right">{t('admin.requests.table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {requests.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                    {t('admin.requests.empty')}
+                  </td>
+                </tr>
+              ) : (
+                requests.map((req) => (
+                  <tr key={req.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
+                          {req.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{req.name}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <p className="text-xs font-bold text-slate-700">{req.phone}</p>
+                      <p className="text-xs text-slate-500 font-medium">{req.address}</p>
+                    </td>
+                    <td className="px-8 py-5">
+                      <p className="text-xs font-bold text-slate-600">
+                        {new Date(req.date).toLocaleDateString()}
+                      </p>
+                    </td>
+                    <td className="px-8 py-5">
+                        <span className={`w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 
+                          req.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                           {t(`admin.requests.status.${req.status}`)}
+                        </span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      {req.status === 'pending' && (
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                          <button 
+                            onClick={() => {
+                              approveRequest(req.id);
+                              showNotification(t('admin.requests.status.approved'), 'success');
+                            }}
+                            className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all font-bold text-xs"
+                          >
+                            {t('admin.requests.approve')}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              rejectRequest(req.id);
+                              showNotification(t('admin.requests.status.rejected'), 'error');
+                            }}
+                            className="px-3 py-2 rounded-xl border border-red-100 text-red-500 hover:bg-red-50 transition-all font-bold text-xs"
+                          >
+                            {t('admin.requests.reject')}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </section>
+      );
+    }
+    
     
     if (activeView === 'users') {
       return (
@@ -347,14 +442,17 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-3">
                                  <div className={`p-2.5 rounded-xl ${
                                     task.type === 'repair' ? 'bg-red-50 text-red-500' : 
-                                    task.type === 'reading' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'
+                                    task.type === 'reading' ? 'bg-blue-50 text-blue-500' : 
+                                    task.type === 'new_connection' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'
                                  }`}>
                                     {task.type === 'repair' ? <Wrench size={18} /> : 
-                                     task.type === 'reading' ? <TrendingUp size={18} /> : <Scissors size={18} />}
+                                     task.type === 'reading' ? <TrendingUp size={18} /> : 
+                                     task.type === 'new_connection' ? <Plus size={18} /> : <Scissors size={18} />}
                                  </div>
                                  <div>
                                     <p className="font-bold text-slate-800 text-sm">
                                       {task.type === 'reading' && t('admin.tasks.type.reading')}
+                                      {task.type === 'new_connection' && t('admin.tasks.type.new_connection')}
                                       {task.type === 'disconnection' && `${t('admin.tasks.type.disconnection_prefix')} ${task.customerName}`}
                                       {task.type === 'repair' && `${t('admin.tasks.type.repair_prefix')} ${task.reason}`}
                                     </p>
@@ -602,6 +700,19 @@ export default function AdminDashboard() {
           </button>
 
           <button 
+            onClick={() => setActiveView('requests')}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
+              activeView === 'requests' ? 'bg-primary text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <FileText size={20} />
+              <span className="text-sm">{t('admin.sidebar.requests')}</span>
+            </div>
+            {activeView === 'requests' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+          </button>
+
+          <button 
             onClick={() => setActiveView('tasks')}
             className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
               activeView === 'tasks' ? 'bg-primary text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
@@ -828,11 +939,11 @@ export default function AdminDashboard() {
                   </div>
 
                   <form onSubmit={handleCreateTask} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.type')}</label>
-                        <div className="grid grid-cols-3 gap-2">
-                           {(['repair', 'reading', 'disconnection'] as const).map(type => (
+                        <div className="grid grid-cols-4 gap-2">
+                           {(['repair', 'reading', 'disconnection', 'new_connection'] as const).map(type => (
                              <button
                                key={type}
                                type="button"
@@ -841,26 +952,8 @@ export default function AdminDashboard() {
                                  newTaskForm.type === type ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'
                                }`}
                              >
-                               {type === 'repair' ? <Wrench size={14} /> : type === 'reading' ? <TrendingUp size={14} /> : <Scissors size={14} />}
+                               {type === 'repair' ? <Wrench size={14} /> : type === 'reading' ? <TrendingUp size={14} /> : type === 'new_connection' ? <Plus size={14} /> : <Scissors size={14} />}
                                {t(`admin.tasks.type.${type}`).split(' ')[0]}
-                             </button>
-                           ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.priority')}</label>
-                        <div className="flex gap-2">
-                           {(['normal', 'high'] as const).map(p => (
-                             <button
-                               key={p}
-                               type="button"
-                               onClick={() => setNewTaskForm({...newTaskForm, priority: p})}
-                               className={`flex-1 py-3 rounded-xl text-xs font-extrabold uppercase transition-all ${
-                                 newTaskForm.priority === p ? (p === 'high' ? 'bg-red-500 text-white' : 'bg-primary text-white') : 'bg-slate-100 text-slate-400'
-                               }`}
-                             >
-                               {t(`admin.tasks.priority.${p}`)}
                              </button>
                            ))}
                         </div>
