@@ -1,216 +1,199 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../authContext';
 import {
-  ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle, 
-  Loader2, Plus, MoreHorizontal, LogOut, Bell, Settings, Menu, X, Clock
+  LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
+  Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
+  CheckSquare, MessageCircle, Grid, LogOut, Menu, X
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
-import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { formatCurrency } from '../../lib/utils';
 
-type ModuleView = 'home' | 'ledger' | 'journals' | 'reports' | 'ap' | 'ar' | 'budget' | 'settings';
+// Subviews
+import DashboardUtama from './views/DashboardUtama';
+import DashboardEksekutif from './views/DashboardEksekutif';
+import DashboardManajerial from './views/DashboardManajerial';
+import DashboardSIA from './views/DashboardSIA';
+import JurnalUmum from './views/JurnalUmum';
+import BukuBesar from './views/BukuBesar';
+import HutangAP from './views/HutangAP';
+import PiutangAR from './views/PiutangAR';
+import AsetTetap from './views/AsetTetap';
+import Persediaan from './views/Persediaan';
+import Anggaran from './views/Anggaran';
+import LaporanKeuangan from './views/LaporanKeuangan';
+import VerifikasiData from './views/VerifikasiData';
+import Pengaduan from './views/Pengaduan';
+import Operasional from './views/Operasional';
 
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  type: 'income' | 'expense';
-  category: string;
-  status: 'pending' | 'verified' | 'posted';
-}
+export type ModuleView = 
+  | 'dashboard_utama' | 'dashboard_eksekutif' | 'dashboard_manajerial' | 'dashboard_sia'
+  | 'jurnal_umum' | 'buku_besar' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
+  | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
+  | 'pengaduan' | 'operasional';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeModule, setActiveModule] = useState<ModuleView>('home');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeModule, setActiveModule] = useState<ModuleView>('dashboard_utama');
   const [showMenu, setShowMenu] = useState(false);
 
-  // 1. Guard: Redirect jika bukan direktur
+  // Guard: Redirect jika bukan direktur
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'direktur')) {
       navigate('/login');
     }
   }, [user, authLoading, navigate]);
 
-  // 2. Real-time Data Fetching
-  useEffect(() => {
-    // Hanya jalankan jika auth sudah selesai dan user adalah direktur
-    if (authLoading || !user || user.role !== 'direktur') return;
-
-    setLoading(true);
-    const q = query(collection(db, 'transactions'), orderBy('date', 'desc'));
-
-    const unsubscribe = onSnapshot(q, 
-      (snapshot) => {
-        const txData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Transaction[];
-        
-        setTransactions(txData);
-        setLoading(false);
-        setError(null);
-      }, 
-      (err) => {
-        console.error("Firestore Error:", err);
-        setError("Gagal memuat data. Pastikan Index Firestore sudah dibuat.");
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, authLoading]);
-
-  // 3. Kalkulasi Metrics (Memoized untuk performa)
-  const metrics = useMemo(() => {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let pendingCount = 0;
-    const monthlyMap = new Map<string, { income: number; expense: number }>();
-    const categoryMap = new Map<string, number>();
-
-    transactions.forEach(tx => {
-      // Totals
-      if (tx.type === 'income') totalIncome += tx.amount;
-      else {
-        totalExpense += tx.amount;
-        categoryMap.set(tx.category, (categoryMap.get(tx.category) || 0) + tx.amount);
-      }
-      if (tx.status === 'pending') pendingCount++;
-
-      // Chart Data
-      const monthKey = tx.date?.substring(0, 7) || 'Unknown';
-      if (!monthlyMap.has(monthKey)) monthlyMap.set(monthKey, { income: 0, expense: 0 });
-      const mData = monthlyMap.get(monthKey)!;
-      if (tx.type === 'income') mData.income += tx.amount;
-      else mData.expense += tx.amount;
-    });
-
-    return {
-      totalIncome,
-      totalExpense,
-      netIncome: totalIncome - totalExpense,
-      pendingTransactions: pendingCount,
-      monthlyData: Array.from(monthlyMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .slice(-6)
-        .map(([month, data]) => ({ month: month.substring(5), ...data })),
-      categoryBreakdown: Array.from(categoryMap.entries())
-        .map(([category, value]) => ({ category, value }))
-        .sort((a, b) => b.value - a.value).slice(0, 5)
-    };
-  }, [transactions]);
-
-  if (authLoading || (loading && !error)) {
+  if (authLoading || !user) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+      <div className="h-screen w-full flex items-center justify-center bg-slate-900">
         <div className="text-center">
-          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
-          <p className="text-slate-600 font-medium">Memverifikasi Akses Direktur...</p>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400 font-medium">Memverifikasi Akses...</p>
         </div>
       </div>
     );
   }
 
+  const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
+    { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
+    { id: 'dashboard_eksekutif', label: 'Dashboard Eksekutif', icon: LayoutGrid },
+    { id: 'dashboard_manajerial', label: 'Dashboard Manajerial', icon: LayoutPanelLeft },
+    { id: 'dashboard_sia', label: 'Dashboard SIA', icon: Server },
+    { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
+    { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
+    { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
+    { id: 'piutang_ar', label: 'Piutang (AR)', icon: Users },
+    { id: 'aset_tetap', label: 'Aset Tetap', icon: HardDrive },
+    { id: 'persediaan', label: 'Persediaan', icon: Package },
+    { id: 'anggaran', label: 'Anggaran', icon: PieChart },
+    { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
+    { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
+    { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
+    { id: 'operasional', label: 'Operasional', icon: Grid },
+  ];
+
+  const renderContent = () => {
+    switch (activeModule) {
+      case 'dashboard_utama': return <DashboardUtama />;
+      case 'dashboard_eksekutif': return <DashboardEksekutif />;
+      case 'dashboard_manajerial': return <DashboardManajerial />;
+      case 'dashboard_sia': return <DashboardSIA />;
+      case 'jurnal_umum': return <JurnalUmum />;
+      case 'buku_besar': return <BukuBesar />;
+      case 'hutang_ap': return <HutangAP />;
+      case 'piutang_ar': return <PiutangAR />;
+      case 'aset_tetap': return <AsetTetap />;
+      case 'persediaan': return <Persediaan />;
+      case 'anggaran': return <Anggaran />;
+      case 'laporan_keuangan': return <LaporanKeuangan />;
+      case 'verifikasi_data': return <VerifikasiData />;
+      case 'pengaduan': return <Pengaduan />;
+      case 'operasional': return <Operasional />;
+      default: return <DashboardUtama />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+    <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
+      {/* Mobile Menu Overlay */}
+      {showMenu && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setShowMenu(false)}
+        />
+      )}
+
+      {/* Sidebar - Dark Theme as requested */}
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-[#0f172a] shadow-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${showMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:relative`}>
+        {/* Logo Area */}
+        <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl shadow-lg">💰</div>
-            <h1 className="text-lg font-bold text-slate-900 hidden sm:block">Akuntansi PDAM Seruyan</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{user?.name}</p>
-              <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase font-bold">Direktur</span>
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/20">
+              S
             </div>
-            <button onClick={logout} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><LogOut size={20}/></button>
+            <div>
+              <h1 className="text-white font-bold tracking-wide">SIA SERUYAN</h1>
+              <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">PDAM Accounting</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowMenu(false)}
+            className="ml-auto p-2 text-slate-400 hover:text-white lg:hidden"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
+          <div className="mb-4 px-2">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">MODUL UTAMA</p>
+          </div>
+          <nav className="space-y-1.5">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveModule(item.id);
+                  if (window.innerWidth < 1024) setShowMenu(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  activeModule === item.id
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-medium'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                <item.icon size={18} className={activeModule === item.id ? 'text-white' : 'text-slate-400'} />
+                <span className="text-sm font-medium">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* User Profile / Logout */}
+        <div className="p-4 border-t border-slate-800/50 bg-[#0f172a]">
+          <div className="flex items-center gap-3 px-2 mb-4">
+            <img src={user.avatar} alt="Profile" className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700" />
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-white truncate">{user.name}</p>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wider">{user.role}</p>
+            </div>
+          </div>
+          <button 
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+          >
+            <LogOut size={18} />
+            <span className="text-sm font-bold">Keluar Sistem</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+        {/* Mobile Header */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:hidden shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg font-bold">
+              S
+            </div>
+            <h1 className="font-bold text-slate-800">SIA SERUYAN</h1>
+          </div>
+          <button 
+            onClick={() => setShowMenu(true)}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {renderContent()}
           </div>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        {error ? (
-          <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-center">
-            <AlertCircle className="text-red-500 mx-auto mb-3" size={40} />
-            <p className="text-red-800 font-bold">{error}</p>
-            <button onClick={() => window.location.reload()} className="mt-4 text-sm text-red-600 underline">Coba Lagi</button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard title="Pendapatan" value={formatCurrency(metrics.totalIncome)} color="green" icon={<ArrowUpRight/>} />
-              <MetricCard title="Pengeluaran" value={formatCurrency(metrics.totalExpense)} color="red" icon={<ArrowDownLeft/>} />
-              <MetricCard title="Laba Bersih" value={formatCurrency(metrics.netIncome)} color="blue" icon={<TrendingUp/>} />
-              <MetricCard title="Pending" value={metrics.pendingTransactions.toString()} color="amber" icon={<Clock/>} />
-            </div>
-
-            {/* Charts Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-6 text-lg">Tren 6 Bulan Terakhir</h3>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `Rp${v/1000000}jt`} />
-                      <Tooltip cursor={{fill: '#f8fafc'}} />
-                      <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={30} />
-                      <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-6 text-lg">Kategori Pengeluaran</h3>
-                <div className="space-y-5">
-                  {metrics.categoryBreakdown.map((item, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-500 font-medium">{item.category}</span>
-                        <span className="font-bold text-slate-900">{formatCurrency(item.value)}</span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500" style={{ width: `${(item.value / (metrics.totalExpense || 1)) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
-    </div>
-  );
-}
-
-function MetricCard({ title, value, color, icon }: any) {
-  const colors: any = {
-    green: 'text-green-600 bg-green-50',
-    red: 'text-red-600 bg-red-50',
-    blue: 'text-blue-600 bg-blue-50',
-    amber: 'text-amber-600 bg-amber-50'
-  };
-  return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
-      <div>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
-        <p className="text-xl font-black text-slate-900">{value}</p>
-      </div>
-      <div className={`p-3 rounded-xl ${colors[color]}`}>{icon}</div>
     </div>
   );
 }
