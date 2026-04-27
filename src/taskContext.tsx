@@ -1,22 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from './firebase'; 
 import { collection, onSnapshot, doc, setDoc, updateDoc, query } from 'firebase/firestore';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: 'pending' | 'assigned' | 'in-progress' | 'completed';
-  assignedTo: string | null;
-  createdAt: string;
-}
+import { Task } from './types';
 
 interface TaskContextType {
   tasks: Task[];
   createTask: (taskData: any) => Promise<void>;
   assignTask: (taskId: string, staffId: string) => Promise<void>;
-  updateTaskStatus: (taskId: string, status: string) => Promise<void>;
+  updateTaskStatus: (taskId: string, status: string, updates?: any) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -34,8 +25,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         return {
           id: doc.id,
           ...data,
-          // Paksa category jadi huruf kecil agar filter UI tidak meleset
-          category: (data.category || 'perbaikan').toLowerCase()
         };
       }) as Task[];
       
@@ -55,12 +44,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       const newId = `TSK-${Date.now()}`;
       const newTask = {
         id: newId,
-        title: taskData.title || 'Perbaikan Baru',
-        description: taskData.description || '',
-        category: (taskData.category || 'perbaikan').toLowerCase(),
         status: 'pending',
         assignedTo: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        ...taskData
       };
       await setDoc(doc(db, 'tasks', newId), newTask);
     } catch (error) {
@@ -79,9 +66,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateTaskStatus = async (taskId: string, status: string) => {
+  const updateTaskStatus = async (taskId: string, status: string, updates?: any) => {
     try {
-      await updateDoc(doc(db, 'tasks', taskId), { status });
+      const updateData = { status, ...(updates || {}) };
+      await updateDoc(doc(db, 'tasks', taskId), updateData);
     } catch (error) {
       console.error("Gagal update status:", error);
     }

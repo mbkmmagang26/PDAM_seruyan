@@ -43,7 +43,7 @@ import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/fire
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests';
-type UserFilter = 'staff' | 'customer';
+type UserFilter = 'staff' | 'customer' | 'direktur';
 type TaskTab = 'tasks' | 'complaints';
 
 export default function AdminDashboard() {
@@ -379,6 +379,16 @@ export default function AdminDashboard() {
                 >
                   {t('admin.user.role.customer')}
                 </button>
+                <button
+                  onClick={() => setUserFilter('direktur')}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                    userFilter === 'direktur'
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Direktur
+                </button>
               </div>
               <button 
                 onClick={() => openAddUser()}
@@ -395,7 +405,7 @@ export default function AdminDashboard() {
               <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <th className="px-8 py-5">IDENTITAS</th>
                 <th className="px-8 py-5">KONTAK</th>
-                {userFilter === 'staff' ? (
+                {userFilter === 'staff' || userFilter === 'direktur' ? (
                   <th className="px-8 py-5">PASSWORD</th>
                 ) : (
                   <th className="px-8 py-5">DATA METER</th>
@@ -467,14 +477,14 @@ export default function AdminDashboard() {
                   ))
                 )
               ) : (
-                allUsers.filter((u: User) => u.role === 'staff').length === 0 ? (
+                allUsers.filter((u: User) => u.role === userFilter).length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
-                      Tidak ada staff yang ditemukan
+                      Tidak ada pengguna yang ditemukan
                     </td>
                   </tr>
                 ) : (
-                  allUsers.filter((u: User) => u.role === 'staff').map((u: User) => (
+                  allUsers.filter((u: User) => u.role === userFilter).map((u: User) => (
                     <tr key={u.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
@@ -508,20 +518,20 @@ export default function AdminDashboard() {
                       <td className="px-8 py-5">
                         <div className="flex flex-col gap-1.5">
                           <span className="w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">
-                            STAFF
+                            {u.role}
                           </span>
-                          <div className={`flex items-center gap-1.5 font-bold text-[10px] ${u.status === 'active' ? 'text-emerald-600' : 'text-amber-500'}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${u.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500 pulse'}`}></div>
-                            {u.status.toUpperCase()}
+                          <div className={`flex items-center gap-1.5 font-bold text-[10px] ${(u.status || 'active') === 'active' ? 'text-emerald-600' : 'text-amber-500'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${(u.status || 'active') === 'active' ? 'bg-emerald-500' : 'bg-amber-500 pulse'}`}></div>
+                            {(u.status || 'active').toUpperCase()}
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-primary transition-all active:scale-95"><Edit size={18} /></button>
-                          {u.status === 'active' ? (
+                          {(u.status || 'active') === 'active' ? (
                             <button 
-                              onClick={() => handleToggleStatus(u.id, u.status)}
+                              onClick={() => handleToggleStatus(u.id, u.status || 'active')}
                               className="p-2.5 rounded-xl hover:bg-red-50 text-slate-400 hover:text-error transition-all active:scale-95 group/btn"
                               title={t('admin.user.button.deactivate')}
                             >

@@ -145,9 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const verificationCode = isStaff 
         ? Math.floor(100000 + Math.random() * 900000).toString() 
-        : undefined;
+        : null; // Firebase does not allow undefined, use null instead
 
-      const newUser: User = {
+      const newUser: any = {
         id: firebaseUser.uid,
         name,
         email,
@@ -156,11 +156,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password, // Store password in Firestore
         role,
         status,
-        verificationCode,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
       };
 
-      await setDoc(doc(db, 'user', firebaseUser.uid), newUser);
+      if (verificationCode) {
+        newUser.verificationCode = verificationCode;
+      }
+
+      await setDoc(doc(db, 'user', firebaseUser.uid), newUser as User);
 
       if (status === 'pending') {
         await signOut(auth);
