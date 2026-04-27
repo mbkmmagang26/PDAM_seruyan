@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
-import { Book, Loader2, Filter, Search, Plus, Download } from 'lucide-react';
+import { Book, Loader2, Filter, Search, Plus, Download, X, Layers } from 'lucide-react';
 
 export default function BukuBesar() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -12,6 +12,13 @@ export default function BukuBesar() {
   
   const [activeTab, setActiveTab] = useState('Daftar Akun (COA)');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [coaForm, setCoaForm] = useState({
+    code: '',
+    name: '',
+    type: 'ASSET',
+    level: 1
+  });
   const tabs = ["Daftar Akun (COA)", "Buku Besar Per Akun"];
 
   useEffect(() => {
@@ -24,9 +31,9 @@ export default function BukuBesar() {
     const qCoa = query(collection(db, 'coa'), orderBy('code', 'asc'));
     const unsubCoa = onSnapshot(qCoa, (snapshot) => {
       const coaData = snapshot.docs.map(doc => {
-        const data = doc.data();
+        const data = doc.data() as any;
         // Determine level from code length (simplistic fallback if level not in db)
-        const codeParts = data.code ? data.code.split('.') : [];
+        const codeParts = (data.code || '').split('.');
         const level = data.level || (codeParts.length > 0 ? codeParts.length : 1);
         return { id: doc.id, ...data, level };
       });
@@ -39,11 +46,26 @@ export default function BukuBesar() {
     return () => { unsubTx(); unsubCoa(); };
   }, [selectedCoa]);
 
+  const handleAddCoa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addDoc(collection(db, 'coa'), {
+        ...coaForm,
+        level: Number(coaForm.level),
+        createdAt: serverTimestamp()
+      });
+      setShowAddForm(false);
+      setCoaForm({ code: '', name: '', type: 'ASSET', level: 1 });
+    } catch (err) {
+      alert('Gagal menambah akun COA');
+    }
+  };
+
   const ledgerData = useMemo(() => {
     if (!selectedCoa) return [];
     
     let currentBalance = 0;
-    const isAssetOrExpense = selectedCoa.startsWith('1') || selectedCoa.startsWith('5');
+    const isAssetOrExpense = (selectedCoa || '').startsWith('1') || (selectedCoa || '').startsWith('5');
     
     const accountTx = transactions.filter(t => t.category === selectedCoa);
     
@@ -118,7 +140,10 @@ export default function BukuBesar() {
               <button className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm">
                 <Download size={18} /> Export
               </button>
-              <button className="flex-1 sm:flex-none bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+              <button 
+                onClick={() => setShowAddForm(true)}
+                className="flex-1 sm:flex-none bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
                 <Plus size={18} /> Tambah Akun COA
               </button>
             </div>
@@ -226,6 +251,90 @@ export default function BukuBesar() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Tambah COA */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowAddForm(false)} />
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                  <Layers size={20} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-800 uppercase tracking-tight">Tambah Akun</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chart of Accounts</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAddForm(false)} className="p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-slate-600 shadow-sm border border-transparent hover:border-slate-100">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCoa} className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Kode Akun</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Contoh: 1.1.1" 
+                  value={coaForm.code}
+                  onChange={e => setCoaForm({...coaForm, code: e.target.value})}
+                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Nama Akun</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Contoh: Kas Besar" 
+                  value={coaForm.name}
+                  onChange={e => setCoaForm({...coaForm, name: e.target.value})}
+                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Tipe</label>
+                  <select 
+                    value={coaForm.type}
+                    onChange={e => setCoaForm({...coaForm, type: e.target.value})}
+                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                  >
+                    <option value="ASSET">ASSET</option>
+                    <option value="LIABILITY">LIABILITY</option>
+                    <option value="EQUITY">EQUITY</option>
+                    <option value="REVENUE">REVENUE</option>
+                    <option value="EXPENSE">EXPENSE</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Level</label>
+                  <select 
+                    value={coaForm.level}
+                    onChange={e => setCoaForm({...coaForm, level: Number(e.target.value)})}
+                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                  >
+                    <option value={1}>Level 1</option>
+                    <option value={2}>Level 2</option>
+                    <option value={3}>Level 3</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-[0.98] mt-4"
+              >
+                Simpan Akun
+              </button>
+            </form>
           </div>
         </div>
       )}

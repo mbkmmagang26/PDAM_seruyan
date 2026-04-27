@@ -3,10 +3,12 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, 
-  AlertCircle, CheckSquare, Users, Activity
+  AlertCircle, CheckSquare, Users, Activity,
+  ArrowUpRight, ArrowDownRight, Wallet, LayoutGrid, Clock,
+  Layers, MessageCircle
 } from 'lucide-react';
 import { formatCurrency } from '../../../lib/utils';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useAuth } from '../../../authContext';
 
 export default function DashboardUtama() {
@@ -17,8 +19,11 @@ export default function DashboardUtama() {
     income: 0,
     expense: 0,
     assets: 0,
+    inventoryValue: 0,
+    lowStock: 0,
     tasksPending: 0,
-    pengaduanPending: 0
+    pengaduanPending: 0,
+    cashTransit: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +33,7 @@ export default function DashboardUtama() {
     const unsubTx = onSnapshot(query(collection(db, 'transactions')), (snapshot) => {
       let totalInc = 0;
       let totalExp = 0;
+      let transit = 0;
       const monthly = new Map<string, { income: number; expense: number }>();
 
       snapshot.forEach(doc => {
@@ -35,9 +41,12 @@ export default function DashboardUtama() {
         if (data.type === 'income') totalInc += data.amount || 0;
         else totalExp += data.amount || 0;
 
+        if (data.category === 'Kas Transit') transit += data.amount || 0;
+
         // For Chart
         if (data.date) {
-          const month = data.date.substring(0, 7); // YYYY-MM
+          const dateObj = new Date(data.date);
+          const month = dateObj.toLocaleString('id-ID', { month: 'short' });
           if (!monthly.has(month)) monthly.set(month, { income: 0, expense: 0 });
           if (data.type === 'income') monthly.get(month)!.income += data.amount || 0;
           else monthly.get(month)!.expense += data.amount || 0;
@@ -45,12 +54,22 @@ export default function DashboardUtama() {
       });
 
       const formattedChart = Array.from(monthly.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .slice(-6)
-        .map(([month, data]) => ({ name: month, Pemasukan: data.income, Pengeluaran: data.expense }));
+        .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
 
-      setStats(s => ({ ...s, income: totalInc, expense: totalExp }));
+      setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit }));
       setChartData(formattedChart);
+    });
+
+    // Listen to Inventory
+    const unsubInv = onSnapshot(collection(db, 'inventory'), (snapshot) => {
+      let totalVal = 0;
+      let low = 0;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        totalVal += (data.stock || 0) * (data.price || 0);
+        if ((data.stock || 0) <= (data.minStock || 5)) low++;
+      });
+      setStats(s => ({ ...s, inventoryValue: totalVal, lowStock: low }));
     });
 
     // Listen to Assets
@@ -83,6 +102,7 @@ export default function DashboardUtama() {
 
     return () => {
       unsubTx();
+      unsubInv();
       unsubAssets();
       unsubTasks();
       unsubPengaduan();
@@ -90,208 +110,298 @@ export default function DashboardUtama() {
   }, []);
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500 font-bold">Memuat Dashboard...</div>;
-  }
-
-  if (isStaff) {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex justify-between items-end mb-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-slate-800">Dashboard Utama</h2>
-            <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Periode Aktif: 2026</span>
-          </div>
-        </div>
-        
-        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
-          <h3 className="text-xl font-bold text-slate-800 mb-2">Monitoring Operasional</h3>
-          <p className="text-slate-500 max-w-md">Anda login menggunakan peran <span className="font-bold text-blue-600">STAFF</span>. Visualisasi laporan laba rugi dan posisi kas disembunyikan.</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-4">Fixed Assets</p>
-              <p className="text-4xl font-black text-slate-800 mb-2">4</p>
-              <p className="text-sm font-bold text-slate-500">KATEGORI ASET TERDAFTAR</p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Nilai Buku Aset</span>
-              <span className="text-sm font-bold text-emerald-600">Rp 0</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-900 p-6 rounded-3xl shadow-sm text-white flex flex-col justify-between">
-            <div>
-              <p className="text-xs font-bold text-blue-400 tracking-wider uppercase mb-6">Inventory Status</p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span className="text-sm font-bold text-slate-300">Stok Aman <span className="text-slate-500 font-normal">(1.1.5)</span></span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <span className="text-sm font-bold text-slate-300">Valuasi Stok</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8">
-              <p className="text-3xl font-black text-white">Rp 0</p>
-            </div>
-          </div>
-        </div>
+      <div className="p-20 text-center flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Menyiapkan Dashboard Intelijen...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end mb-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Dashboard Utama</h2>
-          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Periode Aktif: 2026</span>
+    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/20">
+            <LayoutGrid size={28} />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Pusat Kendali</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Sistem Informasi Akuntansi &bull; LIVE</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Anggaran</p>
+            <p className="text-sm font-black text-slate-700 uppercase">Jan - Des 2026</p>
+          </div>
+          <div className="w-px h-8 bg-slate-200"></div>
+          <button className="text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all">
+             <Activity size={20} />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Laba Rugi Berjalan */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <p className="text-xs font-bold text-slate-400 tracking-wider uppercase">Laba Rugi Berjalan</p>
-              <p className="text-[10px] text-slate-400 italic mt-1">Terdiri dari Pendapatan Air & Non-Air</p>
-            </div>
-            <span className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
-              <TrendingUp size={12} /> Aktif
-            </span>
-          </div>
-          <p className="text-4xl font-black text-slate-800 mb-8">{formatCurrency(stats.income - stats.expense)}</p>
-          <div className="flex gap-2">
-             <div className="h-1.5 flex-1 bg-slate-100 rounded-full"></div>
-             <div className="h-1.5 w-1/3 bg-blue-600 rounded-full"></div>
-          </div>
-        </div>
-
-        {/* Posisi Kas */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-6">Posisi Kas</p>
-          <p className="text-3xl font-black text-slate-800 mb-6">Rp 0</p>
-          <div className="space-y-4">
-            <div className="flex justify-between text-xs">
-              <span className="font-bold text-slate-500">Bank <span className="text-slate-400 font-normal">(1.1.1)</span></span>
-              <span className="font-bold text-slate-800">Rp 0</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="font-bold text-slate-500">Kas Ditangan <span className="text-slate-400 font-normal">(1.1.2)</span></span>
-              <span className="font-bold text-slate-800">Rp 0</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="font-bold text-blue-600">Kas Transit (1.1.6)</span>
-              <span className="font-bold text-blue-600">Rp 0</span>
-            </div>
-            <p className="text-[9px] text-slate-400 italic -mt-3">Uang di brankas (belum setor)</p>
-          </div>
-          <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</span>
-            <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Liquid</span>
-          </div>
-        </div>
-
-        {/* Total Piutang */}
-        <div className="bg-blue-600 p-6 rounded-3xl shadow-sm text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-xs font-bold text-blue-200 tracking-wider uppercase mb-8">Total Piutang (AR)</p>
-            <p className="text-4xl font-black text-white mb-2">Rp 0</p>
-            <p className="text-sm font-medium text-blue-200">Estimasi tagihan Macet Air</p>
-          </div>
-          <div className="relative z-10 mt-8 flex justify-between items-end">
-            <span className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Live Data</span>
-            <TrendingUp className="text-blue-300" size={20} />
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500 rounded-full opacity-50 blur-2xl"></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Chart */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <p className="text-lg font-bold text-slate-800">Performa Keuangan</p>
-                <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mt-1">Pendapatan VS Beban (6 Bulan Terakhir)</p>
-              </div>
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-full flex items-center gap-1"><div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div> Pendapatan</span>
-                <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-bold uppercase rounded-full flex items-center gap-1"><div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div> Beban</span>
-              </div>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => `Rp ${val/1000000}Jt`} />
-                  <Tooltip cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }} formatter={(value: number) => formatCurrency(value)} />
-                  <Line type="monotone" dataKey="Pemasukan" stroke="#2563eb" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="Pengeluaran" stroke="#cbd5e1" strokeWidth={2} dot={false} strokeDasharray="4 4" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Efisiensi Operasional */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-slate-800">Efisiensi Operasional</p>
-              <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mt-1">Rasio Beban Terhadap Pendapatan</p>
-            </div>
-            <div className="flex items-center gap-4 w-1/2">
-              <span className="text-xl font-black text-slate-800">0% <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">Opex Ratio</span></span>
-              <div className="h-2 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                 <div className="h-full bg-blue-600 w-0"></div>
-              </div>
-              <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold uppercase">Sehat</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {/* Fixed Assets */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[200px]">
-            <div>
-              <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-4">Fixed Assets</p>
-              <p className="text-4xl font-black text-slate-800 mb-2">4</p>
-              <p className="text-sm font-bold text-slate-500">KATEGORI ASET TERDAFTAR</p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">Nilai Buku Aset</span>
-              <span className="text-sm font-bold text-emerald-600">Rp 0</span>
-            </div>
-          </div>
-
-          {/* Inventory Status */}
-          <div className="bg-slate-900 p-6 rounded-3xl shadow-sm text-white flex flex-col justify-between min-h-[200px]">
-            <div>
-              <p className="text-xs font-bold text-blue-400 tracking-wider uppercase mb-6">Inventory Status</p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span className="text-sm font-bold text-slate-300">Stok Aman <span className="text-slate-500 font-normal">(1.1.5)</span></span>
+      {!isStaff ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Laba Rugi Card */}
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Laba Rugi Berjalan</p>
+                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <TrendingUp size={12} /> +12.5%
+                    </span>
+                  </div>
+                  <h3 className="text-4xl font-black text-slate-800 mt-4 leading-none">{formatCurrency(stats.income - stats.expense)}</h3>
+                  <p className="text-xs font-bold text-slate-400 mt-2">Akumulasi pendapatan dikurangi beban</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <span className="text-sm font-bold text-slate-300">Valuasi Stok</span>
+                
+                <div className="mt-12 flex items-center gap-4">
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-3/4 rounded-full shadow-lg shadow-emerald-500/20"></div>
+                  </div>
+                  <span className="text-xs font-black text-slate-700">75%</span>
                 </div>
               </div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-slate-50 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
             </div>
-            <div className="mt-8">
-              <p className="text-3xl font-black text-white">Rp 0</p>
+
+            {/* Posisi Kas Card */}
+            <div className="bg-slate-900 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-xs font-black text-blue-400 tracking-widest uppercase mb-1">Likuiditas (Total Kas)</p>
+                <h3 className="text-4xl font-black text-white mt-4 leading-none">{formatCurrency(stats.income - stats.expense + stats.cashTransit)}</h3>
+                
+                <div className="mt-10 space-y-4">
+                  <div className="flex justify-between items-center bg-white/5 p-3 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Wallet size={16} className="text-blue-400" />
+                      <span className="text-xs font-bold text-slate-300">Bank & Kas</span>
+                    </div>
+                    <span className="text-xs font-black text-white">{formatCurrency(stats.income - stats.expense)}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-white/5 p-3 rounded-2xl border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <Clock size={16} className="text-amber-400" />
+                      <span className="text-xs font-bold text-slate-300">Kas Transit (1.1.6)</span>
+                    </div>
+                    <span className="text-xs font-black text-white">{formatCurrency(stats.cashTransit)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600 rounded-full blur-[80px] opacity-30"></div>
+            </div>
+
+            {/* Piutang Card */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 text-white relative overflow-hidden">
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                <div>
+                  <p className="text-xs font-black text-blue-200 tracking-widest uppercase mb-1">Outstanding Piutang (AR)</p>
+                  <h3 className="text-4xl font-black text-white mt-4 leading-none">Rp 0</h3>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-blue-100/80 leading-relaxed max-w-[150px]">Estimasi penagihan aktif bulan ini.</p>
+                  <div className="mt-6 flex justify-between items-end">
+                    <div className="flex -space-x-2">
+                       {[1,2,3].map(i => <div key={i} className="w-8 h-8 rounded-full border-2 border-blue-600 bg-blue-400 flex items-center justify-center text-[10px] font-bold">U{i}</div>)}
+                    </div>
+                    <ArrowUpRight size={24} className="text-blue-200" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Financial Chart */}
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+                  <div>
+                    <h4 className="text-xl font-black text-slate-800 tracking-tight">Dinamika Keuangan</h4>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Cash Flow Analytics (Monthly)</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-blue-600 shadow-lg shadow-blue-600/20"></div>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Inflow</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded-full bg-slate-300"></div>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Outflow</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} tickFormatter={(val) => `Rp ${val/1000000}jt`} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
+                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                      />
+                      <Area type="monotone" dataKey="Pemasukan" stroke="#2563eb" strokeWidth={4} fillOpacity={1} fill="url(#colorIn)" />
+                      <Area type="monotone" dataKey="Pengeluaran" stroke="#cbd5e1" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Quick Actions / Operational Alerts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-rose-50 border border-rose-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-rose-100 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
+                      <AlertCircle size={24} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-rose-900 uppercase tracking-tight">Stok Menipis</p>
+                      <p className="text-xs font-bold text-rose-700/60">{stats.lowStock} ITEM PERLU RE-ORDER</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="text-rose-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+                <div className="bg-blue-50 border border-blue-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-blue-100 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                      <MessageCircle size={24} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-blue-900 uppercase tracking-tight">Pengaduan Baru</p>
+                      <p className="text-xs font-bold text-blue-700/60">{stats.pengaduanPending} LAPORAN MENUNGGU</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="text-blue-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Asset Metrics */}
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div className="flex justify-between items-start mb-10">
+                  <div>
+                    <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Fixed Assets</p>
+                    <h4 className="text-3xl font-black text-slate-800 tracking-tight">Aktiva Tetap</h4>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                    <Package size={24} />
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                       <span>Total Valuasi</span>
+                       <span className="text-emerald-500">Appreciated</span>
+                    </div>
+                    <p className="text-2xl font-black text-slate-800">{formatCurrency(stats.assets)}</p>
+                  </div>
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex justify-between items-center text-xs font-bold">
+                       <span className="text-slate-500">Asset Count</span>
+                       <span className="bg-slate-100 px-3 py-1 rounded-lg text-slate-700 font-black">4 Categories</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inventory Summary */}
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-10">
+                    <div>
+                      <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Inventory Value</p>
+                      <h4 className="text-3xl font-black text-slate-800 tracking-tight">Stok Material</h4>
+                    </div>
+                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                      <Layers size={24} />
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                         <span>Stock Valuation</span>
+                         <span className="text-blue-500">Real-time</span>
+                      </div>
+                      <p className="text-2xl font-black text-slate-800">{formatCurrency(stats.inventoryValue)}</p>
+                    </div>
+                    <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                          <span className="text-xs font-bold text-slate-500">Operational Ready</span>
+                       </div>
+                       <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">Detail Stok</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-8">
+           <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-center flex flex-col items-center">
+              <div className="relative z-10 max-w-lg">
+                <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-white mb-8 mx-auto backdrop-blur-md border border-white/10">
+                   <Users size={40} />
+                </div>
+                <h3 className="text-3xl font-black text-white mb-4 tracking-tight">Monitoring Operasional</h3>
+                <p className="text-slate-400 leading-relaxed font-medium">Anda login menggunakan peran <span className="text-blue-400 font-bold">STAFF OPERASIONAL</span>. Akses data finansial dibatasi sesuai kebijakan privasi perusahaan.</p>
+                <div className="mt-10 flex gap-4 justify-center">
+                   <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 text-white text-sm font-black uppercase tracking-widest">Akses Terbatas</div>
+                   <div className="px-6 py-3 bg-blue-600 rounded-2xl text-white text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">Buka Tugas</div>
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full blur-[120px] opacity-20"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600 rounded-full blur-[120px] opacity-20"></div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between group cursor-pointer hover:border-blue-300 transition-all">
+                 <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                       <CheckSquare size={32} />
+                    </div>
+                    <div>
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Tugas Operasional</p>
+                       <p className="text-2xl font-black text-slate-800">{stats.tasksPending} Pending</p>
+                    </div>
+                 </div>
+                 <ArrowUpRight size={24} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between group cursor-pointer hover:border-rose-300 transition-all">
+                 <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500">
+                       <AlertCircle size={32} />
+                    </div>
+                    <div>
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Pengaduan Masuk</p>
+                       <p className="text-2xl font-black text-slate-800">{stats.pengaduanPending} Baru</p>
+                    </div>
+                 </div>
+                 <ArrowUpRight size={24} className="text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+              </div>
+           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
 

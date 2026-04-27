@@ -2,13 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
-import { BarChart3, Loader2, Download } from 'lucide-react';
+import { BarChart3, Loader2, Download, Printer, FileText, ChevronRight, Calculator, PieChart, Share2, Eye, Calendar, Settings, Layout, Layers, RefreshCw, Search } from 'lucide-react';
+
+type ReportType = 'laba_rugi' | 'neraca' | 'arus_kas' | 'ekuitas';
 
 export default function LaporanKeuangan() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reportType, setReportType] = useState<'laba_rugi' | 'neraca'>('laba_rugi');
+  const [activeReport, setActiveReport] = useState<ReportType>('laba_rugi');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [theme, setTheme] = useState<'standard' | 'blue' | 'dark'>('standard');
+
+  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   useEffect(() => {
     const unsubTx = onSnapshot(query(collection(db, 'transactions')), (snapshot) => {
@@ -24,195 +31,361 @@ export default function LaporanKeuangan() {
   }, []);
 
   const reportData = useMemo(() => {
-    // 4 = Pendapatan, 5 = Beban, 1 = Aset, 2 = Kewajiban, 3 = Ekuitas
     const grouped: Record<string, number> = {};
-    
-    coa.forEach(c => grouped[c.code] = 0);
+    coa.forEach(c => { if (c.code) grouped[c.code] = 0; });
 
-    transactions.forEach(t => {
+    // Improved date filtering to handle Firestore Timestamps
+    const filteredTx = transactions.filter(t => {
+      if (!t.date) return false;
+      const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
+      return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
+    });
+
+    filteredTx.forEach(t => {
+      if (!t.category) return;
       if (!grouped[t.category]) grouped[t.category] = 0;
-      
       const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
       const debit = t.type === 'income' ? t.amount : 0;
       const kredit = t.type === 'expense' ? t.amount : 0;
-      
-      if (isAssetOrExpense) {
-        grouped[t.category] += (debit - kredit);
-      } else {
-        grouped[t.category] += (kredit - debit);
-      }
+      if (isAssetOrExpense) grouped[t.category] += (debit - kredit);
+      else grouped[t.category] += (kredit - debit);
     });
 
-    // Laba Rugi
-    const pendapatan = coa.filter(c => c.code.startsWith('4')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
-    const beban = coa.filter(c => c.code.startsWith('5')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
+    // Laba Rugi Data
+    const pendapatan = coa.filter(c => c.code && c.code.startsWith('4')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
+    const beban = coa.filter(c => c.code && c.code.startsWith('5')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
     const totalPendapatan = pendapatan.reduce((sum, item) => sum + item.amount, 0);
     const totalBeban = beban.reduce((sum, item) => sum + item.amount, 0);
     const labaBersih = totalPendapatan - totalBeban;
 
-    // Neraca
-    const aset = coa.filter(c => c.code.startsWith('1')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
-    const kewajiban = coa.filter(c => c.code.startsWith('2')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
-    const ekuitas = coa.filter(c => c.code.startsWith('3')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
-    
+    // Neraca Data
+    const aset = coa.filter(c => c.code && c.code.startsWith('1')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
+    const kewajiban = coa.filter(c => c.code && c.code.startsWith('2')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
+    const ekuitas = coa.filter(c => c.code && c.code.startsWith('3')).map(c => ({ ...c, amount: grouped[c.code] || 0 }));
     const totalAset = aset.reduce((sum, item) => sum + item.amount, 0);
     const totalKewajiban = kewajiban.reduce((sum, item) => sum + item.amount, 0);
-    const totalEkuitas = ekuitas.reduce((sum, item) => sum + item.amount, 0) + labaBersih; // Laba ditahan masuk ke ekuitas
+    const totalEkuitas = ekuitas.reduce((sum, item) => sum + item.amount, 0) + labaBersih;
+
+    // Arus Kas Data (Simplified)
+    const arusOperasional = totalPendapatan - totalBeban;
+    const arusInvestasi = -aset.filter(a => a.code.startsWith('1.3')).reduce((sum, a) => sum + a.amount, 0); // Asset tetap
+    const arusPendanaan = totalKewajiban + (totalEkuitas - labaBersih); // Kewajiban + Modal
+    const kenaikanKas = arusOperasional + arusInvestasi + arusPendanaan;
 
     return {
       pendapatan, beban, totalPendapatan, totalBeban, labaBersih,
-      aset, kewajiban, ekuitas, totalAset, totalKewajiban, totalEkuitas
+      aset, kewajiban, ekuitas, totalAset, totalKewajiban, totalEkuitas,
+      arusOperasional, arusInvestasi, arusPendanaan, kenaikanKas
     };
-  }, [transactions, coa]);
+  }, [transactions, coa, selectedMonth, selectedYear]);
 
-  if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Laporan...</div>;
+  if (loading) return <div className="p-8 text-center flex flex-col items-center gap-4"><Loader2 className="animate-spin text-blue-600" size={40} /><p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Menyusun Laporan Keuangan...</p></div>;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Laporan Keuangan</h2>
-          <p className="text-slate-500">Ringkasan Laba Rugi dan Neraca Saldo.</p>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Pusat Laporan Keuangan</h2>
+          <p className="text-slate-500 text-sm font-medium">Laporan standar SAK untuk audit dan manajemen</p>
         </div>
-        <div className="flex gap-2">
-          <button className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-colors flex items-center gap-2">
-            <Download size={18} /> Cetak / Export PDF
-          </button>
+        <div className="flex items-center gap-4">
+           <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500" size={16} />
+              <input type="text" placeholder="Cari data..." className="pl-10 pr-4 py-2 bg-slate-100 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 transition-all w-48" />
+           </div>
+           <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Settings size={20}/></button>
         </div>
       </div>
 
-      <div className="flex border-b border-slate-200 mb-6">
-        <button 
-          onClick={() => setReportType('laba_rugi')}
-          className={`px-6 py-3 font-bold text-sm border-b-2 transition-colors ${reportType === 'laba_rugi' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          Laporan Laba Rugi
-        </button>
-        <button 
-          onClick={() => setReportType('neraca')}
-          className={`px-6 py-3 font-bold text-sm border-b-2 transition-colors ${reportType === 'neraca' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          Neraca (Balance Sheet)
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-8 max-w-4xl mx-auto">
-        <div className="text-center mb-8 border-b border-slate-200 pb-6">
-          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-widest">SIA PDAM SERUYAN</h1>
-          <h2 className="text-lg font-bold text-slate-600 uppercase">
-            {reportType === 'laba_rugi' ? 'Laporan Laba Rugi' : 'Neraca'}
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">Untuk periode yang berakhir saat ini</p>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        {/* Sidebar List */}
+        <div className="xl:col-span-4 space-y-4">
+          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-4 space-y-2">
+            {[
+              { id: 'laba_rugi', title: 'Laporan Laba Rugi', subtitle: 'MONTHLY/ANNUAL', desc: 'Ringkasan pendapatan dan beban operasional', icon: <Calculator size={20} /> },
+              { id: 'neraca', title: 'Neraca (Balance Sheet)', subtitle: 'POINT IN TIME', desc: 'Posisi keuangan: Aktiva, Kewajiban, dan Ekuitas', icon: <Layers size={20} /> },
+              { id: 'arus_kas', title: 'Laporan Arus Kas', subtitle: 'MONTHLY', desc: 'Aliran dana masuk dan keluar dari operasional, investasi, pendanaan', icon: <RefreshCw size={20} /> },
+              { id: 'ekuitas', title: 'Laporan Perubahan Ekuitas', subtitle: 'ANNUAL', desc: 'Ringkasan perubahan modal dan laba ditahan', icon: <Layout size={20} /> }
+            ].map(report => (
+              <button
+                key={report.id}
+                onClick={() => setActiveReport(report.id as ReportType)}
+                className={`w-full text-left p-4 rounded-2xl transition-all border group flex items-center justify-between ${
+                  activeReport === report.id 
+                  ? 'bg-blue-50 border-blue-200 shadow-sm shadow-blue-500/10' 
+                  : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                     activeReport === report.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+                   }`}>
+                     {report.icon}
+                   </div>
+                   <div>
+                     <p className={`font-black text-sm uppercase tracking-wider ${activeReport === report.id ? 'text-blue-700' : 'text-slate-700'}`}>{report.title}</p>
+                     <p className="text-[8px] font-black text-slate-400 tracking-[0.2em]">{report.subtitle}</p>
+                     <p className="text-[10px] text-slate-500 mt-1 font-medium">{report.desc}</p>
+                   </div>
+                </div>
+                <ChevronRight size={16} className={activeReport === report.id ? 'text-blue-400' : 'text-slate-300'} />
+              </button>
+            ))}
+          </div>
         </div>
 
-        {reportType === 'laba_rugi' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-bold text-lg text-emerald-700 border-b-2 border-emerald-100 pb-2 mb-4">Pendapatan</h3>
-              {reportData.pendapatan.map(p => (
-                <div key={p.id} className="flex justify-between py-2 text-slate-700 border-b border-slate-50 border-dashed">
-                  <span className="pl-4">{p.code} - {p.name}</span>
-                  <span className="font-medium">{formatCurrency(p.amount)}</span>
+        {/* Preview Area */}
+        <div className="xl:col-span-8 bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden min-h-[800px] flex flex-col">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+             <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                   <Eye size={16} />
                 </div>
-              ))}
-              <div className="flex justify-between py-3 text-slate-800 font-bold bg-slate-50 px-4 mt-2 rounded-lg">
-                <span>Total Pendapatan</span>
-                <span className="text-emerald-700">{formatCurrency(reportData.totalPendapatan)}</span>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-lg text-rose-700 border-b-2 border-rose-100 pb-2 mb-4 mt-8">Beban Pokok & Operasional</h3>
-              {reportData.beban.map(b => (
-                <div key={b.id} className="flex justify-between py-2 text-slate-700 border-b border-slate-50 border-dashed">
-                  <span className="pl-4">{b.code} - {b.name}</span>
-                  <span className="font-medium">{formatCurrency(b.amount)}</span>
+                <span className="text-sm font-bold text-slate-600">Preview: Laporan Keuangan</span>
+             </div>
+             
+             <div className="flex items-center gap-4">
+                <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                   <button onClick={() => setTheme('standard')} className={`w-6 h-6 rounded ${theme === 'standard' ? 'bg-blue-600 ring-2 ring-blue-500/20' : 'bg-slate-100 border border-slate-200'}`}></button>
+                   <button onClick={() => setTheme('blue')} className={`w-6 h-6 rounded mx-1 ${theme === 'blue' ? 'bg-blue-900 ring-2 ring-blue-900/20' : 'bg-blue-50 border border-blue-200'}`}></button>
+                   <button onClick={() => setTheme('dark')} className={`w-6 h-6 rounded ${theme === 'dark' ? 'bg-slate-900 ring-2 ring-slate-900/20' : 'bg-slate-800 border border-slate-700'}`}></button>
                 </div>
-              ))}
-              <div className="flex justify-between py-3 text-slate-800 font-bold bg-slate-50 px-4 mt-2 rounded-lg">
-                <span>Total Beban</span>
-                <span className="text-rose-700">{formatCurrency(reportData.totalBeban)}</span>
-              </div>
-            </div>
 
-            <div className="flex justify-between py-4 text-xl font-black text-white bg-slate-800 px-6 mt-8 rounded-xl shadow-md">
-              <span>Laba Bersih (Net Income)</span>
-              <span className={reportData.labaBersih >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                {formatCurrency(reportData.labaBersih)}
-              </span>
+                <div className="h-6 w-px bg-slate-200"></div>
+
+                <div className="flex gap-2">
+                   <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100"><Printer size={18}/></button>
+                   <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100"><Download size={18}/></button>
+                </div>
+             </div>
+          </div>
+
+          <div className="p-4 bg-white border-b border-slate-100 flex justify-end gap-3">
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                <Calendar size={14} className="text-slate-400" />
+                <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 outline-none">
+                   {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+                <div className="w-px h-3 bg-slate-200 mx-1"></div>
+                <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 outline-none">
+                   {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+             </div>
+          </div>
+
+          {/* Actual Report Document */}
+          <div className="flex-1 p-12 bg-slate-50/30 overflow-y-auto flex justify-center">
+            <div className={`w-full max-w-4xl bg-white shadow-2xl rounded-sm border border-slate-200 p-16 font-serif ${
+              theme === 'blue' ? 'border-t-8 border-blue-900' : theme === 'dark' ? 'border-t-8 border-slate-900' : 'border-t-8 border-blue-600'
+            }`}>
+               <div className="text-center mb-16">
+                  <h1 className="text-2xl font-bold text-slate-900 tracking-widest uppercase">PDAM SERUYAN</h1>
+                  <p className="text-sm text-slate-500 italic mt-2">Periode {months[selectedMonth]} {selectedYear}</p>
+                  <div className="w-24 h-1 bg-slate-900 mx-auto mt-6"></div>
+               </div>
+
+               {activeReport === 'laba_rugi' && (
+                 <div className="space-y-12">
+                   <section>
+                     <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Pendapatan Operasional</h3>
+                     <div className="space-y-3 px-4">
+                       {reportData.pendapatan.map(p => (
+                         <div key={p.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                           <span className="text-sm text-slate-700">{p.name}</span>
+                           <span className="text-sm font-bold text-slate-800">{formatCurrency(p.amount)}</span>
+                         </div>
+                       ))}
+                       <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                         <span className="text-sm uppercase">Total Pendapatan</span>
+                         <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalPendapatan)}</span>
+                       </div>
+                     </div>
+                   </section>
+
+                   <section>
+                     <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Beban Operasional</h3>
+                     <div className="space-y-3 px-4">
+                       {reportData.beban.map(b => (
+                         <div key={b.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                           <span className="text-sm text-slate-700">{b.name}</span>
+                           <span className="text-sm font-bold text-slate-800">-{formatCurrency(b.amount)}</span>
+                         </div>
+                       ))}
+                       <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                         <span className="text-sm uppercase">Total Beban Operasional</span>
+                         <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalBeban)}</span>
+                       </div>
+                     </div>
+                   </section>
+
+                   <div className="pt-12">
+                      <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
+                         <h4 className="text-lg font-bold uppercase tracking-widest">Laba/Rugi Berjalan</h4>
+                         <span className={`text-xl font-bold ${reportData.labaBersih >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                           {formatCurrency(reportData.labaBersih)}
+                         </span>
+                      </div>
+                   </div>
+                 </div>
+               )}
+
+               {activeReport === 'neraca' && (
+                 <div className="space-y-12">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <section>
+                         <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Aktiva (Aset)</h3>
+                         <div className="space-y-3 px-2">
+                           {reportData.aset.map(a => (
+                             <div key={a.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                               <span className="text-xs text-slate-700">{a.name}</span>
+                               <span className="text-xs font-bold text-slate-800">{formatCurrency(a.amount)}</span>
+                             </div>
+                           ))}
+                           <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                             <span className="text-xs uppercase">Total Aktiva</span>
+                             <span className="text-xs underline decoration-double">{formatCurrency(reportData.totalAset)}</span>
+                           </div>
+                         </div>
+                      </section>
+
+                      <section>
+                         <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Pasiva (Kewajiban & Ekuitas)</h3>
+                         <div className="space-y-6">
+                            <div className="space-y-3 px-2">
+                               <p className="text-[10px] font-bold text-slate-400 italic">Kewajiban</p>
+                               {reportData.kewajiban.map(k => (
+                                 <div key={k.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-xs text-slate-700">{k.name}</span>
+                                   <span className="text-xs font-bold text-slate-800">{formatCurrency(k.amount)}</span>
+                                 </div>
+                               ))}
+                            </div>
+                            <div className="space-y-3 px-2">
+                               <p className="text-[10px] font-bold text-slate-400 italic">Ekuitas</p>
+                               {reportData.ekuitas.map(e => (
+                                 <div key={e.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-xs text-slate-700">{e.name}</span>
+                                   <span className="text-xs font-bold text-slate-800">{formatCurrency(e.amount)}</span>
+                                 </div>
+                               ))}
+                               <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1 italic">
+                                 <span className="text-xs text-blue-600">Laba Berjalan</span>
+                                 <span className="text-xs font-bold text-blue-700">{formatCurrency(reportData.labaBersih)}</span>
+                               </div>
+                            </div>
+                            <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900 px-2">
+                               <span className="text-xs uppercase">Total Pasiva</span>
+                               <span className="text-xs underline decoration-double">{formatCurrency(reportData.totalKewajiban + reportData.totalEkuitas)}</span>
+                            </div>
+                         </div>
+                      </section>
+                   </div>
+                 </div>
+               )}
+
+               {activeReport === 'arus_kas' && (
+                 <div className="space-y-12">
+                   <section>
+                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Operasional</h3>
+                      <div className="space-y-3 px-4">
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Laba Bersih Berjalan</span>
+                          <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.labaBersih)}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 italic mt-4">Penyesuaian non-kas:</p>
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Depresiasi & Amortisasi (Estimasi)</span>
+                          <span className="text-sm font-bold text-slate-800">Rp 0</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                          <span className="text-sm uppercase">Total Kas dari Operasional</span>
+                          <span className="text-sm underline">{formatCurrency(reportData.arusOperasional)}</span>
+                        </div>
+                      </div>
+                   </section>
+
+                   <section>
+                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Investasi</h3>
+                      <div className="space-y-3 px-4">
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Perolehan Aset Tetap</span>
+                          <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.arusInvestasi)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                          <span className="text-sm uppercase">Total Kas dari Investasi</span>
+                          <span className="text-sm underline">{formatCurrency(reportData.arusInvestasi)}</span>
+                        </div>
+                      </div>
+                   </section>
+
+                   <section>
+                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Pendanaan</h3>
+                      <div className="space-y-3 px-4">
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Perubahan Kewajiban & Ekuitas</span>
+                          <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.arusPendanaan)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                          <span className="text-sm uppercase">Total Kas dari Pendanaan</span>
+                          <span className="text-sm underline">{formatCurrency(reportData.arusPendanaan)}</span>
+                        </div>
+                      </div>
+                   </section>
+
+                   <div className="pt-12">
+                      <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-blue-50">
+                         <h4 className="text-lg font-bold uppercase tracking-widest">Kenaikan/Penurunan Kas Bersih</h4>
+                         <span className={`text-xl font-bold ${reportData.kenaikanKas >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                           {formatCurrency(reportData.kenaikanKas)}
+                         </span>
+                      </div>
+                   </div>
+                 </div>
+               )}
+
+               {activeReport === 'ekuitas' && (
+                 <div className="space-y-12">
+                   <section>
+                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Rincian Perubahan Ekuitas</h3>
+                      <div className="space-y-6 px-4">
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Saldo Awal Ekuitas</span>
+                          <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.totalEkuitas - reportData.labaBersih)}</span>
+                        </div>
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Laba Bersih Periode Berjalan</span>
+                          <span className="text-sm font-bold text-emerald-600">+{formatCurrency(reportData.labaBersih)}</span>
+                        </div>
+                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                          <span className="text-sm text-slate-700">Prive / Penarikan Modal</span>
+                          <span className="text-sm font-bold text-slate-400">(Rp 0)</span>
+                        </div>
+                        <div className="pt-8 flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
+                          <h4 className="text-lg font-bold uppercase tracking-widest">Saldo Akhir Ekuitas</h4>
+                          <span className="text-xl font-bold text-slate-900">{formatCurrency(reportData.totalEkuitas)}</span>
+                        </div>
+                      </div>
+                   </section>
+                 </div>
+               )}
+
+               {/* Signature Section */}
+               <div className="mt-32 grid grid-cols-2 gap-20 text-center">
+                  <div className="space-y-20">
+                     <p className="text-sm text-slate-900">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
+                     <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                  </div>
+                  <div className="space-y-20">
+                     <p className="text-sm text-slate-900">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
+                     <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                  </div>
+               </div>
             </div>
           </div>
-        )}
-
-        {reportType === 'neraca' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Aset */}
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg text-blue-700 border-b-2 border-blue-100 pb-2 mb-4 uppercase">Aset (Aktiva)</h3>
-              {reportData.aset.map(a => (
-                <div key={a.id} className="flex justify-between py-1.5 text-slate-700 text-sm">
-                  <span>{a.code} - {a.name}</span>
-                  <span className="font-medium">{formatCurrency(a.amount)}</span>
-                </div>
-              ))}
-              <div className="flex justify-between py-3 text-slate-800 font-bold bg-blue-50 px-4 mt-4 rounded-lg">
-                <span>Total Aset</span>
-                <span className="text-blue-700">{formatCurrency(reportData.totalAset)}</span>
-              </div>
-            </div>
-
-            {/* Kewajiban & Ekuitas */}
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg text-purple-700 border-b-2 border-purple-100 pb-2 mb-4 uppercase">Kewajiban & Ekuitas (Pasiva)</h3>
-              
-              <h4 className="font-bold text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">Kewajiban</h4>
-              {reportData.kewajiban.map(k => (
-                <div key={k.id} className="flex justify-between py-1.5 text-slate-700 text-sm">
-                  <span>{k.code} - {k.name}</span>
-                  <span className="font-medium">{formatCurrency(k.amount)}</span>
-                </div>
-              ))}
-              <div className="flex justify-between py-2 text-slate-800 font-bold text-sm">
-                <span>Total Kewajiban</span>
-                <span>{formatCurrency(reportData.totalKewajiban)}</span>
-              </div>
-
-              <h4 className="font-bold text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded mt-6">Ekuitas</h4>
-              {reportData.ekuitas.map(e => (
-                <div key={e.id} className="flex justify-between py-1.5 text-slate-700 text-sm">
-                  <span>{e.code} - {e.name}</span>
-                  <span className="font-medium">{formatCurrency(e.amount)}</span>
-                </div>
-              ))}
-              <div className="flex justify-between py-1.5 text-slate-700 text-sm italic border-b border-slate-200 pb-3">
-                <span>Laba Tahun Berjalan</span>
-                <span className="font-medium">{formatCurrency(reportData.labaBersih)}</span>
-              </div>
-              
-              <div className="flex justify-between py-2 text-slate-800 font-bold text-sm">
-                <span>Total Ekuitas</span>
-                <span>{formatCurrency(reportData.totalEkuitas)}</span>
-              </div>
-
-              <div className="flex justify-between py-3 text-slate-800 font-bold bg-purple-50 px-4 mt-8 rounded-lg">
-                <span>Total Pasiva</span>
-                <span className="text-purple-700">{formatCurrency(reportData.totalKewajiban + reportData.totalEkuitas)}</span>
-              </div>
-            </div>
-
-            {/* Balancce Checker */}
-            <div className="col-span-1 md:col-span-2 mt-8 text-center border-t border-slate-200 pt-6">
-              <div className={`inline-flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm ${
-                reportData.totalAset === (reportData.totalKewajiban + reportData.totalEkuitas) 
-                ? 'bg-emerald-100 text-emerald-700' 
-                : 'bg-rose-100 text-rose-700'
-              }`}>
-                Neraca {reportData.totalAset === (reportData.totalKewajiban + reportData.totalEkuitas) ? 'Seimbang (Balanced)' : 'Tidak Seimbang (Unbalanced)'}
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
+
+

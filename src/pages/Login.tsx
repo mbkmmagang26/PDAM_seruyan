@@ -53,7 +53,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (user) {
+  if (user && step !== 'role') {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'staff') return <Navigate to="/staff" replace />;
     if (user.role === 'direktur') return <Navigate to="/accounting" replace />;
