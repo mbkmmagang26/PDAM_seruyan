@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Waves, 
-  Search, 
-  Bell, 
-  HelpCircle, 
-  Plus, 
-  Users, 
-  BadgeCheck, 
-  Clock, 
-  TrendingUp, 
-  History, 
-  LayoutDashboard, 
-  CreditCard, 
-  Wrench, 
+import {
+  Waves,
+  Search,
+  Bell,
+  HelpCircle,
+  Plus,
+  Users,
+  BadgeCheck,
+  Clock,
+  TrendingUp,
+  History,
+  LayoutDashboard,
+  CreditCard,
+  Wrench,
   LogOut,
   Edit,
   Ban,
@@ -55,20 +55,21 @@ export default function AdminDashboard() {
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
   const [userFilter, setUserFilter] = useState<UserFilter>('staff');
   const [taskTab, setTaskTab] = useState<TaskTab>('tasks');
-  
+
   const [customers, setCustomers] = useState<any[]>([]);
   const [complaints, setComplaints] = useState<any[]>([]);
+  const [golonganList, setGolonganList] = useState<any[]>([]);
 
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerData, setEditCustomerData] = useState<any>(null);
-  
+
   const [processComplaintData, setProcessComplaintData] = useState<any>(null);
   const [selectedStaffForComplaint, setSelectedStaffForComplaint] = useState('');
-  
+
   const [selectedTaskForAssignment, setSelectedTaskForAssignment] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<string[]>([]);
 
@@ -78,9 +79,10 @@ export default function AdminDashboard() {
     phone: '',
     address: '',
     password: '',
-    role: 'staff' as UserRole
+    role: 'staff' as UserRole,
+    gol: 'Rumah Tangga 2 (R2)'
   });
-  
+
   const [newTaskForm, setNewTaskForm] = useState({
     type: 'repair' as 'repair' | 'reading' | 'disconnection' | 'new_connection',
     location: '',
@@ -117,6 +119,13 @@ export default function AdminDashboard() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'tb_golongan'), (snapshot) => {
+      setGolonganList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, []);
+
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -125,17 +134,38 @@ export default function AdminDashboard() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register(newUserReg.name, newUserReg.email, newUserReg.phone, newUserReg.address, newUserReg.password, newUserReg.role);
+      const result = await register(newUserReg.name, newUserReg.email, newUserReg.phone, newUserReg.address, newUserReg.password, newUserReg.role);
+
+      // If adding a customer, also create their record in tb_pelanggan
+      if (newUserReg.role === 'customer') {
+        const { setDoc } = await import('firebase/firestore');
+        // We use the ID returned or we can find it. But wait, `register` doesn't return the uid directly. 
+        // Let's use addDoc for tb_pelanggan since register creates user collection.
+        // Actually, we can fetch the user by email from tb_pelanggan or just addDoc.
+        const { collection, addDoc } = await import('firebase/firestore');
+        await addDoc(collection(db, 'tb_pelanggan'), {
+          nama: newUserReg.name,
+          alamat: newUserReg.address,
+          noHp: newUserReg.phone,
+          status: 'Aktif',
+          role: 'pelanggan',
+          no_meter: '',
+          id_pelanggan: 'PELANGGAN BARU',
+          gol: newUserReg.gol || 'Rumah Tangga 2 (R2)',
+          createdAt: new Date().toISOString()
+        });
+      }
+
       showNotification(t('admin.user.success_create'), 'success');
       setIsAddingUser(false);
-      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff' });
+      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
       showNotification(err.message, 'error');
     }
   };
 
   const openAddUser = () => {
-    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter });
+    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter, gol: 'Rumah Tangga 2 (R2)' });
     setIsAddingUser(true);
   };
 
@@ -154,14 +184,14 @@ export default function AdminDashboard() {
       if (currentStatus === 'Nonaktif' || !currentStatus) {
         const noMeter = window.prompt("Masukkan Nomor Meter untuk mengaktifkan pelanggan:");
         if (noMeter === null) return; // User cancelled
-        
+
         if (!noMeter.trim()) {
           showNotification('Nomor Meter wajib diisi untuk mengaktifkan pelanggan', 'error');
           return;
         }
 
         const docRef = doc(db, 'tb_pelanggan', customerId);
-        await updateDoc(docRef, { 
+        await updateDoc(docRef, {
           status: 'Aktif',
           no_meter: noMeter.trim()
         });
@@ -201,6 +231,7 @@ export default function AdminDashboard() {
           role: 'pelanggan',
           no_meter: '',
           id_pelanggan: 'MENUNGGU PASANG',
+          gol: 'Rumah Tangga 2 (R2)',
           createdAt: new Date().toISOString()
         });
         finalPermohonanId = newPelangganRef.id;
@@ -219,15 +250,15 @@ export default function AdminDashboard() {
         customerId: newTaskForm.customerId || undefined,
         permohonanId: finalPermohonanId || undefined
       });
-      
+
       showNotification('Perintah Kerja berhasil ditambahkan', 'success');
       setIsAddingTask(false);
-      setNewTaskForm({ 
-        type: 'repair', 
-        location: '', 
-        district: '', 
-        priority: 'normal', 
-        reason: '', 
+      setNewTaskForm({
+        type: 'repair',
+        location: '',
+        district: '',
+        priority: 'normal',
+        reason: '',
         assignedTo: '',
         customerName: '',
         customerPhone: '',
@@ -253,7 +284,8 @@ export default function AdminDashboard() {
         nama: editCustomerData.nama || '',
         noHp: editCustomerData.noHp || '',
         alamat: editCustomerData.alamat || '',
-        no_meter: editCustomerData.no_meter || ''
+        no_meter: editCustomerData.no_meter || '',
+        gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
       showNotification('Data pelanggan berhasil diupdate', 'success');
       setIsEditingCustomer(false);
@@ -291,7 +323,7 @@ export default function AdminDashboard() {
   const submitProcessComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!processComplaintData || !selectedStaffForComplaint) return;
-    
+
     try {
       // @ts-ignore
       await createTask({
@@ -305,7 +337,7 @@ export default function AdminDashboard() {
         deadline: 'URGENT',
         pengaduanId: processComplaintData.id
       });
-      
+
       await updateDoc(doc(db, 'pengaduan', processComplaintData.id), { status: 'Diproses' });
       showNotification('Pengaduan berhasil ditugaskan ke staff', 'success');
       setProcessComplaintData(null);
@@ -335,7 +367,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-slate-500 font-medium">{t('admin.requests.subtitle')}</p>
             </div>
           </div>
-          
+
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -377,17 +409,16 @@ export default function AdminDashboard() {
                       </p>
                     </td>
                     <td className="px-8 py-5">
-                        <span className={`w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 
+                      <span className={`w-fit px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
                           req.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                         }`}>
-                           {t(`admin.requests.status.${req.status}`)}
-                        </span>
+                        {t(`admin.requests.status.${req.status}`)}
+                      </span>
                     </td>
                     <td className="px-8 py-5 text-right">
                       {req.status === 'pending' && (
                         <div className="flex justify-end gap-2 transition-all">
-                          <button 
+                          <button
                             onClick={async () => {
                               try {
                                 await approveRequest(req.id);
@@ -400,11 +431,11 @@ export default function AdminDashboard() {
                           >
                             {t('admin.requests.approve')}
                           </button>
-                          <button 
+                          <button
                             onClick={async () => {
                               try {
                                 await rejectRequest(req.id);
-                                showNotification('Permohonan ditolak', 'info');
+                                showNotification('Permohonan ditolak', 'error');
                               } catch (e) {
                                 showNotification('Gagal memproses permohonan', 'error');
                               }
@@ -424,7 +455,7 @@ export default function AdminDashboard() {
         </section>
       );
     }
-    
+
     if (activeView === 'users') {
       return (
         <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
@@ -439,36 +470,33 @@ export default function AdminDashboard() {
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1">
                 <button
                   onClick={() => setUserFilter('staff')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    userFilter === 'staff'
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'staff'
                       ? 'bg-white text-[#00478d] shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                    }`}
                 >
                   {t('admin.user.role.staff')}
                 </button>
                 <button
                   onClick={() => setUserFilter('customer')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    userFilter === 'customer'
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'customer'
                       ? 'bg-white text-[#00478d] shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                    }`}
                 >
                   {t('admin.user.role.customer')}
                 </button>
                 <button
                   onClick={() => setUserFilter('direktur')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    userFilter === 'direktur'
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'direktur'
                       ? 'bg-white text-[#00478d] shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                    }`}
                 >
                   Direktur
                 </button>
               </div>
-              <button 
+              <button
                 onClick={() => openAddUser()}
                 className="flex items-center gap-2 px-6 py-3 bg-[#00478d] text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
               >
@@ -477,7 +505,7 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
-          
+
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -536,6 +564,9 @@ export default function AdminDashboard() {
                             <div className={`w-1.5 h-1.5 rounded-full ${(c.status || 'Aktif') === 'Aktif' ? 'bg-emerald-500' : 'bg-amber-500 pulse'}`}></div>
                             {(c.status || 'Aktif').toUpperCase()}
                           </div>
+                          <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 bg-slate-100 rounded-md w-fit">
+                            {c.gol || 'Belum Ada Golongan'}
+                          </span>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
@@ -544,7 +575,7 @@ export default function AdminDashboard() {
                             <Edit size={18} />
                           </button>
                           {(c.status || 'Aktif') === 'Aktif' ? (
-                            <button 
+                            <button
                               onClick={() => handleToggleCustomerStatus(c.id, c.status || 'Aktif')}
                               className="p-2.5 rounded-xl hover:bg-red-50 text-slate-400 hover:text-error transition-all active:scale-95 group/btn"
                               title="Nonaktifkan Pelanggan"
@@ -552,7 +583,7 @@ export default function AdminDashboard() {
                               <Ban size={18} className="group-hover/btn:rotate-12 transition-transform" />
                             </button>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => handleToggleCustomerStatus(c.id, c.status || 'Nonaktif')}
                               className="p-2.5 rounded-xl hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-all active:scale-95 group/btn"
                               title="Aktifkan Pelanggan"
@@ -601,7 +632,7 @@ export default function AdminDashboard() {
                           <p className="text-xs font-mono font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                             {visiblePasswords.includes(u.id) ? (u.password || '••••••••') : '••••••••'}
                           </p>
-                          <button 
+                          <button
                             onClick={() => setVisiblePasswords(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
                             className="p-1.5 hover:bg-[#00478d]/10 rounded-lg text-slate-400 hover:text-[#00478d] transition-all opacity-0 group-hover/pass:opacity-100"
                             title={visiblePasswords.includes(u.id) ? 'Hide Password' : 'Show Password'}
@@ -625,7 +656,7 @@ export default function AdminDashboard() {
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
                           {(u.status || 'active') === 'active' ? (
-                            <button 
+                            <button
                               onClick={() => handleToggleStatus(u.id, u.status || 'active')}
                               className="p-2.5 rounded-xl hover:bg-red-50 text-slate-400 hover:text-error transition-all active:scale-95 group/btn"
                               title={t('admin.user.button.deactivate')}
@@ -633,7 +664,7 @@ export default function AdminDashboard() {
                               <Ban size={18} className="group-hover/btn:rotate-12 transition-transform" />
                             </button>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => handleToggleStatus(u.id, u.status)}
                               className="p-2.5 rounded-xl hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-all active:scale-95 group/btn"
                               title={t('admin.user.button.activate')}
@@ -665,17 +696,15 @@ export default function AdminDashboard() {
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1">
                 <button
                   onClick={() => setTaskTab('tasks')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    taskTab === 'tasks' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${taskTab === 'tasks' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
                 >
                   Perintah Kerja
                 </button>
                 <button
                   onClick={() => setTaskTab('complaints')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-                    taskTab === 'complaints' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${taskTab === 'complaints' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
                 >
                   Pengaduan Masuk
                   {complaints.filter(c => c.status === 'Menunggu Respon').length > 0 && (
@@ -685,7 +714,7 @@ export default function AdminDashboard() {
                   )}
                 </button>
               </div>
-              <button 
+              <button
                 onClick={() => setIsAddingTask(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-[#00478d] text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
               >
@@ -698,239 +727,235 @@ export default function AdminDashboard() {
           {taskTab === 'tasks' ? (
             <>
               <div className="grid grid-cols-4 gap-4">
-                 <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.status.pending')}</p>
-                    <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'pending').length}</h4>
-                 </div>
-                 <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-blue-500">
-                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{t('admin.tasks.status.assigned')}</p>
-                    <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'assigned').length}</h4>
-                 </div>
-                 <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{t('admin.tasks.status.completed')}</p>
-                    <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'completed').length}</h4>
-                 </div>
-                 <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-red-500">
-                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{t('admin.tasks.priority.high').toUpperCase()}</p>
-                    <h4 className="text-2xl font-headline font-bold text-red-600">{tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length}</h4>
-                 </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.status.pending')}</p>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'pending').length}</h4>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-blue-500">
+                  <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{t('admin.tasks.status.assigned')}</p>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'assigned').length}</h4>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
+                  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{t('admin.tasks.status.completed')}</p>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'completed').length}</h4>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-red-500">
+                  <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{t('admin.tasks.priority.high').toUpperCase()}</p>
+                  <h4 className="text-2xl font-headline font-bold text-red-600">{tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length}</h4>
+                </div>
               </div>
 
               <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                 <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                       <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          <th className="px-8 py-4">{t('admin.tasks.table.details')}</th>
-                          <th className="px-8 py-4">{t('admin.tasks.table.reason')}</th>
-                          <th className="px-8 py-4">{t('admin.tasks.table.assignee')}</th>
-                          <th className="px-8 py-4">{t('admin.tasks.table.status')}</th>
-                          <th className="px-8 py-4 text-right">{t('admin.tasks.table.actions')}</th>
-                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                       {tasks.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
-                              {t('admin.tasks.empty')}
-                            </td>
-                          </tr>
-                       ) : (
-                         tasks.map(task => (
-                            <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
-                               <td className="px-8 py-5">
-                                  <div className="flex items-center gap-3">
-                                     <div className={`p-2.5 rounded-xl ${
-                                        task.type === 'repair' ? 'bg-red-50 text-red-500' : 
-                                        task.type === 'reading' ? 'bg-blue-50 text-blue-500' : 
-                                        task.type === 'new_connection' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'
-                                     }`}>
-                                        {task.type === 'repair' ? <Wrench size={18} /> : 
-                                         task.type === 'reading' ? <TrendingUp size={18} /> : 
-                                         task.type === 'new_connection' ? <Plus size={18} /> : 
-                                         task.type === 'disconnection' ? <Scissors size={18} /> : <Wrench size={18} />}
-                                     </div>
-                                     <div>
-                                        <p className="font-bold text-slate-800 text-sm">
-                                          {task.type === 'reading' && 'Pencatatan Meter'}
-                                          {task.type === 'new_connection' && `Sambungan Baru: ${task.customerName || 'Pelanggan Baru'}`}
-                                          {task.type === 'disconnection' && `Pemutusan: ${task.customerName || 'Pelanggan'}`}
-                                          {task.type === 'repair' && `Perbaikan: ${task.customerName || task.title || 'Layanan'}`}
-                                        </p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase">{task.location || 'Lokasi Belum Ditentukan'}</p>
-                                     </div>
-                                  </div>
-                               </td>
-                               <td className="px-8 py-5">
-                                  <div className="flex flex-col gap-1">
-                                     <span className={`text-[10px] font-bold w-fit px-2 py-0.5 rounded ${
-                                        task.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
-                                     }`}>
-                                        {task.priority === 'high' ? 'PRIORITAS TINGGI' : 'PRIORITAS NORMAL'}
-                                     </span>
-                                     <p className="text-xs text-slate-500 font-medium italic truncate max-w-[200px]">{task.reason || task.title || 'Pemeliharaan Rutin'}</p>
-                                  </div>
-                               </td>
-                                <td className="px-8 py-5">
-                                   {task.assignedTo ? (
-                                      <div className="flex items-center gap-2">
-                                         <div className="w-8 h-8 rounded-full bg-[#00478d]/10 text-[#00478d] flex items-center justify-center text-xs font-bold border border-[#00478d]/20">
-                                            {allUsers.find(u => u.id === task.assignedTo)?.name.substring(0, 1).toUpperCase() || 'S'}
-                                         </div>
-                                         <span className="text-xs font-bold text-slate-700">{allUsers.find(u => u.id === task.assignedTo)?.name || 'Staff Terpilih'}</span>
-                                      </div>
-                                   ) : (
-                                      <span className="text-xs text-amber-600 font-bold flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
-                                         <Clock size={14} /> Belum Ditugaskan
-                                      </span>
-                                   )}
-                                </td>
-                               <td className="px-8 py-5">
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                     task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 
-                                     task.status === 'in-progress' ? 'bg-[#00478d]/10 text-[#00478d]' :
-                                     task.status === 'assigned' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
-                                  }`}>
-                                     {task.status === 'completed' ? 'SELESAI VERIFIKASI' : 
-                                      task.status === 'in-progress' ? 'DIPROSES STAFF' :
-                                      task.status === 'assigned' ? 'TELAH DITUGASKAN' : 'MENUNGGU STAFF'}
-                                  </span>
-                               </td>
-                               <td className="px-8 py-5 text-right">
-                                  {task.status !== 'completed' && (
-                                     <div className="relative inline-block text-left">
-                                        <button 
-                                          onClick={() => setSelectedTaskForAssignment(selectedTaskForAssignment === task.id ? null : task.id)}
-                                          className="p-2 hover:bg-slate-100 rounded-xl transition-all text-[#00478d] font-bold text-xs flex items-center gap-2 group"
-                                        >
-                                           {task.assignedTo ? t('admin.tasks.change_staff') : t('admin.tasks.assign_staff')}
-                                           <Edit size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                                        </button>
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <th className="px-8 py-4">{t('admin.tasks.table.details')}</th>
+                      <th className="px-8 py-4">{t('admin.tasks.table.reason')}</th>
+                      <th className="px-8 py-4">{t('admin.tasks.table.assignee')}</th>
+                      <th className="px-8 py-4">{t('admin.tasks.table.status')}</th>
+                      <th className="px-8 py-4 text-right">{t('admin.tasks.table.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {tasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                          {t('admin.tasks.empty')}
+                        </td>
+                      </tr>
+                    ) : (
+                      tasks.map(task => (
+                        <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2.5 rounded-xl ${task.type === 'repair' ? 'bg-red-50 text-red-500' :
+                                  task.type === 'reading' ? 'bg-blue-50 text-blue-500' :
+                                    task.type === 'new_connection' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'
+                                }`}>
+                                {task.type === 'repair' ? <Wrench size={18} /> :
+                                  task.type === 'reading' ? <TrendingUp size={18} /> :
+                                    task.type === 'new_connection' ? <Plus size={18} /> :
+                                      task.type === 'disconnection' ? <Scissors size={18} /> : <Wrench size={18} />}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800 text-sm">
+                                  {task.type === 'reading' && 'Pencatatan Meter'}
+                                  {task.type === 'new_connection' && `Sambungan Baru: ${task.customerName || 'Pelanggan Baru'}`}
+                                  {task.type === 'disconnection' && `Pemutusan: ${task.customerName || 'Pelanggan'}`}
+                                  {task.type === 'repair' && `Perbaikan: ${task.customerName || task.title || 'Layanan'}`}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase">{task.location || 'Lokasi Belum Ditentukan'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <div className="flex flex-col gap-1">
+                              <span className={`text-[10px] font-bold w-fit px-2 py-0.5 rounded ${task.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                {task.priority === 'high' ? 'PRIORITAS TINGGI' : 'PRIORITAS NORMAL'}
+                              </span>
+                              <p className="text-xs text-slate-500 font-medium italic truncate max-w-[200px]">{task.reason || task.title || 'Pemeliharaan Rutin'}</p>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            {task.assignedTo ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-[#00478d]/10 text-[#00478d] flex items-center justify-center text-xs font-bold border border-[#00478d]/20">
+                                  {allUsers.find(u => u.id === task.assignedTo)?.name.substring(0, 1).toUpperCase() || 'S'}
+                                </div>
+                                <span className="text-xs font-bold text-slate-700">{allUsers.find(u => u.id === task.assignedTo)?.name || 'Staff Terpilih'}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-amber-600 font-bold flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
+                                <Clock size={14} /> Belum Ditugaskan
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                task.status === 'in-progress' ? 'bg-[#00478d]/10 text-[#00478d]' :
+                                  task.status === 'assigned' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                              {task.status === 'completed' ? 'SELESAI VERIFIKASI' :
+                                task.status === 'in-progress' ? 'DIPROSES STAFF' :
+                                  task.status === 'assigned' ? 'TELAH DITUGASKAN' : 'MENUNGGU STAFF'}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5 text-right">
+                            {task.status !== 'completed' && (
+                              <div className="relative inline-block text-left">
+                                <button
+                                  onClick={() => setSelectedTaskForAssignment(selectedTaskForAssignment === task.id ? null : task.id)}
+                                  className="p-2 hover:bg-slate-100 rounded-xl transition-all text-[#00478d] font-bold text-xs flex items-center gap-2 group"
+                                >
+                                  {task.assignedTo ? t('admin.tasks.change_staff') : t('admin.tasks.assign_staff')}
+                                  <Edit size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                </button>
 
-                                        <AnimatePresence>
-                                          {selectedTaskForAssignment === task.id && (
-                                            <motion.div 
-                                              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                                              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                              className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
-                                            >
-                                              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
-                                              <div className="max-h-48 overflow-y-auto">
-                                                {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
-                                                  <button 
-                                                    key={staff.id}
-                                                    onClick={() => {
-                                                      assignTask(task.id, staff.id);
-                                                      setSelectedTaskForAssignment(null);
-                                                      showNotification(`${t('admin.user.msg.assigned')} ${staff.name}`, 'success');
-                                                    }}
-                                                    className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
-                                                  >
-                                                    <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
-                                                      {staff.name.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                      <p className="text-xs font-bold text-slate-700">{staff.name}</p>
-                                                      <p className="text-[10px] text-slate-400">{staff.phone}</p>
-                                                    </div>
-                                                    {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
-                                                  </button>
-                                                ))}
-                                              </div>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                     </div>
+                                <AnimatePresence>
+                                  {selectedTaskForAssignment === task.id && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                      className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
+                                    >
+                                      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
+                                      <div className="max-h-48 overflow-y-auto">
+                                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
+                                          <button
+                                            key={staff.id}
+                                            onClick={() => {
+                                              assignTask(task.id, staff.id);
+                                              setSelectedTaskForAssignment(null);
+                                              showNotification(`${t('admin.user.msg.assigned')} ${staff.name}`, 'success');
+                                            }}
+                                            className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
+                                          >
+                                            <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
+                                              {staff.name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-xs font-bold text-slate-700">{staff.name}</p>
+                                              <p className="text-[10px] text-slate-400">{staff.phone}</p>
+                                            </div>
+                                            {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </motion.div>
                                   )}
-                               </td>
-                            </tr>
-                         ))
-                       )}
-                    </tbody>
-                 </table>
+                                </AnimatePresence>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </>
           ) : (
-             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                <table className="w-full text-left">
-                   <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                         <th className="px-8 py-4">PELAPOR</th>
-                         <th className="px-8 py-4">KATEGORI & LAPORAN</th>
-                         <th className="px-8 py-4">LAMPIRAN</th>
-                         <th className="px-8 py-4">STATUS</th>
-                         <th className="px-8 py-4 text-right">AKSI</th>
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <th className="px-8 py-4">PELAPOR</th>
+                    <th className="px-8 py-4">KATEGORI & LAPORAN</th>
+                    <th className="px-8 py-4">LAMPIRAN</th>
+                    <th className="px-8 py-4">STATUS</th>
+                    <th className="px-8 py-4 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {complaints.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                        Belum ada pengaduan
+                      </td>
+                    </tr>
+                  ) : (
+                    complaints.map(complaint => (
+                      <tr key={complaint.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-8 py-5">
+                          <p className="font-bold text-slate-800 text-sm">{complaint.userName || 'Tanpa Nama'}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">{complaint.userNoMeter ? `Meter: ${complaint.userNoMeter}` : 'Tanpa No Meter'}</p>
+                          <p className="text-xs text-slate-500 mt-1 max-w-[150px] truncate">{complaint.userAlamat}</p>
+                        </td>
+                        <td className="px-8 py-5">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold w-fit px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                              {complaint.category}
+                            </span>
+                            <p className="text-xs text-slate-500 font-medium italic max-w-xs">{complaint.description}</p>
+                          </div>
+                        </td>
+                        <td className="px-8 py-5">
+                          {complaint.imageUrl ? (
+                            <a href={complaint.imageUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#00478d] hover:underline text-xs font-bold">
+                              <Camera size={14} /> Lihat Foto
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-8 py-5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${complaint.status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' :
+                              complaint.status === 'Diproses' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                            {complaint.status?.toUpperCase() || 'MENUNGGU RESPON'}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="flex justify-end gap-2">
+                            {complaint.status === 'Menunggu Respon' && (
+                              <button
+                                onClick={() => setProcessComplaintData(complaint)}
+                                className="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+                              >
+                                Proses ke Perintah Kerja
+                              </button>
+                            )}
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('Hapus pengaduan ini?')) {
+                                  await deleteDoc(doc(db, 'pengaduan', complaint.id));
+                                  showNotification('Pengaduan dihapus', 'success');
+                                }
+                              }}
+                              className="p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                   </thead>
-                   <tbody className="divide-y divide-slate-50">
-                      {complaints.length === 0 ? (
-                         <tr>
-                           <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
-                             Belum ada pengaduan
-                           </td>
-                         </tr>
-                      ) : (
-                        complaints.map(complaint => (
-                           <tr key={complaint.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-8 py-5">
-                                 <p className="font-bold text-slate-800 text-sm">{complaint.userName || 'Tanpa Nama'}</p>
-                                 <p className="text-[10px] text-slate-400 font-bold uppercase">{complaint.userNoMeter ? `Meter: ${complaint.userNoMeter}` : 'Tanpa No Meter'}</p>
-                                 <p className="text-xs text-slate-500 mt-1 max-w-[150px] truncate">{complaint.userAlamat}</p>
-                              </td>
-                              <td className="px-8 py-5">
-                                 <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-bold w-fit px-2 py-0.5 rounded bg-orange-100 text-orange-700">
-                                       {complaint.category}
-                                    </span>
-                                    <p className="text-xs text-slate-500 font-medium italic max-w-xs">{complaint.description}</p>
-                                 </div>
-                              </td>
-                              <td className="px-8 py-5">
-                                 {complaint.imageUrl ? (
-                                    <a href={complaint.imageUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#00478d] hover:underline text-xs font-bold">
-                                       <Camera size={14} /> Lihat Foto
-                                    </a>
-                                 ) : (
-                                    <span className="text-xs text-slate-400">-</span>
-                                 )}
-                              </td>
-                              <td className="px-8 py-5">
-                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    complaint.status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 
-                                    complaint.status === 'Diproses' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                                 }`}>
-                                    {complaint.status?.toUpperCase() || 'MENUNGGU RESPON'}
-                                 </span>
-                              </td>
-                              <td className="px-8 py-5 text-right">
-                                 <div className="flex justify-end gap-2">
-                                    {complaint.status === 'Menunggu Respon' && (
-                                       <button 
-                                         onClick={() => setProcessComplaintData(complaint)}
-                                         className="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-xl text-xs font-bold transition-all"
-                                       >
-                                         Proses ke Perintah Kerja
-                                       </button>
-                                    )}
-                                    <button 
-                                      onClick={async () => {
-                                        if (window.confirm('Hapus pengaduan ini?')) {
-                                          await deleteDoc(doc(db, 'pengaduan', complaint.id));
-                                          showNotification('Pengaduan dihapus', 'success');
-                                        }
-                                      }}
-                                      className="p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                 </div>
-                              </td>
-                           </tr>
-                        ))
-                      )}
-                   </tbody>
-                </table>
-             </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       );
@@ -940,7 +965,7 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         <section className="grid grid-cols-3 gap-6">
           {stats.map((stat, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -969,41 +994,41 @@ export default function AdminDashboard() {
         </section>
 
         <section className="flex gap-4">
-           <button 
-             onClick={() => setActiveView('users')}
-             className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
-           >
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white transition-all">
-                 <Users size={24} />
-               </div>
-               <div className="text-left">
-                 <h4 className="font-bold text-slate-800">{t('admin.user.management')}</h4>
-                 <p className="text-xs text-slate-500 font-medium">{t('admin.user.management_sub')}</p>
-               </div>
-             </div>
-             <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
-                <Plus size={20} />
-             </div>
-           </button>
+          <button
+            onClick={() => setActiveView('users')}
+            className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white transition-all">
+                <Users size={24} />
+              </div>
+              <div className="text-left">
+                <h4 className="font-bold text-slate-800">{t('admin.user.management')}</h4>
+                <p className="text-xs text-slate-500 font-medium">{t('admin.user.management_sub')}</p>
+              </div>
+            </div>
+            <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
+              <Plus size={20} />
+            </div>
+          </button>
 
-           <button 
-             onClick={() => setActiveView('tasks')}
-             className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
-           >
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white transition-all">
-                 <Wrench size={24} />
-               </div>
-               <div className="text-left">
-                 <h4 className="font-bold text-slate-800">{t('admin.tasks.management')}</h4>
-                 <p className="text-xs text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
-               </div>
-             </div>
-             <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
-                <Plus size={20} />
-             </div>
-           </button>
+          <button
+            onClick={() => setActiveView('tasks')}
+            className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white transition-all">
+                <Wrench size={24} />
+              </div>
+              <div className="text-left">
+                <h4 className="font-bold text-slate-800">{t('admin.tasks.management')}</h4>
+                <p className="text-xs text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
+              </div>
+            </div>
+            <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
+              <Plus size={20} />
+            </div>
+          </button>
         </section>
 
         <section className="bg-slate-900 rounded-[3.5rem] p-10 text-white border-l-[10px] border-[#00478d] relative overflow-hidden">
@@ -1053,13 +1078,12 @@ export default function AdminDashboard() {
           </div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-extrabold">{t('common.search')} MANAGEMENT</p>
         </div>
-        
+
         <nav className="flex-1 space-y-2 overflow-y-auto hide-scrollbar pb-4">
-          <button 
+          <button
             onClick={() => setActiveView('dashboard')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
-              activeView === 'dashboard' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'dashboard' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <div className="flex items-center gap-4">
               <LayoutDashboard size={20} />
@@ -1067,12 +1091,11 @@ export default function AdminDashboard() {
             </div>
             {activeView === 'dashboard' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setActiveView('users')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
-              activeView === 'users' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'users' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <div className="flex items-center gap-4">
               <Users size={20} />
@@ -1081,11 +1104,10 @@ export default function AdminDashboard() {
             {activeView === 'users' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
           </button>
 
-          <button 
+          <button
             onClick={() => setActiveView('requests')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
-              activeView === 'requests' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'requests' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <div className="flex items-center gap-4">
               <FileText size={20} />
@@ -1094,11 +1116,10 @@ export default function AdminDashboard() {
             {activeView === 'requests' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
           </button>
 
-          <button 
+          <button
             onClick={() => setActiveView('tasks')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${
-              activeView === 'tasks' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'tasks' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <div className="flex items-center gap-4">
               <Wrench size={20} />
@@ -1108,32 +1129,29 @@ export default function AdminDashboard() {
           </button>
 
           <div className="pt-4 pb-2 px-5">
-             <div className="h-px bg-slate-100 w-full"></div>
+            <div className="h-px bg-slate-100 w-full"></div>
           </div>
 
-          <button 
+          <button
             onClick={() => setActiveView('waterflow')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${
-              activeView === 'waterflow' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'waterflow' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <Waves size={20} />
             <span className="text-sm">{t('admin.sidebar.waterflow')}</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveView('billing')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${
-              activeView === 'billing' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'billing' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <CreditCard size={20} />
             <span className="text-sm">{t('admin.sidebar.billing')}</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveView('tarif')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${
-              activeView === 'tarif' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'tarif' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+              }`}
           >
             <Activity size={20} />
             <span className="text-sm">Master Tarif</span>
@@ -1141,7 +1159,7 @@ export default function AdminDashboard() {
         </nav>
         <div className="mt-auto space-y-4">
           <div className="flex items-center justify-center p-2">
-             <LanguageToggle />
+            <LanguageToggle />
           </div>
 
           <button onClick={logout} className="w-full flex items-center gap-4 px-5 py-3.5 text-error font-bold hover:bg-red-50 rounded-2xl transition-all">
@@ -1154,16 +1172,16 @@ export default function AdminDashboard() {
       <main className="flex-1 ml-72 min-h-screen relative">
         <header className="h-20 bg-white/80 backdrop-blur-2xl border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-40">
           <div className="flex items-center gap-4">
-             <div className="relative group">
-               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00478d] transition-colors" />
-               <input 
-                 type="text" 
-                 placeholder={t('common.search')} 
-                 className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm w-80 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-               />
-             </div>
+            <div className="relative group">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00478d] transition-colors" />
+              <input
+                type="text"
+                placeholder={t('common.search')}
+                className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm w-80 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+              />
+            </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="flex gap-2">
               <button className="p-3 bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl relative transition-all border border-slate-50">
@@ -1174,45 +1192,45 @@ export default function AdminDashboard() {
                 <HelpCircle size={20} />
               </button>
             </div>
-            
+
             <div className="h-10 w-px bg-slate-100 mx-2"></div>
-            
+
             <div className="flex items-center gap-4">
-               <div className="text-right">
-                  <p className="text-sm font-bold text-slate-800">{user?.name}</p>
-                  <p className="text-[10px] text-[#00478d] font-extrabold uppercase tracking-tighter">{t('admin.profile.role')}</p>
-               </div>
-               <div className="flex items-center gap-3">
-                  <button 
-                    onClick={logout}
-                    className="p-2.5 text-slate-400 hover:text-error hover:bg-red-50 rounded-xl transition-all border border-slate-100 hover:border-red-100"
-                    title={t('common.logout')}
-                  >
-                    <LogOut size={18} />
-                  </button>
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden ring-4 ring-primary/5 shadow-inner">
-                    <img 
-                      src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"} 
-                      alt="Admin" 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-               </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-slate-800">{user?.name}</p>
+                <p className="text-[10px] text-[#00478d] font-extrabold uppercase tracking-tighter">{t('admin.profile.role')}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={logout}
+                  className="p-2.5 text-slate-400 hover:text-error hover:bg-red-50 rounded-xl transition-all border border-slate-100 hover:border-red-100"
+                  title={t('common.logout')}
+                >
+                  <LogOut size={18} />
+                </button>
+                <div className="w-12 h-12 rounded-2xl overflow-hidden ring-4 ring-primary/5 shadow-inner">
+                  <img
+                    src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"}
+                    alt="Admin"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </header>
 
         <div className="p-10">
           <AnimatePresence mode="wait">
-             <motion.div
-               key={activeView}
-               initial={{ opacity: 0, y: 10 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: -10 }}
-               transition={{ duration: 0.2 }}
-             >
-               {renderContent()}
-             </motion.div>
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
           </AnimatePresence>
         </div>
 
@@ -1222,9 +1240,8 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`fixed bottom-8 right-8 z-[100] px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border ${
-                notification.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'
-              }`}
+              className={`fixed bottom-8 right-8 z-[100] px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border ${notification.type === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'
+                }`}
             >
               {notification.type === 'success' ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
               <p className="font-bold text-sm tracking-tight">{notification.message}</p>
@@ -1236,12 +1253,12 @@ export default function AdminDashboard() {
         <AnimatePresence>
           {processComplaintData && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setProcessComplaintData(null)}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
               />
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
@@ -1275,14 +1292,14 @@ export default function AdminDashboard() {
         <AnimatePresence>
           {isAddingUser && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsAddingUser(false)}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
               />
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1298,26 +1315,26 @@ export default function AdminDashboard() {
                 <form onSubmit={handleCreateUser} className="p-10 space-y-5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.name')}</label>
-                    <input type="text" required value={newUserReg.name} onChange={e => setNewUserReg({...newUserReg, name: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. John Doe" />
+                    <input type="text" required value={newUserReg.name} onChange={e => setNewUserReg({ ...newUserReg, name: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. John Doe" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.email')}</label>
-                      <input type="email" required value={newUserReg.email} onChange={e => setNewUserReg({...newUserReg, email: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="john@example.com" />
+                      <input type="email" required value={newUserReg.email} onChange={e => setNewUserReg({ ...newUserReg, email: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="john@example.com" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.phone')}</label>
-                      <input type="tel" required value={newUserReg.phone} onChange={e => setNewUserReg({...newUserReg, phone: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="08..." />
+                      <input type="tel" required value={newUserReg.phone} onChange={e => setNewUserReg({ ...newUserReg, phone: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="08..." />
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 ml-1">Alamat Domisili</label>
-                    <textarea required value={newUserReg.address} onChange={e => setNewUserReg({...newUserReg, address: e.target.value})} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Alamat lengkap..."></textarea>
+                    <textarea required value={newUserReg.address} onChange={e => setNewUserReg({ ...newUserReg, address: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Alamat lengkap..."></textarea>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.password')}</label>
                     <div className="relative">
-                      <input type={showPassword ? 'text' : 'password'} required value={newUserReg.password} onChange={e => setNewUserReg({...newUserReg, password: e.target.value})} className="w-full pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                      <input type={showPassword ? 'text' : 'password'} required value={newUserReg.password} onChange={e => setNewUserReg({ ...newUserReg, password: e.target.value })} className="w-full pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
@@ -1327,6 +1344,21 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   </div>
+                  {newUserReg.role === 'customer' && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
+                      <select 
+                        required
+                        value={newUserReg.gol} 
+                        onChange={e => setNewUserReg({ ...newUserReg, gol: e.target.value })} 
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      >
+                        {golonganList.map(g => (
+                          <option key={g.id} value={g.name}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setIsAddingUser(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">{t('admin.user.button.cancel')}</button>
                     <button type="submit" className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]">{t('admin.user.button.create')}</button>
@@ -1340,12 +1372,12 @@ export default function AdminDashboard() {
         <AnimatePresence>
           {isEditingCustomer && editCustomerData && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setIsEditingCustomer(false)}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
               />
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
@@ -1360,21 +1392,36 @@ export default function AdminDashboard() {
                 <form onSubmit={submitEditCustomer} className="p-10 space-y-5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 ml-1">Nama Lengkap</label>
-                    <input type="text" required value={editCustomerData.nama || ''} onChange={e => setEditCustomerData({...editCustomerData, nama: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <input type="text" required value={editCustomerData.nama || ''} onChange={e => setEditCustomerData({ ...editCustomerData, nama: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 ml-1">No HP</label>
-                      <input type="tel" required value={editCustomerData.noHp || ''} onChange={e => setEditCustomerData({...editCustomerData, noHp: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                      <input type="tel" required value={editCustomerData.noHp || ''} onChange={e => setEditCustomerData({ ...editCustomerData, noHp: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 ml-1">No Meter</label>
-                      <input type="text" value={editCustomerData.no_meter || ''} onChange={e => setEditCustomerData({...editCustomerData, no_meter: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Belum ada" />
+                      <input type="text" value={editCustomerData.no_meter || ''} onChange={e => setEditCustomerData({ ...editCustomerData, no_meter: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Belum ada" />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Alamat</label>
-                    <textarea required value={editCustomerData.alamat || ''} onChange={e => setEditCustomerData({...editCustomerData, alamat: e.target.value})} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"></textarea>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">Alamat</label>
+                      <textarea required value={editCustomerData.alamat || ''} onChange={e => setEditCustomerData({ ...editCustomerData, alamat: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"></textarea>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
+                      <select 
+                        required
+                        value={editCustomerData.gol || ''} 
+                        onChange={e => setEditCustomerData({ ...editCustomerData, gol: e.target.value })} 
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      >
+                        {golonganList.map(g => (
+                          <option key={g.id} value={g.name}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setIsEditingCustomer(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">Batal</button>
@@ -1387,89 +1434,160 @@ export default function AdminDashboard() {
         </AnimatePresence>
 
         <AnimatePresence>
-           {isAddingTask && (
-             <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setIsAddingTask(false)}
-                  className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
-                />
-                
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
-                >
-                  <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
-                    <div>
-                       <h3 className="text-2xl font-headline font-bold text-slate-800">{t('admin.tasks.add_title')}</h3>
-                       <p className="text-sm text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
-                    </div>
-                    <button onClick={() => setIsAddingTask(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
-                  </div>
+          {isAddingTask && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddingTask(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+              />
 
-                  <form onSubmit={handleCreateTask} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto">
-                    <div className="grid grid-cols-1 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.type')}</label>
-                        <div className="grid grid-cols-4 gap-2">
-                           {(['repair', 'reading', 'disconnection', 'new_connection'] as const).map(type => (
-                             <button
-                               key={type}
-                               type="button"
-                               onClick={() => setNewTaskForm({...newTaskForm, type})}
-                               className={`px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center gap-1.5 border ${
-                                 newTaskForm.type === type ? 'bg-[#00478d] text-white border-[#00478d] shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'
-                               }`}
-                             >
-                               {type === 'repair' ? <Wrench size={14} /> : type === 'reading' ? <TrendingUp size={14} /> : type === 'new_connection' ? <Plus size={14} /> : <Scissors size={14} />}
-                               {t(`admin.tasks.type.${type}`).split(' ')[0]}
-                             </button>
-                           ))}
-                        </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+              >
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800">{t('admin.tasks.add_title')}</h3>
+                    <p className="text-sm text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
+                  </div>
+                  <button onClick={() => setIsAddingTask(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
+                </div>
+
+                <form onSubmit={handleCreateTask} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.type')}</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(['repair', 'reading', 'disconnection', 'new_connection'] as const).map(type => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setNewTaskForm({ ...newTaskForm, type })}
+                            className={`px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center gap-1.5 border ${newTaskForm.type === type ? 'bg-[#00478d] text-white border-[#00478d] shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'
+                              }`}
+                          >
+                            {type === 'repair' ? <Wrench size={14} /> : type === 'reading' ? <TrendingUp size={14} /> : type === 'new_connection' ? <Plus size={14} /> : <Scissors size={14} />}
+                            {t(`admin.tasks.type.${type}`).split(' ')[0]}
+                          </button>
+                        ))}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.staff')}</label>
-                          <select 
-                            value={newTaskForm.assignedTo}
-                            onChange={e => setNewTaskForm({...newTaskForm, assignedTo: e.target.value})}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
-                          >
-                             <option value="">{t('admin.tasks.unassigned')}</option>
-                             {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(u => (
-                               <option key={u.id} value={u.id}>{u.name}</option>
-                             ))}
-                          </select>
-                       </div>
-                       
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500 ml-1">Prioritas</label>
-                          <select 
-                            value={newTaskForm.priority}
-                            onChange={e => setNewTaskForm({...newTaskForm, priority: e.target.value as 'high' | 'normal'})}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
-                          >
-                             <option value="normal">Normal</option>
-                             <option value="high">Tinggi (High)</option>
-                          </select>
-                       </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.staff')}</label>
+                      <select
+                        value={newTaskForm.assignedTo}
+                        onChange={e => setNewTaskForm({ ...newTaskForm, assignedTo: e.target.value })}
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                      >
+                        <option value="">{t('admin.tasks.unassigned')}</option>
+                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(u => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                      </select>
                     </div>
 
-                    {/* SEARCHABLE CUSTOMER/REQUEST SELECTION */}
-                    <div className="space-y-4">
-                      {newTaskForm.type !== 'new_connection' ? (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">Prioritas</label>
+                      <select
+                        value={newTaskForm.priority}
+                        onChange={e => setNewTaskForm({ ...newTaskForm, priority: e.target.value as 'high' | 'normal' })}
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="high">Tinggi (High)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* SEARCHABLE CUSTOMER/REQUEST SELECTION */}
+                  <div className="space-y-4">
+                    {newTaskForm.type !== 'new_connection' ? (
+                      <div className="space-y-1.5 relative">
+                        <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan (Database)</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Cari Nama Pelanggan atau No. Meter..."
+                            value={searchQuery}
+                            onFocus={() => setIsDropdownOpen(true)}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              setIsDropdownOpen(true);
+                            }}
+                            className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                            <Search size={18} />
+                          </div>
+                        </div>
+
+                        <AnimatePresence>
+                          {isDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                            >
+                              <div className="max-h-60 overflow-y-auto">
+                                {customers.filter(c =>
+                                  (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  (c.no_meter || '').toLowerCase().includes(searchQuery.toLowerCase())
+                                ).length === 0 ? (
+                                  <div className="p-4 text-center text-xs text-slate-400 italic">Pelanggan tidak ditemukan</div>
+                                ) : (
+                                  customers.filter(c =>
+                                    (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (c.no_meter || '').toLowerCase().includes(searchQuery.toLowerCase())
+                                  ).map(c => (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setNewTaskForm({
+                                          ...newTaskForm,
+                                          customerId: c.id,
+                                          customerName: c.nama,
+                                          location: c.alamat || '',
+                                          district: 'Seruyan'
+                                        });
+                                        setSearchQuery(c.nama);
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className="w-full px-5 py-3 text-left hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
+                                    >
+                                      <div>
+                                        <p className="text-sm font-bold text-slate-700">{c.nama}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{c.alamat || 'No Address'}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-[10px] font-bold text-[#00478d]">METER: {c.no_meter || '-'}</p>
+                                        <p className="text-[9px] text-slate-400 uppercase font-bold">{c.status || 'Aktif'}</p>
+                                      </div>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
                         <div className="space-y-1.5 relative">
-                          <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan (Database)</label>
+                          <label className="text-xs font-bold text-slate-500 ml-1">Hubungkan dengan Permohonan Baru (Opsional)</label>
                           <div className="relative">
-                            <input 
+                            <input
                               type="text"
-                              placeholder="Cari Nama Pelanggan atau No. Meter..."
+                              placeholder="Cari Nama Pemohon atau Alamat..."
                               value={searchQuery}
                               onFocus={() => setIsDropdownOpen(true)}
                               onChange={(e) => {
@@ -1485,47 +1603,59 @@ export default function AdminDashboard() {
 
                           <AnimatePresence>
                             {isDropdownOpen && (
-                              <motion.div 
+                              <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
                               >
                                 <div className="max-h-60 overflow-y-auto">
-                                  {customers.filter(c => 
-                                    (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                    (c.no_meter || '').toLowerCase().includes(searchQuery.toLowerCase())
-                                  ).length === 0 ? (
-                                    <div className="p-4 text-center text-xs text-slate-400 italic">Pelanggan tidak ditemukan</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewTaskForm({ ...newTaskForm, permohonanId: '', customerName: '', location: '' });
+                                      setSearchQuery('');
+                                      setIsDropdownOpen(false);
+                                    }}
+                                    className="w-full px-5 py-3 text-left hover:bg-slate-50 text-xs font-bold text-slate-400 border-b border-slate-50"
+                                  >
+                                    -- Tanpa Hubungkan Permohonan (Input Manual) --
+                                  </button>
+                                  {requests.filter(req => (req.status === 'approved' || req.status === 'pending') && (
+                                    req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    req.address.toLowerCase().includes(searchQuery.toLowerCase())
+                                  )).length === 0 ? (
+                                    <div className="p-4 text-center text-xs text-slate-400 italic">
+                                      {requests.length === 0 ? "Belum ada data permohonan di database" : "Permohonan tidak ditemukan"}
+                                    </div>
                                   ) : (
-                                    customers.filter(c => 
-                                      (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                      (c.no_meter || '').toLowerCase().includes(searchQuery.toLowerCase())
-                                    ).map(c => (
+                                    requests.filter(req => (req.status === 'approved' || req.status === 'pending') && (
+                                      req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      req.address.toLowerCase().includes(searchQuery.toLowerCase())
+                                    )).map(req => (
                                       <button
-                                        key={c.id}
+                                        key={req.id}
                                         type="button"
                                         onClick={() => {
                                           setNewTaskForm({
                                             ...newTaskForm,
-                                            customerId: c.id,
-                                            customerName: c.nama,
-                                            location: c.alamat || '',
+                                            permohonanId: req.id,
+                                            customerName: req.name,
+                                            location: req.address,
                                             district: 'Seruyan'
                                           });
-                                          setSearchQuery(c.nama);
+                                          setSearchQuery(req.name);
                                           setIsDropdownOpen(false);
                                         }}
-                                        className="w-full px-5 py-3 text-left hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
+                                        className="w-full px-5 py-3 text-left hover:bg-slate-50 flex flex-col gap-1 border-b border-slate-50 last:border-0 transition-colors"
                                       >
-                                        <div>
-                                          <p className="text-sm font-bold text-slate-700">{c.nama}</p>
-                                          <p className="text-[10px] text-slate-400 font-medium">{c.alamat || 'No Address'}</p>
+                                        <div className="flex justify-between items-center">
+                                          <p className="text-sm font-bold text-slate-700">{req.name}</p>
+                                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                            {req.status.toUpperCase()}
+                                          </span>
                                         </div>
-                                        <div className="text-right">
-                                          <p className="text-[10px] font-bold text-[#00478d]">METER: {c.no_meter || '-'}</p>
-                                          <p className="text-[9px] text-slate-400 uppercase font-bold">{c.status || 'Aktif'}</p>
-                                        </div>
+                                        <p className="text-[10px] text-slate-500 font-medium">{req.address}</p>
                                       </button>
                                     ))
                                   )}
@@ -1534,252 +1664,168 @@ export default function AdminDashboard() {
                             )}
                           </AnimatePresence>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="space-y-1.5 relative">
-                            <label className="text-xs font-bold text-slate-500 ml-1">Hubungkan dengan Permohonan Baru (Opsional)</label>
-                            <div className="relative">
-                              <input 
-                                type="text"
-                                placeholder="Cari Nama Pemohon atau Alamat..."
-                                value={searchQuery}
-                                onFocus={() => setIsDropdownOpen(true)}
-                                onChange={(e) => {
-                                  setSearchQuery(e.target.value);
-                                  setIsDropdownOpen(true);
-                                }}
-                                className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
-                              />
-                              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                <Search size={18} />
+
+                        {!newTaskForm.permohonanId && (
+                          <div className="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                            <div className="space-y-1.5 relative">
+                              <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan Terdaftar (Tanpa Meter)</label>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={newTaskForm.customerName}
+                                  onFocus={() => setIsDropdownOpen(true)}
+                                  onChange={e => {
+                                    setNewTaskForm({ ...newTaskForm, customerName: e.target.value });
+                                    setSearchQuery(e.target.value);
+                                    setIsDropdownOpen(true);
+                                  }}
+                                  placeholder="Cari nama atau ketik nama baru..."
+                                  className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                  <Users size={18} />
+                                </div>
+                              </div>
+
+                              <AnimatePresence>
+                                {isDropdownOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                                  >
+                                    <div className="max-h-48 overflow-y-auto">
+                                      {customers
+                                        .filter(c => (!c.no_meter || c.no_meter === '') && (c.nama || '').toLowerCase().includes((searchQuery || '').toLowerCase()))
+                                        .length === 0 ? (
+                                        <div className="p-4 text-center text-xs text-slate-400 italic">Tidak ada pelanggan tanpa meter ditemukan</div>
+                                      ) : (
+                                        customers
+                                          .filter(c => (!c.no_meter || c.no_meter === '') && (c.nama || '').toLowerCase().includes((searchQuery || '').toLowerCase()))
+                                          .map(c => (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onClick={() => {
+                                                setNewTaskForm({
+                                                  ...newTaskForm,
+                                                  customerId: c.id,
+                                                  customerName: c.nama,
+                                                  customerPhone: c.noHp || '',
+                                                  location: c.alamat || '',
+                                                  district: 'Seruyan'
+                                                });
+                                                setSearchQuery(c.nama);
+                                                setIsDropdownOpen(false);
+                                              }}
+                                              className="w-full px-5 py-3 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
+                                            >
+                                              <p className="text-sm font-bold text-slate-700">{c.nama}</p>
+                                              <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} • {c.alamat || 'Tanpa Alamat'}</p>
+                                            </button>
+                                          ))
+                                      )
+                                      }
+                                      {searchQuery && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setIsDropdownOpen(false)}
+                                          className="w-full px-5 py-3 text-left bg-slate-50 text-[10px] font-bold text-primary uppercase tracking-wider"
+                                        >
+                                          + Gunakan Nama Baru "{searchQuery}"
+                                        </button>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 ml-1">Nama Final</label>
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={newTaskForm.customerName}
+                                  className="w-full px-5 py-3.5 bg-slate-100/50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 ml-1">Nomor HP Pelanggan</label>
+                                <input
+                                  type="tel"
+                                  required
+                                  value={newTaskForm.customerPhone}
+                                  onChange={e => setNewTaskForm({ ...newTaskForm, customerPhone: e.target.value })}
+                                  placeholder="0812..."
+                                  className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                                />
                               </div>
                             </div>
-
-                            <AnimatePresence>
-                              {isDropdownOpen && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: -10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -10 }}
-                                  className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
-                                >
-                                  <div className="max-h-60 overflow-y-auto">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setNewTaskForm({ ...newTaskForm, permohonanId: '', customerName: '', location: '' });
-                                        setSearchQuery('');
-                                        setIsDropdownOpen(false);
-                                      }}
-                                      className="w-full px-5 py-3 text-left hover:bg-slate-50 text-xs font-bold text-slate-400 border-b border-slate-50"
-                                    >
-                                      -- Tanpa Hubungkan Permohonan (Input Manual) --
-                                    </button>
-                                    {requests.filter(req => (req.status === 'approved' || req.status === 'pending') && (
-                                      req.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                      req.address.toLowerCase().includes(searchQuery.toLowerCase())
-                                    )).length === 0 ? (
-                                      <div className="p-4 text-center text-xs text-slate-400 italic">
-                                        {requests.length === 0 ? "Belum ada data permohonan di database" : "Permohonan tidak ditemukan"}
-                                      </div>
-                                    ) : (
-                                      requests.filter(req => (req.status === 'approved' || req.status === 'pending') && (
-                                        req.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                        req.address.toLowerCase().includes(searchQuery.toLowerCase())
-                                      )).map(req => (
-                                        <button
-                                          key={req.id}
-                                          type="button"
-                                          onClick={() => {
-                                            setNewTaskForm({
-                                              ...newTaskForm,
-                                              permohonanId: req.id,
-                                              customerName: req.name,
-                                              location: req.address,
-                                              district: 'Seruyan'
-                                            });
-                                            setSearchQuery(req.name);
-                                            setIsDropdownOpen(false);
-                                          }}
-                                          className="w-full px-5 py-3 text-left hover:bg-slate-50 flex flex-col gap-1 border-b border-slate-50 last:border-0 transition-colors"
-                                        >
-                                          <div className="flex justify-between items-center">
-                                            <p className="text-sm font-bold text-slate-700">{req.name}</p>
-                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                              {req.status.toUpperCase()}
-                                            </span>
-                                          </div>
-                                          <p className="text-[10px] text-slate-500 font-medium">{req.address}</p>
-                                        </button>
-                                      ))
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
                           </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                          {!newTaskForm.permohonanId && (
-                            <div className="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                               <div className="space-y-1.5 relative">
-                                  <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan Terdaftar (Tanpa Meter)</label>
-                                  <div className="relative">
-                                    <input 
-                                      type="text" 
-                                      value={newTaskForm.customerName}
-                                      onFocus={() => setIsDropdownOpen(true)}
-                                      onChange={e => {
-                                        setNewTaskForm({...newTaskForm, customerName: e.target.value});
-                                        setSearchQuery(e.target.value);
-                                        setIsDropdownOpen(true);
-                                      }}
-                                      placeholder="Cari nama atau ketik nama baru..."
-                                      className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
-                                    />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                      <Users size={18} />
-                                    </div>
-                                  </div>
-
-                                  <AnimatePresence>
-                                    {isDropdownOpen && (
-                                      <motion.div 
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
-                                      >
-                                        <div className="max-h-48 overflow-y-auto">
-                                          {customers
-                                            .filter(c => (!c.no_meter || c.no_meter === '') && (c.nama || '').toLowerCase().includes((searchQuery || '').toLowerCase()))
-                                            .length === 0 ? (
-                                              <div className="p-4 text-center text-xs text-slate-400 italic">Tidak ada pelanggan tanpa meter ditemukan</div>
-                                            ) : (
-                                              customers
-                                                .filter(c => (!c.no_meter || c.no_meter === '') && (c.nama || '').toLowerCase().includes((searchQuery || '').toLowerCase()))
-                                                .map(c => (
-                                                  <button
-                                                    key={c.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                      setNewTaskForm({
-                                                        ...newTaskForm,
-                                                        customerId: c.id,
-                                                        customerName: c.nama,
-                                                        customerPhone: c.noHp || '',
-                                                        location: c.alamat || '',
-                                                        district: 'Seruyan'
-                                                      });
-                                                      setSearchQuery(c.nama);
-                                                      setIsDropdownOpen(false);
-                                                    }}
-                                                    className="w-full px-5 py-3 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
-                                                  >
-                                                    <p className="text-sm font-bold text-slate-700">{c.nama}</p>
-                                                    <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} • {c.alamat || 'Tanpa Alamat'}</p>
-                                                  </button>
-                                                ))
-                                            )
-                                          }
-                                          {searchQuery && (
-                                            <button
-                                              type="button"
-                                              onClick={() => setIsDropdownOpen(false)}
-                                              className="w-full px-5 py-3 text-left bg-slate-50 text-[10px] font-bold text-primary uppercase tracking-wider"
-                                            >
-                                              + Gunakan Nama Baru "{searchQuery}"
-                                            </button>
-                                          )}
-                                        </div>
-                                      </motion.div>
-                                    )}
-                                  </AnimatePresence>
-                               </div>
-
-                               <div className="grid grid-cols-2 gap-6">
-                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-slate-500 ml-1">Nama Final</label>
-                                    <input 
-                                      type="text" 
-                                      readOnly
-                                      value={newTaskForm.customerName}
-                                      className="w-full px-5 py-3.5 bg-slate-100/50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700"
-                                    />
-                                 </div>
-                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-slate-500 ml-1">Nomor HP Pelanggan</label>
-                                    <input 
-                                      type="tel" 
-                                      required
-                                      value={newTaskForm.customerPhone}
-                                      onChange={e => setNewTaskForm({...newTaskForm, customerPhone: e.target.value})}
-                                      placeholder="0812..."
-                                      className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
-                                    />
-                                 </div>
-                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.district')}</label>
-                          <input 
-                            type="text"
-                            required
-                            value={newTaskForm.district}
-                            onChange={e => setNewTaskForm({...newTaskForm, district: e.target.value})}
-                            placeholder={t('admin.tasks.placeholder.district')}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
-                          />
-                       </div>
-                       <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.location')}</label>
-                          <input 
-                            type="text"
-                            required
-                            value={newTaskForm.location}
-                            onChange={e => setNewTaskForm({...newTaskForm, location: e.target.value})}
-                            placeholder={t('admin.tasks.placeholder.location')}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
-                          />
-                       </div>
-                    </div>
-
+                  <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                       <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.reason')}</label>
-                       <textarea 
-                         required
-                         rows={3}
-                         value={newTaskForm.reason}
-                         onChange={e => setNewTaskForm({...newTaskForm, reason: e.target.value})}
-                         placeholder={newTaskForm.type === 'disconnection' ? t('admin.tasks.placeholder.reason_disconnect') : t('admin.tasks.placeholder.reason_leak')}
-                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium resize-none"
-                       />
+                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.district')}</label>
+                      <input
+                        type="text"
+                        required
+                        value={newTaskForm.district}
+                        onChange={e => setNewTaskForm({ ...newTaskForm, district: e.target.value })}
+                        placeholder={t('admin.tasks.placeholder.district')}
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                      />
                     </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.location')}</label>
+                      <input
+                        type="text"
+                        required
+                        value={newTaskForm.location}
+                        onChange={e => setNewTaskForm({ ...newTaskForm, location: e.target.value })}
+                        placeholder={t('admin.tasks.placeholder.location')}
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                      />
+                    </div>
+                  </div>
 
-                    <div className="flex gap-4 pt-4">
-                       <button 
-                         type="button" 
-                         onClick={() => setIsAddingTask(false)}
-                         className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs"
-                       >
-                         {t('admin.user.button.cancel')}
-                       </button>
-                       <button 
-                         type="submit"
-                         className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]"
-                       >
-                         {t('admin.tasks.button.create')}
-                       </button>
-                    </div>
-                  </form>
-                </motion.div>
-             </div>
-           )}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.reason')}</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={newTaskForm.reason}
+                      onChange={e => setNewTaskForm({ ...newTaskForm, reason: e.target.value })}
+                      placeholder={newTaskForm.type === 'disconnection' ? t('admin.tasks.placeholder.reason_disconnect') : t('admin.tasks.placeholder.reason_leak')}
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingTask(false)}
+                      className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs"
+                    >
+                      {t('admin.user.button.cancel')}
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]"
+                    >
+                      {t('admin.tasks.button.create')}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
         </AnimatePresence>
       </main>
     </div>

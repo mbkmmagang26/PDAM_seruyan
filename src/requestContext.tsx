@@ -100,6 +100,7 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         role: 'pelanggan',
         no_meter: '',
         id_pelanggan: 'MENUNGGU PASANG',
+        gol: 'Rumah Tangga 2 (R2)',
         createdAt: new Date().toISOString(),
         permohonanId: id
       }, { merge: true });

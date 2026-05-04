@@ -38,29 +38,29 @@ export const processMeterReadingAndBilling = async (
   fotoUrl?: string
 ): Promise<{ success: boolean; message: string; billId?: string }> => {
   try {
-    // 1. Dapatkan data pelanggan dari User
-    const userDocRef = doc(db, 'user', customerId);
+    // 1. Dapatkan data pelanggan dari tb_pelanggan
+    const userDocRef = doc(db, 'tb_pelanggan', customerId);
     const userSnap = await getDoc(userDocRef);
     
     if (!userSnap.exists()) {
       return { success: false, message: 'Data pelanggan tidak ditemukan.' };
     }
     
-    const userData = userSnap.data() as User;
+    const userData = userSnap.data();
     
-    if (!userData.golonganId) {
+    if (!userData.gol) {
        return { success: false, message: 'Pelanggan belum memiliki Golongan Tarif.' };
     }
 
-    // 2. Dapatkan data Golongan
-    const golDocRef = doc(db, 'tb_golongan', userData.golonganId);
-    const golSnap = await getDoc(golDocRef);
+    // 2. Dapatkan data Golongan berdasarkan nama
+    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userData.gol), limit(1));
+    const golSnap = await getDocs(golQ);
     
-    if (!golSnap.exists()) {
+    if (golSnap.empty) {
       return { success: false, message: 'Data Golongan tidak ditemukan.' };
     }
     
-    const golonganData = golSnap.data() as Golongan;
+    const golonganData = golSnap.docs[0].data() as Golongan;
 
     // 3. Dapatkan stand meter bulan lalu (Stand Awal)
     let standAwal = 0;
@@ -108,7 +108,7 @@ export const processMeterReadingAndBilling = async (
 
     const newBillData: Omit<Bill, 'id'> = {
       customerId,
-      customerName: userData.name,
+      customerName: userData.nama || 'Pelanggan',
       meterReadingId: meterDocRef.id,
       month: currentMonth,
       year: yearStr,
@@ -139,8 +139,8 @@ export const processMeterReadingAndBilling = async (
       // Jika belum ada, buat baru
       await setDoc(tbPelangganRef, {
         nomorSambungan: customerId.substring(0, 8).toUpperCase(),
-        nama: userData.name,
-        alamat: userData.address || '-',
+        nama: userData.nama || 'Pelanggan',
+        alamat: userData.alamat || '-',
         golongan: golonganData.name,
         tagihanTunggakan: totalAmount,
         lastUpdated: new Date().toISOString()

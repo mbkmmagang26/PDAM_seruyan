@@ -37,7 +37,7 @@ export default function Billing() {
     }
   };
 
-  const totalRevenue = bills.filter(b => b.status === 'paid').reduce((acc, curr) => acc + curr.totalTagihan, 0);
+  const totalRevenue = bills.filter(b => b.status === 'paid').reduce((acc, curr) => acc + (curr.totalTagihan || curr.amount || 0), 0);
 
 
   return (
@@ -105,7 +105,7 @@ export default function Billing() {
                 </div>
                 <div className="text-right flex items-center gap-4">
                   <div>
-                    <p className="text-sm font-bold text-[#00478d]">Rp {bill.totalTagihan.toLocaleString('id-ID')}</p>
+                    <p className="text-sm font-bold text-[#00478d]">Rp {(bill.totalTagihan || bill.amount || 0).toLocaleString('id-ID')}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{bill.status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}</p>
                   </div>
                   {bill.status !== 'paid' && (
