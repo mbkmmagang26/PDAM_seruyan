@@ -3,12 +3,13 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDI4Yi0lJsaBq_mTpj8N3-32QfEaDz1100',
-  authDomain: 'pdamseruyan23.firebaseapp.com',
-  projectId: 'pdamseruyan23',
-  storageBucket: 'pdamseruyan23.firebasestorage.app',
-  messagingSenderId: '476401203521',
-  appId: '1:476401203521:web:db8ed451711098e62889c0'
+  apiKey: "AIzaSyBMQCTg56AeyXjdCvq4pteO4IPTBCW29TY",
+  authDomain: "pdam-seruyan.firebaseapp.com",
+  projectId: "pdam-seruyan",
+  storageBucket: "pdam-seruyan.firebasestorage.app",
+  messagingSenderId: "991841589080",
+  appId: "1:991841589080:web:099fdb08595e9231dcb72d",
+  measurementId: "G-0L06CRMVVX"
 };
 
 const app = initializeApp(firebaseConfig);

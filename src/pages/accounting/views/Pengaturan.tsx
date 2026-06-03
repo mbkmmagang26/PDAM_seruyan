@@ -263,7 +263,7 @@ export default function Pengaturan() {
                             </div>
                             <div>
                                <p className="text-sm font-black text-emerald-800 leading-none">Firebase Production Connected</p>
-                               <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase tracking-wider">pdamseruyan23 (Realtime Sync: ON)</p>
+                               <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase tracking-wider">pdam-seruyan (Realtime Sync: ON)</p>
                             </div>
                          </div>
                          <div className="flex items-center gap-2">
