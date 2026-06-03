@@ -12,9 +12,6 @@ import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc } 
 
 // Subviews
 import DashboardUtama from './views/DashboardUtama';
-import DashboardEksekutif from './views/DashboardEksekutif';
-import DashboardManajerial from './views/DashboardManajerial';
-import DashboardSIA from './views/DashboardSIA';
 import JurnalUmum from './views/JurnalUmum';
 import BukuBesar from './views/BukuBesar';
 import HutangAP from './views/HutangAP';
@@ -28,7 +25,7 @@ import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
 
 export type ModuleView = 
-  | 'dashboard_utama' | 'dashboard_eksekutif' | 'dashboard_manajerial' | 'dashboard_sia'
+  | 'dashboard_utama'
   | 'jurnal_umum' | 'buku_besar' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
   | 'pengaduan' | 'operasional';
@@ -113,9 +110,6 @@ export default function AccountingDashboard() {
 
   const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
-    { id: 'dashboard_eksekutif', label: 'Dashboard Eksekutif', icon: LayoutGrid },
-    { id: 'dashboard_manajerial', label: 'Dashboard Manajerial', icon: LayoutPanelLeft },
-    { id: 'dashboard_sia', label: 'Dashboard SIA', icon: Server },
     { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
     { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
     { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
@@ -132,9 +126,6 @@ export default function AccountingDashboard() {
   const renderContent = () => {
     switch (activeModule) {
       case 'dashboard_utama': return <DashboardUtama />;
-      case 'dashboard_eksekutif': return <DashboardEksekutif />;
-      case 'dashboard_manajerial': return <DashboardManajerial />;
-      case 'dashboard_sia': return <DashboardSIA />;
       case 'jurnal_umum': return <JurnalUmum />;
       case 'buku_besar': return <BukuBesar />;
       case 'hutang_ap': return <HutangAP />;

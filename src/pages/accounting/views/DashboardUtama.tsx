@@ -24,7 +24,8 @@ export default function DashboardUtama() {
     lowStock: 0,
     tasksPending: 0,
     pengaduanPending: 0,
-    cashTransit: 0
+    cashTransit: 0,
+    piutang: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +100,16 @@ export default function DashboardUtama() {
         if (status === 'Menunggu' || status === 'Menunggu Respon') pending++;
       });
       setStats(s => ({ ...s, pengaduanPending: pending }));
+    });
+
+    // Listen to Piutang (tb_pelanggan)
+    const unsubPiutang = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
+      let totalPiutang = 0;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        totalPiutang += data.tagihanTunggakan || data.balance || 0;
+      });
+      setStats(s => ({ ...s, piutang: totalPiutang }));
       setLoading(false);
     });
 
@@ -108,6 +119,7 @@ export default function DashboardUtama() {
       unsubAssets();
       unsubTasks();
       unsubPengaduan();
+      unsubPiutang();
     };
   }, []);
 
@@ -132,7 +144,7 @@ export default function DashboardUtama() {
             <LayoutGrid size={28} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Pusat Kendali</h2>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard Utama</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Sistem Informasi Akuntansi &bull; LIVE</p>
@@ -209,7 +221,7 @@ export default function DashboardUtama() {
               <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                   <p className="text-xs font-black text-blue-200 tracking-widest uppercase mb-1">Outstanding Piutang (AR)</p>
-                  <h3 className="text-4xl font-black text-white mt-4 leading-none">Rp 0</h3>
+                  <h3 className="text-4xl font-black text-white mt-4 leading-none">{formatCurrency(stats.piutang)}</h3>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-blue-100/80 leading-relaxed max-w-[150px]">Estimasi penagihan aktif bulan ini.</p>
@@ -275,7 +287,7 @@ export default function DashboardUtama() {
               </div>
 
               {/* Quick Actions / Operational Alerts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div 
                   onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'persediaan' } }))}
                   className="bg-rose-50 border border-rose-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-rose-100 transition-colors"
@@ -285,14 +297,14 @@ export default function DashboardUtama() {
                       <AlertCircle size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-rose-900 uppercase tracking-tight">Stok Menipis</p>
+                      <p className="text-sm font-black text-rose-950 uppercase tracking-tight">Stok Menipis</p>
                       <p className="text-xs font-bold text-rose-700/60">{stats.lowStock} ITEM PERLU RE-ORDER</p>
                     </div>
                   </div>
                   <ArrowUpRight className="text-rose-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
                 <div 
-                  onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'operasional' } }))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'pengaduan' } }))}
                   className="bg-blue-50 border border-blue-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-blue-100 transition-colors"
                 >
                   <div className="flex items-center gap-4">
@@ -300,11 +312,26 @@ export default function DashboardUtama() {
                       <MessageCircle size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-blue-900 uppercase tracking-tight">Pengaduan Baru</p>
+                      <p className="text-sm font-black text-blue-955 uppercase tracking-tight">Pengaduan Baru</p>
                       <p className="text-xs font-bold text-blue-700/60">{stats.pengaduanPending} LAPORAN MENUNGGU</p>
                     </div>
                   </div>
                   <ArrowUpRight className="text-blue-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+                <div 
+                  onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'operasional' } }))}
+                  className="bg-amber-50 border border-amber-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-amber-100 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-600/20">
+                      <CheckSquare size={24} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-amber-955 uppercase tracking-tight">Tugas Lapangan</p>
+                      <p className="text-xs font-bold text-amber-700/60">{stats.tasksPending} PENDING / BERJALAN</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="text-amber-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
               </div>
             </div>
