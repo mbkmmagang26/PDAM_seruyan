@@ -4,7 +4,12 @@ import { useAuth } from '../../authContext';
 import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
+<<<<<<< HEAD
+  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle,
+  UploadCloud, FileSpreadsheet, ShieldCheck, Table
+=======
   CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle, History
+>>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
@@ -23,11 +28,19 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
+<<<<<<< HEAD
+import DRDView from './views/DRD';
+import LPPView from './views/LPP';
+import RekonsiliasiView from './views/Rekonsiliasi';
+import NeracaLajurView from './views/NeracaLajur';
+=======
 import LogAktivitas from './views/LogAktivitas';
+>>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
 
 export type ModuleView = 
   | 'dashboard_utama'
-  | 'jurnal_umum' | 'buku_besar' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
+  | 'drd' | 'lpp' | 'rekonsiliasi'
+  | 'jurnal_umum' | 'buku_besar' | 'neraca_lajur' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
   | 'pengaduan' | 'operasional' | 'log_aktivitas';
 
@@ -111,8 +124,12 @@ export default function AccountingDashboard() {
 
   const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
+    { id: 'drd', label: 'DRD (Rekening Ditagihkan)', icon: UploadCloud },
+    { id: 'lpp', label: 'LPP (Penerimaan Penagihan)', icon: FileSpreadsheet },
+    { id: 'rekonsiliasi', label: 'Rekonsiliasi (Rekap User)', icon: ShieldCheck },
     { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
     { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
+    { id: 'neraca_lajur', label: 'Neraca Lajur (Worksheet)', icon: Table },
     { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
     { id: 'piutang_ar', label: 'Piutang (AR)', icon: Users },
     { id: 'aset_tetap', label: 'Aset Tetap', icon: HardDrive },
@@ -128,8 +145,12 @@ export default function AccountingDashboard() {
   const renderContent = () => {
     switch (activeModule) {
       case 'dashboard_utama': return <DashboardUtama />;
+      case 'drd': return <DRDView />;
+      case 'lpp': return <LPPView />;
+      case 'rekonsiliasi': return <RekonsiliasiView />;
       case 'jurnal_umum': return <JurnalUmum />;
       case 'buku_besar': return <BukuBesar />;
+      case 'neraca_lajur': return <NeracaLajurView />;
       case 'hutang_ap': return <HutangAP />;
       case 'piutang_ar': return <PiutangAR />;
       case 'aset_tetap': return <AsetTetap />;

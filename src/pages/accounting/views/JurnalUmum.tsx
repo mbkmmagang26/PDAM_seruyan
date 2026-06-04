@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
 import { sendNotification } from '../../../lib/notifications';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -132,6 +132,11 @@ export default function JurnalUmum() {
   };
 
   const handleDelete = async (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (tx?.isLocked) {
+      alert('Transaksi ini telah dikunci (EOD) dan tidak dapat dihapus!');
+      return;
+    }
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
     try {
       await deleteDoc(doc(db, 'transactions', id));
@@ -308,14 +313,20 @@ export default function JurnalUmum() {
                          {t.status || 'pending'}
                        </span>
                      </td>
-                     <td className="p-4 text-right">
-                       <button
-                         onClick={() => handleDelete(t.id)}
-                         className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
-                       >
-                         <Trash2 size={18} />
-                       </button>
-                     </td>
+                      <td className="p-4 text-right">
+                        {t.isLocked ? (
+                          <div className="text-slate-400 p-1.5 flex items-center justify-end" title="Terkunci (EOD Rekonsiliasi)">
+                            <Lock size={16} />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </td>
                    </tr>
                  ))}
               </tbody>
