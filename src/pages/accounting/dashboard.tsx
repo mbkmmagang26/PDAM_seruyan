@@ -4,12 +4,8 @@ import { useAuth } from '../../authContext';
 import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
-<<<<<<< HEAD
   CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle,
-  UploadCloud, FileSpreadsheet, ShieldCheck, Table
-=======
-  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle, History
->>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
+  UploadCloud, FileSpreadsheet, ShieldCheck, Table, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
@@ -28,14 +24,11 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
-<<<<<<< HEAD
 import DRDView from './views/DRD';
 import LPPView from './views/LPP';
 import RekonsiliasiView from './views/Rekonsiliasi';
 import NeracaLajurView from './views/NeracaLajur';
-=======
 import LogAktivitas from './views/LogAktivitas';
->>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
 
 export type ModuleView = 
   | 'dashboard_utama'
