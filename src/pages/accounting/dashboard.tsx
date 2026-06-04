@@ -4,7 +4,7 @@ import { useAuth } from '../../authContext';
 import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
-  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle
+  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
@@ -23,12 +23,13 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
+import LogAktivitas from './views/LogAktivitas';
 
 export type ModuleView = 
   | 'dashboard_utama'
   | 'jurnal_umum' | 'buku_besar' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
-  | 'pengaduan' | 'operasional';
+  | 'pengaduan' | 'operasional' | 'log_aktivitas';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -121,6 +122,7 @@ export default function AccountingDashboard() {
     { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
     { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
     { id: 'operasional', label: 'Operasional', icon: Grid },
+    { id: 'log_aktivitas', label: 'Log Aktivitas', icon: History },
   ];
 
   const renderContent = () => {
@@ -137,6 +139,7 @@ export default function AccountingDashboard() {
       case 'verifikasi_data': return <VerifikasiData />;
       case 'pengaduan': return <Pengaduan />;
       case 'operasional': return <Operasional />;
+      case 'log_aktivitas': return <LogAktivitas />;
       default: return <DashboardUtama />;
     }
   };

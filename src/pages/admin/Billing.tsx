@@ -5,8 +5,11 @@ import { useLanguage } from '../../languageContext';
 import { db } from '../../firebase';
 import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import { processPayment } from '../../lib/billingUtils';
+import { useAuth } from '../../authContext';
+import { logActivity } from '../../lib/logger';
 
 export default function Billing() {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [bills, setBills] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -48,6 +51,7 @@ export default function Billing() {
           alert(res.message);
         } else {
           alert('Pembayaran berhasil diproses!');
+          logActivity(user, 'Proses Pembayaran', `Pembayaran tagihan sebesar Rp ${amount} untuk pelanggan ${customerId} berhasil diproses.`);
         }
       } catch (err) {
         alert('Terjadi kesalahan saat memproses pembayaran.');
@@ -76,6 +80,7 @@ export default function Billing() {
         createdAt: new Date().toISOString()
       });
       alert('Tagihan berhasil dibuat dan dikirim ke pelanggan.');
+      logActivity(user, 'Buat Tagihan', `Tagihan baru sebesar Rp ${newBillForm.totalTagihan} dibuat untuk pelanggan ${newBillForm.customerName}.`);
       setIsAddingBill(false);
       setNewBillForm({
         customerId: '',

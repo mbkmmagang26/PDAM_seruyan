@@ -42,6 +42,7 @@ import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { logActivity } from '../../lib/logger';
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
@@ -166,6 +167,7 @@ export default function AdminDashboard() {
       }
 
       showNotification(t('admin.user.success_create'), 'success');
+      logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);
       setIsAddingUser(false);
       setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
@@ -182,6 +184,7 @@ export default function AdminDashboard() {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
+      logActivity(user, 'Ubah Status Pengguna', `Mengubah status pengguna ${userId} menjadi ${newStatus}`);
       showNotification(t('admin.user.msg.status_updated'), 'success');
     } catch (err: any) {
       showNotification(t('admin.user.msg.status_error'), 'error');
@@ -204,11 +207,13 @@ export default function AdminDashboard() {
           status: 'Aktif',
           no_meter: noMeter.trim()
         });
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
         showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'tb_pelanggan', customerId);
           await updateDoc(docRef, { status: 'Nonaktif' });
+          logActivity(user, 'Nonaktifkan Pelanggan', `Menonaktifkan pelanggan ${customerId}`);
           showNotification(`Status pelanggan berhasil diubah menjadi Nonaktif`, 'success');
         }
       }
@@ -260,6 +265,7 @@ export default function AdminDashboard() {
         permohonanId: finalPermohonanId || undefined
       });
 
+      logActivity(user, 'Buat Perintah Kerja', `Menambahkan perintah kerja baru: ${taskTitle} untuk pelanggan ${newTaskForm.customerName || '-'}`);
       showNotification('Perintah Kerja berhasil ditambahkan', 'success');
       setIsAddingTask(false);
       setNewTaskForm({
@@ -300,6 +306,7 @@ export default function AdminDashboard() {
         phone: editUserData.phone || '',
         role: editUserData.role || '',
       });
+      logActivity(user, 'Edit Pengguna', `Mengupdate data pengguna ${editUserData.name || ''}`);
       showNotification('Data pengguna berhasil diupdate', 'success');
       setIsEditingUser(false);
     } catch (error) {
@@ -319,6 +326,7 @@ export default function AdminDashboard() {
         no_meter: editCustomerData.no_meter || '',
         gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
+      logActivity(user, 'Edit Pelanggan', `Mengupdate data pelanggan ${editCustomerData.nama || ''}`);
       showNotification('Data pelanggan berhasil diupdate', 'success');
       setIsEditingCustomer(false);
     } catch (error) {
@@ -330,6 +338,7 @@ export default function AdminDashboard() {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
         await deleteDoc(doc(db, 'tb_pelanggan', id));
+        logActivity(user, 'Hapus Pelanggan', `Menghapus pelanggan ${name}`);
         showNotification('Pelanggan berhasil dihapus', 'success');
       } catch (error) {
         showNotification('Gagal menghapus pelanggan', 'error');
