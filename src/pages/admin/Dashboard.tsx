@@ -65,6 +65,9 @@ export default function AdminDashboard() {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerData, setEditCustomerData] = useState<any>(null);
 
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editUserData, setEditUserData] = useState<any>(null);
+
   const [processComplaintData, setProcessComplaintData] = useState<any>(null);
   const [selectedStaffForComplaint, setSelectedStaffForComplaint] = useState('');
 
@@ -279,6 +282,29 @@ export default function AdminDashboard() {
   const handleEditClick = (customer: any) => {
     setEditCustomerData(customer);
     setIsEditingCustomer(true);
+  };
+
+  const handleEditUserClick = (u: any) => {
+    setEditUserData(u);
+    setIsEditingUser(true);
+  };
+
+  const submitEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUserData) return;
+    try {
+      const docRef = doc(db, 'user', editUserData.id);
+      await updateDoc(docRef, {
+        name: editUserData.name || '',
+        email: editUserData.email || '',
+        phone: editUserData.phone || '',
+        role: editUserData.role || '',
+      });
+      showNotification('Data pengguna berhasil diupdate', 'success');
+      setIsEditingUser(false);
+    } catch (error) {
+      showNotification('Gagal mengupdate pengguna', 'error');
+    }
   };
 
   const submitEditCustomer = async (e: React.FormEvent) => {
@@ -660,7 +686,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                          <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
+                          <button onClick={() => handleEditUserClick(u)} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
                           {(u.status || 'active') === 'active' ? (
                             <button
                               onClick={() => handleToggleStatus(u.id, u.status || 'active')}
@@ -1368,6 +1394,57 @@ export default function AdminDashboard() {
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setIsAddingUser(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">{t('admin.user.button.cancel')}</button>
                     <button type="submit" className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]">{t('admin.user.button.create')}</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isEditingUser && editUserData && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setIsEditingUser(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+              >
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800">Edit Pengguna</h3>
+                    <p className="text-sm text-slate-500 font-medium">Update data staff / direktur</p>
+                  </div>
+                  <button onClick={() => setIsEditingUser(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
+                </div>
+                <form onSubmit={submitEditUser} className="p-10 space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Nama Lengkap</label>
+                    <input type="text" required value={editUserData.name || ''} onChange={e => setEditUserData({ ...editUserData, name: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Email</label>
+                    <input type="email" required value={editUserData.email || ''} onChange={e => setEditUserData({ ...editUserData, email: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">No HP</label>
+                    <input type="tel" required value={editUserData.phone || ''} onChange={e => setEditUserData({ ...editUserData, phone: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Role</label>
+                    <select required value={editUserData.role || ''} onChange={e => setEditUserData({ ...editUserData, role: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                      <option value="staff">Staff / Petugas</option>
+                      <option value="direktur">Direktur</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button type="button" onClick={() => setIsEditingUser(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">Batal</button>
+                    <button type="submit" className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]">Simpan</button>
                   </div>
                 </form>
               </motion.div>
