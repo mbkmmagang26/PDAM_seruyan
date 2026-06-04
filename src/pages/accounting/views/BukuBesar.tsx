@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Book, Loader2, Filter, Search, Plus, Download, X, Layers, Calendar, Trash2, Pencil } from 'lucide-react';
@@ -26,65 +26,6 @@ export default function BukuBesar() {
   });
   const [editingCoa, setEditingCoa] = useState<any>(null);
   const tabs = ["Daftar Akun (COA)", "Buku Besar Per Akun"];
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const pdamCOAs = [
-    { code: '1.1', name: 'Kas dan Setara Kas', type: 'ASSET', level: 2 },
-    { code: '1.1.1', name: 'Kas Kecil', type: 'ASSET', level: 3 },
-    { code: '1.1.2', name: 'Kas Bank', type: 'ASSET', level: 3 },
-    { code: '1.2', name: 'Piutang Usaha', type: 'ASSET', level: 2 },
-    { code: '1.2.1', name: 'Piutang Air', type: 'ASSET', level: 3 },
-    { code: '1.2.2', name: 'Piutang Non-Air', type: 'ASSET', level: 3 },
-    { code: '1.3', name: 'Persediaan', type: 'ASSET', level: 2 },
-    { code: '1.3.1', name: 'Persediaan Bahan Kimia', type: 'ASSET', level: 3 },
-    { code: '1.3.2', name: 'Persediaan Pipa & Material', type: 'ASSET', level: 3 },
-    { code: '1.4', name: 'Aset Tetap', type: 'ASSET', level: 2 },
-    { code: '1.4.1', name: 'Tanah', type: 'ASSET', level: 3 },
-    { code: '1.4.2', name: 'Instalasi Pengolahan Air', type: 'ASSET', level: 3 },
-    { code: '1.4.3', name: 'Akumulasi Penyusutan Aset Tetap', type: 'ASSET', level: 3 },
-    { code: '2.1', name: 'Utang Jangka Pendek', type: 'LIABILITY', level: 2 },
-    { code: '2.1.1', name: 'Utang Usaha', type: 'LIABILITY', level: 3 },
-    { code: '2.1.2', name: 'Utang Pajak', type: 'LIABILITY', level: 3 },
-    { code: '2.2', name: 'Utang Jangka Panjang', type: 'LIABILITY', level: 2 },
-    { code: '2.2.1', name: 'Utang Bank Jangka Panjang', type: 'LIABILITY', level: 3 },
-    { code: '3.1', name: 'Ekuitas', type: 'EQUITY', level: 2 },
-    { code: '3.1.1', name: 'Modal Pemda', type: 'EQUITY', level: 3 },
-    { code: '3.1.2', name: 'Laba Ditahan', type: 'EQUITY', level: 3 },
-    { code: '4.1', name: 'Pendapatan Operasional', type: 'REVENUE', level: 2 },
-    { code: '4.1.1', name: 'Pendapatan Penjualan Air', type: 'REVENUE', level: 3 },
-    { code: '4.1.2', name: 'Pendapatan Sambungan Baru', type: 'REVENUE', level: 3 },
-    { code: '4.1.3', name: 'Pendapatan Denda Keterlambatan', type: 'REVENUE', level: 3 },
-    { code: '4.2', name: 'Pendapatan Non-Operasional', type: 'REVENUE', level: 2 },
-    { code: '4.2.1', name: 'Pendapatan Bunga Bank', type: 'REVENUE', level: 3 },
-    { code: '5.1', name: 'Beban Operasional', type: 'EXPENSE', level: 2 },
-    { code: '5.1.1', name: 'Beban Gaji & Tunjangan', type: 'EXPENSE', level: 3 },
-    { code: '5.1.2', name: 'Beban Pemeliharaan Instalasi', type: 'EXPENSE', level: 3 },
-    { code: '5.1.3', name: 'Beban Bahan Kimia', type: 'EXPENSE', level: 3 },
-    { code: '5.1.4', name: 'Beban Listrik & Air', type: 'EXPENSE', level: 3 },
-    { code: '5.1.5', name: 'Beban Penyusutan', type: 'EXPENSE', level: 3 },
-    { code: '5.2', name: 'Beban Non-Operasional', type: 'EXPENSE', level: 2 },
-    { code: '5.2.1', name: 'Beban Administrasi Bank', type: 'EXPENSE', level: 3 },
-  ];
-
-  const handleSeedCOA = async () => {
-    if (!confirm('Apakah Anda yakin ingin menambahkan COA standar PDAM? Data yang sudah ada tidak akan dihapus, tetapi jika ada kode yang sama mungkin akan menjadi ganda.')) return;
-    setIsSeeding(true);
-    try {
-      const batchPromises = pdamCOAs.map(c => 
-        addDoc(collection(db, 'coa'), {
-          ...c,
-          createdAt: serverTimestamp()
-        })
-      );
-      await Promise.all(batchPromises);
-      logActivity(user, 'Generate COA Standar', 'Menyuntikkan daftar COA standar PDAM ke database');
-      alert('Berhasil menambahkan COA standar PDAM!');
-    } catch (err: any) {
-      alert('Gagal menambahkan COA: ' + err.message);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   useEffect(() => {
     const qTx = query(collection(db, 'transactions'), orderBy('date', 'asc'));
@@ -263,15 +204,6 @@ export default function BukuBesar() {
               >
                 <Download size={18} /> Export
               </button>
-              {coa.length < 5 && (
-                <button 
-                  onClick={handleSeedCOA}
-                  disabled={isSeeding}
-                  className="flex-1 sm:flex-none bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                >
-                  {isSeeding ? <Loader2 size={18} className="animate-spin" /> : <Layers size={18} />} Generate COA Standar
-                </button>
-              )}
               <button 
                 onClick={() => setShowAddForm(true)}
                 className="flex-1 sm:flex-none bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
