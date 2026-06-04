@@ -4,8 +4,12 @@ import { useAuth } from '../../authContext';
 import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
+<<<<<<< HEAD
   CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle,
   UploadCloud, FileSpreadsheet, ShieldCheck, Table
+=======
+  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle, History
+>>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
@@ -24,17 +28,21 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
+<<<<<<< HEAD
 import DRDView from './views/DRD';
 import LPPView from './views/LPP';
 import RekonsiliasiView from './views/Rekonsiliasi';
 import NeracaLajurView from './views/NeracaLajur';
+=======
+import LogAktivitas from './views/LogAktivitas';
+>>>>>>> 30f19e4c702566b646db9d55ef6de00f4de1276d
 
 export type ModuleView = 
   | 'dashboard_utama'
   | 'drd' | 'lpp' | 'rekonsiliasi'
   | 'jurnal_umum' | 'buku_besar' | 'neraca_lajur' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
-  | 'pengaduan' | 'operasional';
+  | 'pengaduan' | 'operasional' | 'log_aktivitas';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -131,6 +139,7 @@ export default function AccountingDashboard() {
     { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
     { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
     { id: 'operasional', label: 'Operasional', icon: Grid },
+    { id: 'log_aktivitas', label: 'Log Aktivitas', icon: History },
   ];
 
   const renderContent = () => {
@@ -151,6 +160,7 @@ export default function AccountingDashboard() {
       case 'verifikasi_data': return <VerifikasiData />;
       case 'pengaduan': return <Pengaduan />;
       case 'operasional': return <Operasional />;
+      case 'log_aktivitas': return <LogAktivitas />;
       default: return <DashboardUtama />;
     }
   };

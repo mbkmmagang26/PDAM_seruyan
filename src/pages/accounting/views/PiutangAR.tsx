@@ -1,30 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calendar, LayoutDashboard, X, Trash2 } from 'lucide-react';
+import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calendar, LayoutDashboard, X, Trash2, FileText, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function PiutangAR() {
+  const { user } = useAuth();
   const [pelanggan, setPelanggan] = useState<any[]>([]);
+  const [bills, setBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Piutang Pelanggan');
   const [showFilter, setShowFilter] = useState(false);
   const [filterType, setFilterType] = useState('Semua');
-  const tabs = ["Piutang Pelanggan", "Analisis Umur Piutang", "Jadwal Penagihan"];
+  const tabs = ["Piutang Pelanggan", "Riwayat Tagihan", "Analisis Umur Piutang"];
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'tb_pelanggan')), (snapshot) => {
+    const unsubPelanggan = onSnapshot(query(collection(db, 'tb_pelanggan')), (snapshot) => {
       setPelanggan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => unsub();
+    
+    const unsubBills = onSnapshot(query(collection(db, 'tb_billing')), (snapshot) => {
+      setBills(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubPelanggan();
+      unsubBills();
+    };
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data pelanggan ini?')) return;
     try {
       await deleteDoc(doc(db, 'tb_pelanggan', id));
+      logActivity(user, 'Hapus Data Pelanggan', `Menghapus data pelanggan dengan ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus pelanggan: ' + err.message);
     }
@@ -41,14 +54,28 @@ export default function PiutangAR() {
   });
 
   const handleExport = () => {
-    const data = filtered.map(p => ({
-      No_Sambungan: p.nomorSambungan,
-      Nama: p.nama,
-      Alamat: p.alamat,
-      Tagihan: p.tagihanTunggakan || p.balance || 0,
-      Status: (p.tagihanTunggakan || p.balance || 0) > 0 ? 'Menunggak' : 'Lunas'
-    }));
-    exportToCSV(data, 'Laporan_Piutang_Pelanggan');
+    if (activeTab === 'Piutang Pelanggan') {
+      const data = filtered.map(p => ({
+        No_Sambungan: p.nomorSambungan,
+        Nama: p.nama,
+        Alamat: p.alamat,
+        Tagihan: p.tagihanTunggakan || p.balance || 0,
+        Status: (p.tagihanTunggakan || p.balance || 0) > 0 ? 'Menunggak' : 'Lunas'
+      }));
+      exportToCSV(data, 'Laporan_Piutang_Pelanggan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Piutang Pelanggan ke CSV');
+    } else if (activeTab === 'Riwayat Tagihan') {
+      const data = bills.map(b => ({
+        Tanggal: new Date(b.createdAt).toLocaleDateString('id-ID'),
+        Pelanggan: b.customerName || 'Unknown',
+        Bulan: b.periodeBulan,
+        Tahun: b.periodeTahun,
+        Nominal: b.totalTagihan || b.amount || 0,
+        Status: b.status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'
+      }));
+      exportToCSV(data, 'Laporan_Riwayat_Tagihan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Riwayat Tagihan ke CSV');
+    }
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Piutang...</div>;
@@ -60,8 +87,8 @@ export default function PiutangAR() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Piutang Usaha (Accounts Receivable)</h2>
-          <p className="text-slate-500 text-sm">Manajemen tagihan dan pemantauan piutang pelanggan.</p>
+          <h2 className="text-2xl font-bold text-slate-800">Piutang Usaha & Tagihan</h2>
+          <p className="text-slate-500 text-sm">Manajemen tagihan, pembayaran, dan pemantauan piutang pelanggan.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -207,6 +234,51 @@ export default function PiutangAR() {
             </div>
           </div>
         </div>
+      ) : activeTab === 'Riwayat Tagihan' ? (
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-4 uppercase tracking-wider text-xs">Tanggal Buat</th>
+                    <th className="p-4 uppercase tracking-wider text-xs">Pelanggan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs">Periode Tagihan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Total Tagihan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {bills.length === 0 ? (
+                    <tr><td colSpan={5} className="p-12 text-center text-slate-500 font-medium">Belum ada riwayat tagihan.</td></tr>
+                  ) : bills.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(b => (
+                    <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4">
+                        <p className="font-medium text-slate-700">{new Date(b.createdAt).toLocaleDateString('id-ID')}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="font-black text-slate-800">{b.customerName || 'Unknown'}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-slate-600 font-medium">{b.periodeBulan} {b.periodeTahun}</p>
+                      </td>
+                      <td className="p-4 text-right">
+                        <p className="font-black text-slate-700">{formatCurrency(b.totalTagihan || b.amount || 0)}</p>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1 ${
+                          b.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                        }`}>
+                          {b.status === 'paid' ? <><CheckCircle size={10} /> LUNAS</> : 'BELUM BAYAR'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="bg-slate-50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
@@ -216,6 +288,7 @@ export default function PiutangAR() {
            <p className="text-slate-500 max-w-xs">Modul untuk memantau piutang berdasarkan usia (0-30, 31-60, 61-90, &gt;90 hari) sedang disiapkan.</p>
         </div>
       )}
+
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

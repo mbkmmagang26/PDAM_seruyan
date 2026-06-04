@@ -5,6 +5,7 @@ import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
 import { sendNotification } from '../../../lib/notifications';
 import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function JurnalUmum() {
   const { user: currentUser } = useAuth();
@@ -98,6 +99,8 @@ export default function JurnalUmum() {
 
       await Promise.all(batchPromises);
 
+      logActivity(currentUser, 'Catat Jurnal Umum', `Mencatat transaksi jurnal: ${formData.reference} - ${formData.description}`);
+
       // Send Notification
       await sendNotification({
         title: 'Jurnal Umum Baru',
@@ -137,6 +140,7 @@ export default function JurnalUmum() {
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
     try {
       await deleteDoc(doc(db, 'transactions', id));
+      logActivity(currentUser, 'Hapus Jurnal', `Menghapus transaksi jurnal ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus transaksi: ' + err.message);
     }
@@ -198,6 +202,7 @@ export default function JurnalUmum() {
       Status: t.status || 'pending'
     }));
     exportToCSV(dataToExport, `Jurnal_Umum_${new Date().toISOString().split('T')[0]}`);
+    logActivity(currentUser, 'Export Jurnal', 'Mengekspor data jurnal ke CSV');
   };
 
   const tabs = ["Semua Jurnal", "Kas Masuk (JKM)", "Bank Masuk (JBM)", "Kas Keluar (JKK)", "Bank Keluar (JBK)"];

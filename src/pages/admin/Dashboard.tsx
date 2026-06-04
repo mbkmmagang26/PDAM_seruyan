@@ -42,6 +42,7 @@ import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { logActivity } from '../../lib/logger';
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
@@ -64,6 +65,9 @@ export default function AdminDashboard() {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editCustomerData, setEditCustomerData] = useState<any>(null);
+
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editUserData, setEditUserData] = useState<any>(null);
 
   const [processComplaintData, setProcessComplaintData] = useState<any>(null);
   const [selectedStaffForComplaint, setSelectedStaffForComplaint] = useState('');
@@ -163,6 +167,7 @@ export default function AdminDashboard() {
       }
 
       showNotification(t('admin.user.success_create'), 'success');
+      logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);
       setIsAddingUser(false);
       setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
@@ -179,6 +184,7 @@ export default function AdminDashboard() {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
+      logActivity(user, 'Ubah Status Pengguna', `Mengubah status pengguna ${userId} menjadi ${newStatus}`);
       showNotification(t('admin.user.msg.status_updated'), 'success');
     } catch (err: any) {
       showNotification(t('admin.user.msg.status_error'), 'error');
@@ -201,11 +207,13 @@ export default function AdminDashboard() {
           status: 'Aktif',
           no_meter: noMeter.trim()
         });
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
         showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'tb_pelanggan', customerId);
           await updateDoc(docRef, { status: 'Nonaktif' });
+          logActivity(user, 'Nonaktifkan Pelanggan', `Menonaktifkan pelanggan ${customerId}`);
           showNotification(`Status pelanggan berhasil diubah menjadi Nonaktif`, 'success');
         }
       }
@@ -257,6 +265,7 @@ export default function AdminDashboard() {
         permohonanId: finalPermohonanId || undefined
       });
 
+      logActivity(user, 'Buat Perintah Kerja', `Menambahkan perintah kerja baru: ${taskTitle} untuk pelanggan ${newTaskForm.customerName || '-'}`);
       showNotification('Perintah Kerja berhasil ditambahkan', 'success');
       setIsAddingTask(false);
       setNewTaskForm({
@@ -281,6 +290,30 @@ export default function AdminDashboard() {
     setIsEditingCustomer(true);
   };
 
+  const handleEditUserClick = (u: any) => {
+    setEditUserData(u);
+    setIsEditingUser(true);
+  };
+
+  const submitEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUserData) return;
+    try {
+      const docRef = doc(db, 'user', editUserData.id);
+      await updateDoc(docRef, {
+        name: editUserData.name || '',
+        email: editUserData.email || '',
+        phone: editUserData.phone || '',
+        role: editUserData.role || '',
+      });
+      logActivity(user, 'Edit Pengguna', `Mengupdate data pengguna ${editUserData.name || ''}`);
+      showNotification('Data pengguna berhasil diupdate', 'success');
+      setIsEditingUser(false);
+    } catch (error) {
+      showNotification('Gagal mengupdate pengguna', 'error');
+    }
+  };
+
   const submitEditCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCustomerData) return;
@@ -293,6 +326,7 @@ export default function AdminDashboard() {
         no_meter: editCustomerData.no_meter || '',
         gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
+      logActivity(user, 'Edit Pelanggan', `Mengupdate data pelanggan ${editCustomerData.nama || ''}`);
       showNotification('Data pelanggan berhasil diupdate', 'success');
       setIsEditingCustomer(false);
     } catch (error) {
@@ -304,6 +338,7 @@ export default function AdminDashboard() {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
         await deleteDoc(doc(db, 'tb_pelanggan', id));
+        logActivity(user, 'Hapus Pelanggan', `Menghapus pelanggan ${name}`);
         showNotification('Pelanggan berhasil dihapus', 'success');
       } catch (error) {
         showNotification('Gagal menghapus pelanggan', 'error');
@@ -660,7 +695,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                          <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
+                          <button onClick={() => handleEditUserClick(u)} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
                           {(u.status || 'active') === 'active' ? (
                             <button
                               onClick={() => handleToggleStatus(u.id, u.status || 'active')}
@@ -1368,6 +1403,57 @@ export default function AdminDashboard() {
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setIsAddingUser(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">{t('admin.user.button.cancel')}</button>
                     <button type="submit" className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]">{t('admin.user.button.create')}</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isEditingUser && editUserData && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setIsEditingUser(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+              >
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800">Edit Pengguna</h3>
+                    <p className="text-sm text-slate-500 font-medium">Update data staff / direktur</p>
+                  </div>
+                  <button onClick={() => setIsEditingUser(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
+                </div>
+                <form onSubmit={submitEditUser} className="p-10 space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Nama Lengkap</label>
+                    <input type="text" required value={editUserData.name || ''} onChange={e => setEditUserData({ ...editUserData, name: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Email</label>
+                    <input type="email" required value={editUserData.email || ''} onChange={e => setEditUserData({ ...editUserData, email: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">No HP</label>
+                    <input type="tel" required value={editUserData.phone || ''} onChange={e => setEditUserData({ ...editUserData, phone: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 ml-1">Role</label>
+                    <select required value={editUserData.role || ''} onChange={e => setEditUserData({ ...editUserData, role: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                      <option value="staff">Staff / Petugas</option>
+                      <option value="direktur">Direktur</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button type="button" onClick={() => setIsEditingUser(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all uppercase tracking-wider text-xs">Batal</button>
+                    <button type="submit" className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]">Simpan</button>
                   </div>
                 </form>
               </motion.div>

@@ -15,8 +15,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
+import { useAuth } from '../../authContext';
+import { logActivity } from '../../lib/logger';
 
 export default function DisconnectionFlow() {
+  const { user: staff } = useAuth();
   const { taskId } = useParams();
   const { tasks, updateTaskStatus } = useTasks();
   const { t } = useLanguage();
@@ -36,6 +39,7 @@ export default function DisconnectionFlow() {
         notes: 'Meter physically removed and pipe sealed. Photo attached.',
         image: 'https://images.unsplash.com/photo-1590231804368-6c8a3074780d?w=400&h=300&fit=crop'
       });
+      logActivity(staff, 'Selesai Pemutusan', `Menyelesaikan tugas pemutusan sambungan ID: ${task.id}`);
       setStep(4);
       setIsSubmitting(false);
     }, 1500);
