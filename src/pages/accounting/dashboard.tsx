@@ -24,18 +24,15 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
-import DRDView from './views/DRD';
-import LPPView from './views/LPP';
-import RekonsiliasiView from './views/Rekonsiliasi';
 import NeracaLajurView from './views/NeracaLajur';
 import LogAktivitas from './views/LogAktivitas';
+import ImportDataView from './views/ImportData';
 
 export type ModuleView = 
   | 'dashboard_utama'
-  | 'drd' | 'lpp' | 'rekonsiliasi'
   | 'jurnal_umum' | 'buku_besar' | 'neraca_lajur' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
-  | 'pengaduan' | 'operasional' | 'log_aktivitas';
+  | 'pengaduan' | 'operasional' | 'log_aktivitas' | 'import_data';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -128,9 +125,6 @@ export default function AccountingDashboard() {
 
   const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
-    { id: 'drd', label: 'DRD (Rekening Ditagihkan)', icon: UploadCloud },
-    { id: 'lpp', label: 'LPP (Penerimaan Penagihan)', icon: FileSpreadsheet },
-    { id: 'rekonsiliasi', label: 'Rekonsiliasi (Rekap User)', icon: ShieldCheck },
     { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
     { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
     { id: 'neraca_lajur', label: 'Neraca Lajur (Worksheet)', icon: Table },
@@ -144,14 +138,13 @@ export default function AccountingDashboard() {
     { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
     { id: 'operasional', label: 'Operasional', icon: Grid },
     { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
+    { id: 'import_data', label: 'Import', icon: UploadCloud },
   ];
 
   const renderContent = () => {
     switch (activeModule) {
       case 'dashboard_utama': return <DashboardUtama />;
-      case 'drd': return <DRDView />;
-      case 'lpp': return <LPPView />;
-      case 'rekonsiliasi': return <RekonsiliasiView />;
+      case 'import_data': return <ImportDataView />;
       case 'jurnal_umum': return <JurnalUmum />;
       case 'buku_besar': return <BukuBesar />;
       case 'neraca_lajur': return <NeracaLajurView />;
