@@ -73,14 +73,12 @@ async function seed() {
     }
 
     try {
-      // 3. Buat/Update dokumen di Firestore 'user'
       await setDoc(doc(db, 'user', uid), {
         id: uid,
         name: userConfig.name,
         email: userConfig.email,
         phone: userConfig.phone,
         address: userConfig.address,
-        password: userConfig.password,
         role: userConfig.role,
         status: userConfig.status,
         avatar: userConfig.avatar

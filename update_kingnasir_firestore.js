@@ -30,7 +30,6 @@ async function findAndUpdateUser() {
         name: 'kingnasir',
         phone: '0873743282482',
         address: 'jalan batu berlian',
-        password: '12345678', // updating their password document but NOT their real Auth password
         role: 'direktur',
         status: 'active',
         avatar: 'https://ui-avatars.com/api/?name=kingnasir&background=random'
