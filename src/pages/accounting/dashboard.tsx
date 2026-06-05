@@ -51,6 +51,7 @@ export default function AccountingDashboard() {
 
   useEffect(() => {
     setGlobalSearchTerm('');
+    setIsNotifOpen(false);
     window.dispatchEvent(new CustomEvent('app-search', { detail: { query: '' } }));
   }, [activeModule]);
 
