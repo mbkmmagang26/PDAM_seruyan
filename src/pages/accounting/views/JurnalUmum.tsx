@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
@@ -14,10 +14,19 @@ export default function JurnalUmum() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Semua Jurnal');
   const [showFilter, setShowFilter] = useState(false);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debouncing effect
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -33,7 +42,7 @@ export default function JurnalUmum() {
 
   useEffect(() => {
     // Listen to Transactions
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'));
+    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'), limit(100));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -171,9 +180,9 @@ export default function JurnalUmum() {
   };
 
   const filteredTx = transactions.filter(t => {
-    const matchSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = t.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.reference?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
     let matchDate = true;
     if (filterDates.start) matchDate = matchDate && t.date >= filterDates.start;

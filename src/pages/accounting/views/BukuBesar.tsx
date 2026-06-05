@@ -15,9 +15,18 @@ export default function BukuBesar() {
   
   const [activeTab, setActiveTab] = useState('Daftar Akun (COA)');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
   const [coaForm, setCoaForm] = useState({
     code: '',
     name: '',
@@ -227,7 +236,7 @@ export default function BukuBesar() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {coa.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (c.code || '').includes(searchTerm)).map(c => (
+                  {coa.filter(c => (c.name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || (c.code || '').includes(debouncedSearchTerm)).map(c => (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 font-bold text-slate-800">{c.code}</td>
                       <td className="p-4 text-slate-700 font-medium" style={{ paddingLeft: c.level === 1 ? '1rem' : c.level === 2 ? '2.5rem' : '4rem' }}>
