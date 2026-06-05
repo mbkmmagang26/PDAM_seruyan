@@ -5,11 +5,7 @@ import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
   CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle,
-<<<<<<< HEAD
   UploadCloud, FileSpreadsheet, ShieldCheck, Table, History as HistoryIcon
-=======
-  UploadCloud, FileSpreadsheet, ShieldCheck, Table, History
->>>>>>> 586a503cbcb8b9e34c9d7c16b88dfb523bcf7eb0
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
