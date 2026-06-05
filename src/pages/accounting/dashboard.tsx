@@ -255,7 +255,7 @@ export default function AccountingDashboard() {
               {menuItems.find(m => m.id === activeModule)?.label || 'Dashboard'}
             </h1>
             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100">
-              Periode Aktif: 2028
+              Periode Aktif: {new Date().getFullYear()}
             </span>
           </div>
 
