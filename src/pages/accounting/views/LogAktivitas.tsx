@@ -23,6 +23,17 @@ export default function LogAktivitas() {
     return () => unsub();
   }, []);
 
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
+
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Log Aktivitas...</div>;
 
   const filteredLogs = logs.filter(log => {
