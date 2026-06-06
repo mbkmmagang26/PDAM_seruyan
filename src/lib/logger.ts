@@ -5,7 +5,7 @@ import { User } from '../types';
 export const logActivity = async (user: User | null, action: string, details: string = '') => {
   if (!user) return;
   try {
-    await addDoc(collection(db, 'tb_activity_logs'), {
+    await addDoc(collection(db, 'tb_activity_user_admin'), {
       userId: user.id,
       userName: user.name,
       userRole: user.role,

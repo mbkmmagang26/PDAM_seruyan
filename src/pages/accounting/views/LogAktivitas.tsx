@@ -12,7 +12,7 @@ export default function LogAktivitas() {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'tb_activity_logs'),
+      collection(db, 'tb_activity_user_admin'),
       orderBy('timestamp', 'desc'),
       limit(200)
     );
