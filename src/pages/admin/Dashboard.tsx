@@ -99,6 +99,51 @@ export default function AdminDashboard() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+
+  const pendingRequests = requests.filter(req => req.status === 'pending');
+  const pendingComplaints = complaints.filter(c => !c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons');
+  const unreadNotifs = pendingRequests.length + pendingComplaints.length;
+
+  const searchResults = () => {
+    if (!globalSearchQuery) return [];
+    const lowerQuery = globalSearchQuery.toLowerCase();
+    const res: any[] = [];
+    
+    allUsers.forEach(u => {
+      if (u.name?.toLowerCase().includes(lowerQuery) || u.email?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `user-${u.id}`, type: 'User', title: u.name, sub: u.role, onClick: () => { setActiveView('users'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+    
+    requests.forEach(r => {
+      if (r.name?.toLowerCase().includes(lowerQuery) || r.address?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `req-${r.id}`, type: 'Permohonan', title: r.name, sub: r.address, onClick: () => { setActiveView('requests'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+    
+    tasks.forEach(t => {
+      if (t.customerName?.toLowerCase().includes(lowerQuery) || t.id?.toLowerCase().includes(lowerQuery) || t.reason?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `task-${t.id}`, type: 'Tugas', title: t.customerName || t.id, sub: t.type, onClick: () => { setActiveView('tasks'); setTaskTab('tasks'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    complaints.forEach(c => {
+      if (c.userName?.toLowerCase().includes(lowerQuery) || c.description?.toLowerCase().includes(lowerQuery) || c.userNoMeter?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `comp-${c.id}`, type: 'Pengaduan', title: c.userName || 'Tanpa Nama', sub: c.category || 'Keluhan Pelanggan', onClick: () => { setActiveView('tasks'); setTaskTab('complaints'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    customers.forEach(cust => {
+      if (cust.nama?.toLowerCase().includes(lowerQuery) || cust.noMeter?.toLowerCase().includes(lowerQuery) || cust.alamat?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `cust-${cust.id}`, type: 'Pelanggan', title: cust.nama, sub: cust.noMeter, onClick: () => { setActiveView('dashboard'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    return res;
+  };
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
@@ -1173,23 +1218,110 @@ export default function AdminDashboard() {
 
       <main className="flex-1 ml-72 min-h-screen relative">
         <header className="h-20 bg-white/80 backdrop-blur-2xl border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 relative">
             <div className="relative group">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00478d] transition-colors" />
               <input
                 type="text"
+                value={globalSearchQuery}
+                onChange={e => {
+                  setGlobalSearchQuery(e.target.value);
+                  setIsGlobalSearchOpen(true);
+                }}
+                onFocus={() => setIsGlobalSearchOpen(true)}
                 placeholder={t('common.search')}
                 className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm w-80 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
+            
+            <AnimatePresence>
+              {isGlobalSearchOpen && globalSearchQuery && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full left-0 mt-3 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto"
+                >
+                  <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Hasil Pencarian</h3>
+                    <button onClick={() => setIsGlobalSearchOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
+                  </div>
+                  {searchResults().length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400">Tidak ada hasil ditemukan</div>
+                  ) : (
+                    searchResults().map(res => (
+                      <button
+                        key={res.id}
+                        onClick={res.onClick}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-sm font-bold text-slate-800">{res.title}</p>
+                          <span className="text-[9px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">{res.type}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500">{res.sub}</p>
+                      </button>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="flex gap-2">
-              <button className="p-3 bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl relative transition-all border border-slate-50">
+            <div className="flex gap-2 relative">
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)} 
+                className={`p-3 rounded-2xl relative transition-all border border-slate-50 ${isNotifOpen ? 'bg-[#00478d] text-white' : 'bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5'}`}
+              >
                 <Bell size={20} />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                )}
               </button>
+
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto"
+                  >
+                    <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Notifikasi</h3>
+                      <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">{unreadNotifs} Baru</span>
+                    </div>
+                    {unreadNotifs === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">Tidak ada notifikasi baru</div>
+                    ) : (
+                      <>
+                        {pendingComplaints.map(c => (
+                          <button
+                            key={`comp-${c.id}`}
+                            onClick={() => { setActiveView('tasks'); setIsNotifOpen(false); }}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800">Pengaduan Baru</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{c.userName || 'Tanpa Nama'} - {c.category}</p>
+                          </button>
+                        ))}
+                        {pendingRequests.map(r => (
+                          <button
+                            key={`req-${r.id}`}
+                            onClick={() => { setActiveView('requests'); setIsNotifOpen(false); }}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800">Permohonan Baru</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{r.name}</p>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <button className="p-3 bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl transition-all border border-slate-50">
                 <HelpCircle size={20} />
               </button>

@@ -27,7 +27,7 @@ import { User, UserRole } from './types';
 interface AuthContextType {
   user: User | null;
   allUsers: User[];
-  login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; message?: string }>;
+  login: (emailOrPhone: string, password?: string, expectedRole?: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, phone: string, address: string, password: string, role: UserRole, gol?: string) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
   verifyCode: (emailOrPhone: string, code: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isAuthenticatingRef = React.useRef(false);
 
   // Helper to fetch user details from either user_admin or tb_pelanggan
   const fetchUserById = async (uid: string): Promise<User | null> => {
@@ -99,6 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sync current user profile from Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (isAuthenticatingRef.current) return;
+      // Drop stale queued events if auth.currentUser has changed since this event was queued
+      if (firebaseUser && firebaseUser.uid !== auth.currentUser?.uid) return;
+
       if (firebaseUser) {
         const userData = await fetchUserById(firebaseUser.uid);
         if (userData) {
@@ -137,8 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const login = async (emailOrPhone: string, password?: string) => {
+  const login = async (emailOrPhone: string, password?: string, expectedRole?: string) => {
     try {
+      isAuthenticatingRef.current = true;
       if (!password) {
         return { success: false, message: 'Password is required' };
       }
@@ -150,6 +156,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!userData) {
         await signOut(auth);
         return { success: false, message: 'Account details not found in database' };
+      }
+
+      // Validasi apakah role user sesuai dengan portal yang dipilih
+      if (expectedRole && userData.role !== expectedRole) {
+        await signOut(auth);
+        return { success: false, message: `Invalid credentials for ${expectedRole} portal. Your account is registered as ${userData.role}.` };
       }
 
       if (userData.status === 'pending') {
@@ -171,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      setUser(userData);
       return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -178,6 +191,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.code === 'auth/user-not-found') message = 'Account not found';
       if (error.code === 'auth/wrong-password') message = 'Invalid password';
       return { success: false, message };
+    } finally {
+      isAuthenticatingRef.current = false;
     }
   };
 

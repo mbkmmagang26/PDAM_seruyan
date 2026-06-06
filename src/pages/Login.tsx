@@ -26,7 +26,7 @@ type Step = 'role' | 'login' | 'forgot-password' | 'verify-code' | 'reset-passwo
 type Role = 'admin' | 'staff' | 'direktur';
 
 export default function Login() {
-  const { user, login, verifyCode, sendPasswordReset, confirmNewPassword } = useAuth();
+  const { user, login, verifyCode, sendPasswordReset, confirmNewPassword, logout } = useAuth();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState<Role>('admin');
@@ -40,6 +40,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Clear any stale session when landing on login page
+  React.useEffect(() => {
+    logout();
+  }, []);
+
   React.useEffect(() => {
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
@@ -52,8 +57,9 @@ export default function Login() {
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
-  if (user && step !== 'role') {
+  if (loginSuccess && user && step !== 'role') {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'staff') return <Navigate to="/staff" replace />;
     if (user.role === 'direktur') return <Navigate to="/accounting" replace />;
@@ -67,8 +73,10 @@ export default function Login() {
 
     try {
       if (step === 'login') {
-        const result = await login(emailOrPhone, password);
-        if (!result.success) {
+        const result = await login(emailOrPhone, password, selectedRole);
+        if (result.success) {
+          setLoginSuccess(true);
+        } else {
           if (result.message === 'PENDING_VERIFICATION') {
             setStep('pending-info');
           } else if (result.message === 'Account blocked') {
