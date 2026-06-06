@@ -100,12 +100,12 @@ export default function StaffDashboard() {
         }
 
         // Update status perintah kerja jadi selesai
-        const taskRef = doc(db, 'tasks', task.id);
+        const taskRef = doc(db, 'aksi_pengaduan', task.id);
         await updateDoc(taskRef, updates);
         
         // Update status pengaduan jadi selesai (jika tugas ini berasal dari pengaduan)
         if (task.pengaduanId) {
-          const pengaduanRef = doc(db, 'pengaduan', task.pengaduanId);
+          const pengaduanRef = doc(db, 'pengaduan_pelanggan', task.pengaduanId);
           await updateDoc(pengaduanRef, {
             status: 'Selesai'
           });

@@ -84,7 +84,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Tasks
-    const unsubTasks = onSnapshot(collection(db, 'tasks'), (snapshot) => {
+    const unsubTasks = onSnapshot(collection(db, 'aksi_pengaduan'), (snapshot) => {
       let pending = 0;
       snapshot.forEach(doc => {
         if (doc.data().status !== 'completed') pending++;
@@ -93,7 +93,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Pengaduan
-    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
+    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
       let pending = 0;
       snapshot.forEach(doc => {
         const status = doc.data().status;
