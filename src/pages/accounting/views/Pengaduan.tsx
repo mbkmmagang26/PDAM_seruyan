@@ -10,7 +10,7 @@ export default function Pengaduan() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'pengaduan'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const unsub = onSnapshot(query(collection(db, 'pengaduan_pelanggan'), orderBy('createdAt', 'desc')), (snapshot) => {
       setPengaduan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
@@ -20,7 +20,7 @@ export default function Pengaduan() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini?')) return;
     try {
-      await deleteDoc(doc(db, 'pengaduan', id));
+      await deleteDoc(doc(db, 'pengaduan_pelanggan', id));
     } catch (err: any) {
       alert('Gagal menghapus pengaduan: ' + err.message);
     }

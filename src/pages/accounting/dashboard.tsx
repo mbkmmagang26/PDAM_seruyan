@@ -4,7 +4,8 @@ import { useAuth } from '../../authContext';
 import {
   LayoutDashboard, LayoutGrid, LayoutPanelLeft, Server, FileText,
   Book, Wallet, Users, HardDrive, Package, PieChart, BarChart3,
-  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle
+  CheckSquare, MessageCircle, Grid, LogOut, Menu, X, Search, Bell, Info, CheckCircle, AlertTriangle, AlertCircle,
+  UploadCloud, FileSpreadsheet, ShieldCheck, Table, History as HistoryIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
@@ -23,12 +24,15 @@ import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
 import Pengaduan from './views/Pengaduan';
 import Operasional from './views/Operasional';
+import NeracaLajurView from './views/NeracaLajur';
+import LogAktivitas from './views/LogAktivitas';
+import ImportDataView from './views/ImportData';
 
 export type ModuleView = 
   | 'dashboard_utama'
-  | 'jurnal_umum' | 'buku_besar' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
+  | 'jurnal_umum' | 'buku_besar' | 'neraca_lajur' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
-  | 'pengaduan' | 'operasional';
+  | 'pengaduan' | 'operasional' | 'log_aktivitas' | 'import_data';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -38,6 +42,18 @@ export default function AccountingDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+
+  const handleSearchChange = (val: string) => {
+    setGlobalSearchTerm(val);
+    window.dispatchEvent(new CustomEvent('app-search', { detail: { query: val } }));
+  };
+
+  useEffect(() => {
+    setGlobalSearchTerm('');
+    setIsNotifOpen(false);
+    window.dispatchEvent(new CustomEvent('app-search', { detail: { query: '' } }));
+  }, [activeModule]);
 
   // Guard: Redirect jika bukan direktur
   useEffect(() => {
@@ -112,6 +128,7 @@ export default function AccountingDashboard() {
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
     { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
     { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
+    { id: 'neraca_lajur', label: 'Neraca Lajur (Worksheet)', icon: Table },
     { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
     { id: 'piutang_ar', label: 'Piutang (AR)', icon: Users },
     { id: 'aset_tetap', label: 'Aset Tetap', icon: HardDrive },
@@ -121,13 +138,17 @@ export default function AccountingDashboard() {
     { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
     { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
     { id: 'operasional', label: 'Operasional', icon: Grid },
+    { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
+    { id: 'import_data', label: 'Import', icon: UploadCloud },
   ];
 
   const renderContent = () => {
     switch (activeModule) {
       case 'dashboard_utama': return <DashboardUtama />;
+      case 'import_data': return <ImportDataView />;
       case 'jurnal_umum': return <JurnalUmum />;
       case 'buku_besar': return <BukuBesar />;
+      case 'neraca_lajur': return <NeracaLajurView />;
       case 'hutang_ap': return <HutangAP />;
       case 'piutang_ar': return <PiutangAR />;
       case 'aset_tetap': return <AsetTetap />;
@@ -137,6 +158,7 @@ export default function AccountingDashboard() {
       case 'verifikasi_data': return <VerifikasiData />;
       case 'pengaduan': return <Pengaduan />;
       case 'operasional': return <Operasional />;
+      case 'log_aktivitas': return <LogAktivitas />;
       default: return <DashboardUtama />;
     }
   };
@@ -234,7 +256,7 @@ export default function AccountingDashboard() {
               {menuItems.find(m => m.id === activeModule)?.label || 'Dashboard'}
             </h1>
             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100">
-              Periode Aktif: 2028
+              Periode Aktif: {new Date().getFullYear()}
             </span>
           </div>
 
@@ -244,6 +266,8 @@ export default function AccountingDashboard() {
               <input 
                 type="text" 
                 placeholder="Cari data..." 
+                value={globalSearchTerm}
+                onChange={e => handleSearchChange(e.target.value)}
                 className="bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 w-64 transition-all" 
               />
             </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
 import { sendNotification } from '../../../lib/notifications';
 import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function JurnalUmum() {
   const { user: currentUser } = useAuth();
@@ -13,10 +14,30 @@ export default function JurnalUmum() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Semua Jurnal');
   const [showFilter, setShowFilter] = useState(false);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debouncing effect
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -32,7 +53,7 @@ export default function JurnalUmum() {
 
   useEffect(() => {
     // Listen to Transactions
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'));
+    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'), limit(100));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -98,6 +119,8 @@ export default function JurnalUmum() {
 
       await Promise.all(batchPromises);
 
+      logActivity(currentUser, 'Catat Jurnal Umum', `Mencatat transaksi jurnal: ${formData.reference} - ${formData.description}`);
+
       // Send Notification
       await sendNotification({
         title: 'Jurnal Umum Baru',
@@ -129,9 +152,15 @@ export default function JurnalUmum() {
   };
 
   const handleDelete = async (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (tx?.isLocked) {
+      alert('Transaksi ini telah dikunci (EOD) dan tidak dapat dihapus!');
+      return;
+    }
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
     try {
       await deleteDoc(doc(db, 'transactions', id));
+      logActivity(currentUser, 'Hapus Jurnal', `Menghapus transaksi jurnal ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus transaksi: ' + err.message);
     }
@@ -162,9 +191,9 @@ export default function JurnalUmum() {
   };
 
   const filteredTx = transactions.filter(t => {
-    const matchSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = t.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.reference?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
     let matchDate = true;
     if (filterDates.start) matchDate = matchDate && t.date >= filterDates.start;
@@ -193,6 +222,7 @@ export default function JurnalUmum() {
       Status: t.status || 'pending'
     }));
     exportToCSV(dataToExport, `Jurnal_Umum_${new Date().toISOString().split('T')[0]}`);
+    logActivity(currentUser, 'Export Jurnal', 'Mengekspor data jurnal ke CSV');
   };
 
   const tabs = ["Semua Jurnal", "Kas Masuk (JKM)", "Bank Masuk (JBM)", "Kas Keluar (JKK)", "Bank Keluar (JBK)"];
@@ -303,14 +333,20 @@ export default function JurnalUmum() {
                          {t.status || 'pending'}
                        </span>
                      </td>
-                     <td className="p-4 text-right">
-                       <button
-                         onClick={() => handleDelete(t.id)}
-                         className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
-                       >
-                         <Trash2 size={18} />
-                       </button>
-                     </td>
+                      <td className="p-4 text-right">
+                        {t.isLocked ? (
+                          <div className="text-slate-400 p-1.5 flex items-center justify-end" title="Terkunci (EOD Rekonsiliasi)">
+                            <Lock size={16} />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </td>
                    </tr>
                  ))}
               </tbody>

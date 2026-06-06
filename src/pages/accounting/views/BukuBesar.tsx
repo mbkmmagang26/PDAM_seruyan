@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Book, Loader2, Filter, Search, Plus, Download, X, Layers, Calendar, Trash2, Pencil } from 'lucide-react';
+import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function BukuBesar() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,9 +15,29 @@ export default function BukuBesar() {
   
   const [activeTab, setActiveTab] = useState('Daftar Akun (COA)');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
   const [coaForm, setCoaForm] = useState({
     code: '',
     name: '',
@@ -59,12 +82,14 @@ export default function BukuBesar() {
           level: Number(coaForm.level),
           updatedAt: serverTimestamp()
         });
+        logActivity(user, 'Edit Akun COA', `Mengedit akun COA: ${coaForm.code} - ${coaForm.name}`);
       } else {
         await addDoc(collection(db, 'coa'), {
           ...coaForm,
           level: Number(coaForm.level),
           createdAt: serverTimestamp()
         });
+        logActivity(user, 'Tambah Akun COA', `Menambahkan akun COA baru: ${coaForm.code} - ${coaForm.name}`);
       }
       setShowAddForm(false);
       setEditingCoa(null);
@@ -78,6 +103,7 @@ export default function BukuBesar() {
     if (!confirm('Apakah Anda yakin ingin menghapus akun ini?')) return;
     try {
       await deleteDoc(doc(db, 'coa', id));
+      logActivity(user, 'Hapus Akun COA', `Menghapus akun COA ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus akun: ' + err.message);
     }
@@ -125,6 +151,7 @@ export default function BukuBesar() {
       Level: c.level
     }));
     exportToCSV(data, 'Daftar_COA');
+    logActivity(user, 'Export COA', 'Mengekspor daftar akun COA ke CSV');
   };
 
   const handleExportLedger = () => {
@@ -137,6 +164,7 @@ export default function BukuBesar() {
       Saldo: t.balance
     }));
     exportToCSV(data, `Buku_Besar_${selectedCoa}`);
+    logActivity(user, 'Export Buku Besar', `Mengekspor laporan buku besar untuk akun: ${selectedCoa}`);
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Buku Besar...</div>;
@@ -219,7 +247,7 @@ export default function BukuBesar() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {coa.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (c.code || '').includes(searchTerm)).map(c => (
+                  {coa.filter(c => (c.name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || (c.code || '').includes(debouncedSearchTerm)).map(c => (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 font-bold text-slate-800">{c.code}</td>
                       <td className="p-4 text-slate-700 font-medium" style={{ paddingLeft: c.level === 1 ? '1rem' : c.level === 2 ? '2.5rem' : '4rem' }}>

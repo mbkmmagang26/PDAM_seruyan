@@ -27,7 +27,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Listener tanpa orderBy dulu agar tidak nyangkut di masalah Index
-    const unsubscribe = onSnapshot(collection(db, 'tasks'), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'aksi_pengaduan'), (snapshot) => {
       const tasksData = snapshot.docs.map(doc => {
         const data = doc.data();
         
@@ -74,7 +74,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         assignedTo: cleanTaskData.assignedTo || null,
         ...cleanTaskData
       };
-      await setDoc(doc(db, 'tasks', newId), newTask);
+      await setDoc(doc(db, 'aksi_pengaduan', newId), newTask);
     } catch (error) {
       console.error("Gagal buat tugas:", error);
       throw error;
@@ -83,7 +83,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const assignTask = async (taskId: string, staffId: string) => {
     try {
-      await updateDoc(doc(db, 'tasks', taskId), {
+      await updateDoc(doc(db, 'aksi_pengaduan', taskId), {
         status: 'assigned',
         assignedTo: staffId
       });
@@ -95,7 +95,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const updateTaskStatus = async (taskId: string, status: string, updates?: any) => {
     try {
       const updateData = { status, ...(updates || {}) };
-      await updateDoc(doc(db, 'tasks', taskId), updateData);
+      await updateDoc(doc(db, 'aksi_pengaduan', taskId), updateData);
     } catch (error) {
       console.error("Gagal update status:", error);
     }

@@ -25,6 +25,7 @@ import { User, MeterReading as MeterReadingType } from '../../types';
 import { processMeterReadingAndBilling } from '../../lib/billingUtils';
 import { collection, query, where, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { logActivity } from '../../lib/logger';
 
 export default function MeterReading() {
   const { allUsers, user: staff, logout } = useAuth();
@@ -74,7 +75,7 @@ export default function MeterReading() {
       setLoadingAwal(true);
       try {
         const meterQ = query(
-          collection(db, 'tb_meterpelanggan'),
+          collection(db, 'tb_meter_pelanggan'),
           where('customerId', '==', activeCustomer.id)
         );
         const snap = await getDocs(meterQ);
@@ -120,6 +121,9 @@ export default function MeterReading() {
           notes: `${t('staff.tabs.reading')} ${readingValue} m3. Total Tagihan Dibuat.`,
           image: 'https://images.unsplash.com/photo-1590231804368-6c8a3074780d?w=400&h=300&fit=crop'
         });
+        logActivity(staff, 'Selesai Pencatatan', `Menyelesaikan tugas pencatatan meter ID: ${assignedTask.id}`);
+      } else {
+        logActivity(staff, 'Pencatatan Manual', `Melakukan pencatatan meter manual untuk pelanggan ID: ${activeCustomer.id}`);
       }
       setIsSubmitting(false);
       setIsSuccess(true);

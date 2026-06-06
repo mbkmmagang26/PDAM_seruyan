@@ -24,6 +24,7 @@ import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { logActivity } from '../../lib/logger';
 
 type Tab = 'repair' | 'reading' | 'disconnection' | 'new_connection';
 
@@ -68,6 +69,7 @@ export default function StaffDashboard() {
   const handleStartTask = async (task: any) => {
     try {
       await updateTaskStatus(task.id, 'in-progress');
+      logActivity(user, 'Mulai Pekerjaan', `Memulai pekerjaan tugas ${task.type} - ID: ${task.id}`);
       // alert('Pekerjaan dimulai! Silakan kerjakan tugas sesuai SOP.');
     } catch (error) {
       console.error(error);
@@ -98,12 +100,12 @@ export default function StaffDashboard() {
         }
 
         // Update status perintah kerja jadi selesai
-        const taskRef = doc(db, 'tasks', task.id);
+        const taskRef = doc(db, 'aksi_pengaduan', task.id);
         await updateDoc(taskRef, updates);
         
         // Update status pengaduan jadi selesai (jika tugas ini berasal dari pengaduan)
         if (task.pengaduanId) {
-          const pengaduanRef = doc(db, 'pengaduan', task.pengaduanId);
+          const pengaduanRef = doc(db, 'pengaduan_pelanggan', task.pengaduanId);
           await updateDoc(pengaduanRef, {
             status: 'Selesai'
           });
@@ -126,6 +128,7 @@ export default function StaffDashboard() {
           }
         }
         
+        logActivity(user, 'Selesai Pekerjaan', `Menyelesaikan tugas ${task.type} - ID: ${task.id}`);
         alert('Kerja bagus! Tugas berhasil diselesaikan.');
       } catch (error) {
         console.error(error);

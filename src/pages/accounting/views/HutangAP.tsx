@@ -4,6 +4,7 @@ import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Wallet, Loader2, Plus, X, Search, Filter, Download, UserPlus, History, LayoutDashboard, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function HutangAP() {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ export default function HutangAP() {
         authorId: user?.id || 'system',
         authorName: user?.name || 'Unknown'
       });
+      logActivity(user, 'Tambah Vendor', `Menambahkan vendor baru: ${formData.company}`);
       setShowAddForm(false);
       setFormData({ name: '', company: '', phone: '', address: '', balance: 0 });
     } catch (err: any) {
@@ -53,6 +55,7 @@ export default function HutangAP() {
     if (!confirm('Apakah Anda yakin ingin menghapus vendor ini?')) return;
     try {
       await deleteDoc(doc(db, 'vendors', id));
+      logActivity(user, 'Hapus Vendor', `Menghapus vendor ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus vendor: ' + err.message);
     }
@@ -78,6 +81,7 @@ export default function HutangAP() {
       Status: (v.balance || 0) > 0 ? 'Hutang Aktif' : 'Lunas'
     }));
     exportToCSV(data, 'Laporan_Hutang_Vendor');
+    logActivity(user, 'Export Hutang Vendor', 'Mengekspor laporan hutang vendor ke CSV');
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Hutang...</div>;

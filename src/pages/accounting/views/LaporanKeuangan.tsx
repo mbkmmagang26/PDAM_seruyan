@@ -2,11 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { BarChart3, Loader2, Download, Printer, FileText, ChevronRight, Calculator, PieChart, Share2, Eye, Calendar, Settings, Layout, Layers, RefreshCw, Search, X } from 'lucide-react';
+import { BarChart3, Loader2, Download, Printer, FileText, ChevronRight, Calculator, PieChart, Share2, Eye, Calendar, Settings, Layout, Layers, RefreshCw, Search, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import domtoimage from 'dom-to-image';
 
-type ReportType = 'laba_rugi' | 'neraca' | 'arus_kas' | 'ekuitas';
+type ReportType = 'laba_rugi' | 'ekuitas' | 'neraca' | 'arus_kas' | 'rincian';
 
 export default function LaporanKeuangan() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -273,9 +273,10 @@ export default function LaporanKeuangan() {
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-4 space-y-2">
             {[
               { id: 'laba_rugi', title: 'Laporan Laba Rugi', subtitle: 'MONTHLY/ANNUAL', desc: 'Ringkasan pendapatan dan beban operasional', icon: <Calculator size={20} /> },
+              { id: 'ekuitas', title: 'Laporan Perubahan Ekuitas', subtitle: 'ANNUAL', desc: 'Ringkasan perubahan modal dan laba ditahan', icon: <Layout size={20} /> },
               { id: 'neraca', title: 'Neraca (Balance Sheet)', subtitle: 'POINT IN TIME', desc: 'Posisi keuangan: Aktiva, Kewajiban, dan Ekuitas', icon: <Layers size={20} /> },
               { id: 'arus_kas', title: 'Laporan Arus Kas', subtitle: 'MONTHLY', desc: 'Aliran dana masuk dan keluar dari operasional, investasi, pendanaan', icon: <RefreshCw size={20} /> },
-              { id: 'ekuitas', title: 'Laporan Perubahan Ekuitas', subtitle: 'ANNUAL', desc: 'Ringkasan perubahan modal dan laba ditahan', icon: <Layout size={20} /> }
+              { id: 'rincian', title: 'Rincian Saldo Akun', subtitle: 'DETAIL SCHEDULE', desc: 'Rincian saldo buku pembantu per akun level 3', icon: <FileText size={20} /> }
             ].filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())).map(report => (
               <button
                 key={report.id}
@@ -355,10 +356,23 @@ export default function LaporanKeuangan() {
             <div className={`print-area w-full max-w-4xl bg-white shadow-2xl rounded-sm border border-slate-200 p-16 font-serif ${
               theme === 'blue' ? 'border-t-8 border-blue-900' : theme === 'dark' ? 'border-t-8 border-slate-900' : 'border-t-8 border-blue-600'
             }`}>
-               <div className="text-center mb-16">
+               <div className="text-center mb-10">
                   <h1 className="text-2xl font-bold text-slate-900 tracking-widest uppercase">PDAM SERUYAN</h1>
                   <p className="text-sm text-slate-500 italic mt-2">Periode {months[selectedMonth]} {selectedYear}</p>
-                  <div className="w-24 h-1 bg-slate-900 mx-auto mt-6"></div>
+                  <div className="w-24 h-1 bg-slate-900 mx-auto mt-6 mb-6"></div>
+                  
+                  {/* Balance Integrity Check */}
+                  <div className="no-print flex justify-center">
+                    {Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)) < 0.1 ? (
+                      <span className="px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle size={14} /> STATUS INTEGRITAS: NERACA VALID & SEIMBANG
+                      </span>
+                    ) : (
+                      <span className="px-4 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                        <AlertTriangle size={14} /> PERINGATAN INTEGRITAS: SELISIH BALANCE ({formatCurrency(Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)))})
+                      </span>
+                    )}
+                  </div>
                </div>
 
                {activeReport === 'laba_rugi' && (
@@ -519,6 +533,36 @@ export default function LaporanKeuangan() {
                    </div>
                  </div>
                )}
+
+               {activeReport === 'rincian' && (
+                  <div className="space-y-12">
+                    <section>
+                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Rincian Saldo Akun (Buku Pembantu)</h3>
+                      <div className="space-y-3 px-4">
+                        <div className="flex justify-between font-bold text-slate-400 border-b border-slate-200 pb-2 text-xs uppercase tracking-wider">
+                          <span>Akun (COA)</span>
+                          <span>Saldo Akhir</span>
+                        </div>
+                        {coa.filter(c => c.level === 3).map(c => {
+                          const val = reportData.aset.find(a => a.code === c.code)?.amount ||
+                                      reportData.kewajiban.find(k => k.code === c.code)?.amount ||
+                                      reportData.ekuitas.find(e => e.code === c.code)?.amount ||
+                                      reportData.pendapatan.find(p => p.code === c.code)?.amount ||
+                                      reportData.beban.find(b => b.code === c.code)?.amount || 0;
+                          return (
+                            <div key={c.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                              <div className="text-sm">
+                                <span className="font-mono text-slate-400 mr-2">{c.code}</span>
+                                <span className="text-slate-700 font-medium">{c.name}</span>
+                              </div>
+                              <span className="text-sm font-bold text-slate-800">{formatCurrency(val)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </div>
+                )}
 
                {activeReport === 'ekuitas' && (
                  <div className="space-y-12">

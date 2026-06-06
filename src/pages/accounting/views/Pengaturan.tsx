@@ -21,7 +21,15 @@ export default function Pengaturan() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await updateDoc(doc(db, 'user', user!.id), profileData);
+      if (user?.role === 'pelanggan' || user?.role === 'customer') {
+        await updateDoc(doc(db, 'tb_pelanggan', user!.id), {
+          nama: profileData.name,
+          noHp: profileData.phone,
+          alamat: profileData.address
+        });
+      } else {
+        await updateDoc(doc(db, 'user_admin', user!.id), profileData);
+      }
       window.dispatchEvent(new CustomEvent('app-toast', {
         detail: { title: 'Profil Diperbarui', message: 'Perubahan data profil Anda berhasil disimpan.', type: 'success' }
       }));
@@ -39,7 +47,13 @@ export default function Pengaturan() {
     }
     if (!confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) return;
     try {
-      await deleteDoc(doc(db, 'user', id));
+      const { getDoc } = await import('firebase/firestore');
+      const adminDoc = await getDoc(doc(db, 'user_admin', id));
+      if (adminDoc.exists()) {
+        await deleteDoc(doc(db, 'user_admin', id));
+      } else {
+        await deleteDoc(doc(db, 'tb_pelanggan', id));
+      }
     } catch (err: any) {
       alert('Gagal menghapus pengguna: ' + err.message);
     }

@@ -16,7 +16,7 @@ const db = getFirestore(app);
 
 async function findAndUpdateUser() {
   try {
-    const q = query(collection(db, 'user'), where('email', '==', 'fanntek71@gmail.com'));
+    const q = query(collection(db, 'user_admin'), where('email', '==', 'fanntek71@gmail.com'));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
@@ -30,7 +30,6 @@ async function findAndUpdateUser() {
         name: 'kingnasir',
         phone: '0873743282482',
         address: 'jalan batu berlian',
-        password: '12345678', // updating their password document but NOT their real Auth password
         role: 'direktur',
         status: 'active',
         avatar: 'https://ui-avatars.com/api/?name=kingnasir&background=random'

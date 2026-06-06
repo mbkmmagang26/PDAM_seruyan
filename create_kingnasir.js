@@ -34,13 +34,12 @@ async function createOrUpdateAccount() {
   }
 
   try {
-    await setDoc(doc(db, 'user', user.uid), {
+    await setDoc(doc(db, 'user_admin', user.uid), {
       id: user.uid,
       name: 'kingnasir',
       email: 'fanntek71@gmail.com',
       phone: '0873743282482',
       address: 'jalan batu berlian',
-      password: '12345678',
       role: 'direktur',
       status: 'active',
       avatar: 'https://ui-avatars.com/api/?name=kingnasir&background=random'

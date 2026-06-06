@@ -10,7 +10,7 @@ export default function Operasional() {
   const [activeStatus, setActiveStatus] = useState('all');
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const unsub = onSnapshot(query(collection(db, 'aksi_pengaduan'), orderBy('createdAt', 'desc')), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });

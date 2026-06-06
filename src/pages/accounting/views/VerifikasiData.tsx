@@ -26,6 +26,17 @@ export default function VerifikasiData() {
     return () => unsub();
   }, []);
 
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
+
   const handleVerify = async (id: string) => {
     if (!confirm('Verifikasi transaksi ini?')) return;
     try {

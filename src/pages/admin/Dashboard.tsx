@@ -42,6 +42,7 @@ import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { logActivity } from '../../lib/logger';
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -140,29 +141,18 @@ export default function AdminDashboard() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await register(newUserReg.name, newUserReg.email, newUserReg.phone, newUserReg.address, newUserReg.password, newUserReg.role);
-
-      // If adding a customer, also create their record in tb_pelanggan
-      if (newUserReg.role === 'customer') {
-        const { setDoc } = await import('firebase/firestore');
-        // We use the ID returned or we can find it. But wait, `register` doesn't return the uid directly. 
-        // Let's use addDoc for tb_pelanggan since register creates user collection.
-        // Actually, we can fetch the user by email from tb_pelanggan or just addDoc.
-        const { collection, addDoc } = await import('firebase/firestore');
-        await addDoc(collection(db, 'tb_pelanggan'), {
-          nama: newUserReg.name,
-          alamat: newUserReg.address,
-          noHp: newUserReg.phone,
-          status: 'Aktif',
-          role: 'pelanggan',
-          no_meter: '',
-          id_pelanggan: 'PELANGGAN BARU',
-          gol: newUserReg.gol || 'Rumah Tangga 2 (R2)',
-          createdAt: new Date().toISOString()
-        });
-      }
+      const result = await register(
+        newUserReg.name,
+        newUserReg.email,
+        newUserReg.phone,
+        newUserReg.address,
+        newUserReg.password,
+        newUserReg.role,
+        newUserReg.gol
+      );
 
       showNotification(t('admin.user.success_create'), 'success');
+      logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);
       setIsAddingUser(false);
       setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
@@ -179,6 +169,7 @@ export default function AdminDashboard() {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
+      logActivity(user, 'Ubah Status Pengguna', `Mengubah status pengguna ${userId} menjadi ${newStatus}`);
       showNotification(t('admin.user.msg.status_updated'), 'success');
     } catch (err: any) {
       showNotification(t('admin.user.msg.status_error'), 'error');
@@ -201,11 +192,13 @@ export default function AdminDashboard() {
           status: 'Aktif',
           no_meter: noMeter.trim()
         });
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
         showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'tb_pelanggan', customerId);
           await updateDoc(docRef, { status: 'Nonaktif' });
+          logActivity(user, 'Nonaktifkan Pelanggan', `Menonaktifkan pelanggan ${customerId}`);
           showNotification(`Status pelanggan berhasil diubah menjadi Nonaktif`, 'success');
         }
       }
@@ -257,6 +250,7 @@ export default function AdminDashboard() {
         permohonanId: finalPermohonanId || undefined
       });
 
+      logActivity(user, 'Buat Perintah Kerja', `Menambahkan perintah kerja baru: ${taskTitle} untuk pelanggan ${newTaskForm.customerName || '-'}`);
       showNotification('Perintah Kerja berhasil ditambahkan', 'success');
       setIsAddingTask(false);
       setNewTaskForm({
@@ -276,6 +270,7 @@ export default function AdminDashboard() {
     }
   };
 
+
   const handleEditClick = (customer: any) => {
     setEditCustomerData(customer);
     setIsEditingCustomer(true);
@@ -293,6 +288,7 @@ export default function AdminDashboard() {
         no_meter: editCustomerData.no_meter || '',
         gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
+      logActivity(user, 'Edit Pelanggan', `Mengupdate data pelanggan ${editCustomerData.nama || ''}`);
       showNotification('Data pelanggan berhasil diupdate', 'success');
       setIsEditingCustomer(false);
     } catch (error) {
@@ -304,6 +300,7 @@ export default function AdminDashboard() {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
         await deleteDoc(doc(db, 'tb_pelanggan', id));
+        logActivity(user, 'Hapus Pelanggan', `Menghapus pelanggan ${name}`);
         showNotification('Pelanggan berhasil dihapus', 'success');
       } catch (error) {
         showNotification('Gagal menghapus pelanggan', 'error');
@@ -344,7 +341,7 @@ export default function AdminDashboard() {
         pengaduanId: processComplaintData.id
       });
 
-      await updateDoc(doc(db, 'pengaduan', processComplaintData.id), { status: 'Diproses' });
+      await updateDoc(doc(db, 'pengaduan_pelanggan', processComplaintData.id), { status: 'Diproses' });
       showNotification('Pengaduan berhasil ditugaskan ke staff', 'success');
       setProcessComplaintData(null);
       setSelectedStaffForComplaint('');
@@ -660,7 +657,6 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                          <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
                           {(u.status || 'active') === 'active' ? (
                             <button
                               onClick={() => handleToggleStatus(u.id, u.status || 'active')}
@@ -946,7 +942,7 @@ export default function AdminDashboard() {
                             <button
                               onClick={async () => {
                                 if (window.confirm('Hapus pengaduan ini?')) {
-                                  await deleteDoc(doc(db, 'pengaduan', complaint.id));
+                                  await deleteDoc(doc(db, 'pengaduan_pelanggan', complaint.id));
                                   showNotification('Pengaduan dihapus', 'success');
                                 }
                               }}
@@ -1374,6 +1370,7 @@ export default function AdminDashboard() {
             </div>
           )}
         </AnimatePresence>
+
 
         <AnimatePresence>
           {isEditingCustomer && editCustomerData && (
