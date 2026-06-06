@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, 
@@ -31,8 +31,14 @@ export default function DashboardUtama() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen to Transactions
-    const unsubTx = onSnapshot(query(collection(db, 'transactions')), (snapshot) => {
+    // Listen to Transactions of current budget year (2026)
+    const currentYearStart = '2026-01-01';
+    const currentYearEnd = '2026-12-31';
+    const unsubTx = onSnapshot(query(
+      collection(db, 'transactions'),
+      where('date', '>=', currentYearStart),
+      where('date', '<=', currentYearEnd)
+    ), (snapshot) => {
       let totalInc = 0;
       let totalExp = 0;
       let transit = 0;

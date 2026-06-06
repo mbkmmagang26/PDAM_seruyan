@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, TrendingUp, Download, Filter, CheckCircle2, Clock, Plus, Search, X, Users } from 'lucide-react';
 import { useLanguage } from '../../languageContext';
 import { db } from '../../firebase';
-import { collection, query, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, where } from 'firebase/firestore';
 import { processPayment } from '../../lib/billingUtils';
 import { useAuth } from '../../authContext';
 import { logActivity } from '../../lib/logger';
@@ -14,6 +14,8 @@ export default function Billing() {
   const [bills, setBills] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
 
   const [isAddingBill, setIsAddingBill] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,12 +30,36 @@ export default function Billing() {
   });
 
   useEffect(() => {
-    const q = query(collection(db, 'tb_billing'), orderBy('createdAt', 'desc'));
+    let q = query(collection(db, 'tb_billing'), orderBy('createdAt', 'desc'));
+    
+    if (filterMonth !== 'all' && filterYear !== 'all') {
+      q = query(
+        collection(db, 'tb_billing'),
+        where('periodeBulan', '==', filterMonth),
+        where('periodeTahun', '==', filterYear),
+        orderBy('createdAt', 'desc')
+      );
+    } else if (filterMonth !== 'all') {
+      q = query(
+        collection(db, 'tb_billing'),
+        where('periodeBulan', '==', filterMonth),
+        orderBy('createdAt', 'desc')
+      );
+    } else if (filterYear !== 'all') {
+      q = query(
+        collection(db, 'tb_billing'),
+        where('periodeTahun', '==', filterYear),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
     const unsub = onSnapshot(q, (snap) => {
       setBills(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Firestore Error in Billing query:", error);
     });
     return () => unsub();
-  }, []);
+  }, [filterMonth, filterYear]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snap) => {
@@ -105,10 +131,26 @@ export default function Billing() {
           <p className="text-sm text-slate-500">{t('admin.billing.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors">
-            <Filter size={16} />
-            {t('admin.billing.filter')}
-          </button>
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-500"
+          >
+            <option value="all">Semua Bulan</option>
+            {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-500"
+          >
+            <option value="all">Semua Tahun</option>
+            {['2023', '2024', '2025', '2026', '2027'].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors">
             <Download size={16} />
             {t('user.billing.download')}

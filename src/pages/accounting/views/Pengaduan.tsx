@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { MessageCircle, Loader2, Search, Filter, CheckCircle2, AlertCircle, Clock, Download, User, Trash2 } from 'lucide-react';
 
@@ -10,12 +10,30 @@ export default function Pengaduan() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'pengaduan_pelanggan'), orderBy('createdAt', 'desc')), (snapshot) => {
+    setLoading(true);
+    let q;
+    if (activeFilter !== 'all') {
+      q = query(
+        collection(db, 'pengaduan_pelanggan'),
+        where('status', '==', activeFilter),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      q = query(
+        collection(db, 'pengaduan_pelanggan'),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
+    const unsub = onSnapshot(q, (snapshot) => {
       setPengaduan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (error) => {
+      console.error("Firestore Error in Pengaduan query:", error);
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [activeFilter]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini?')) return;
@@ -30,8 +48,7 @@ export default function Pengaduan() {
     const matchesSearch = (p.namaPelanggan || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (p.deskripsi || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (p.nomorSambungan || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = activeFilter === 'all' || p.status === activeFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Pengaduan...</div>;

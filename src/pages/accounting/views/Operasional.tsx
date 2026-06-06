@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Grid, Loader2, Search, Filter, CheckCircle2, Clock, AlertCircle, Calendar, Download } from 'lucide-react';
 
@@ -10,19 +10,36 @@ export default function Operasional() {
   const [activeStatus, setActiveStatus] = useState('all');
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'aksi_pengaduan'), orderBy('createdAt', 'desc')), (snapshot) => {
+    setLoading(true);
+    let q;
+    if (activeStatus !== 'all') {
+      q = query(
+        collection(db, 'aksi_pengaduan'),
+        where('status', '==', activeStatus),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      q = query(
+        collection(db, 'aksi_pengaduan'),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
+    const unsub = onSnapshot(q, (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (error) => {
+      console.error("Firestore Error in Operasional query:", error);
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [activeStatus]);
 
   const filtered = tasks.filter(t => {
     const matchesSearch = (t.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (t.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (t.assignedToName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = activeStatus === 'all' || t.status === activeStatus;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Operasional...</div>;

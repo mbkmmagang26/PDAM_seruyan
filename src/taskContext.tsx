@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from './firebase'; 
-import { collection, onSnapshot, doc, setDoc, updateDoc, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { Task } from './types';
 import { useAuth } from './authContext';
 
@@ -27,7 +27,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Listener tanpa orderBy dulu agar tidak nyangkut di masalah Index
-    const unsubscribe = onSnapshot(collection(db, 'aksi_pengaduan'), (snapshot) => {
+    let q = query(collection(db, 'aksi_pengaduan'));
+    if (user?.role === 'staff') {
+      q = query(collection(db, 'aksi_pengaduan'), where('assignedTo', '==', user.id));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasksData = snapshot.docs.map(doc => {
         const data = doc.data();
         
