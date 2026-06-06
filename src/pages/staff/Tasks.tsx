@@ -174,11 +174,14 @@ export default function StaffDashboard() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/staff')}
-              className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 cursor-pointer hover:ring-2 hover:ring-#00478d/20 transition-all shadow-sm"
+              className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 cursor-pointer hover:ring-2 hover:ring-#00478d/20 transition-all shadow-sm shrink-0"
             >
               <img src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"} alt="Staff" className="w-full h-full object-cover" />
             </button>
-            <span className="text-lg font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</span>
+            <div className="flex items-center gap-2">
+              <img src="/logo-pdam.png" alt="Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
+              <span className="text-lg font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <LanguageToggle />

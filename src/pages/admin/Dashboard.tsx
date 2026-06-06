@@ -1118,8 +1118,8 @@ export default function AdminDashboard() {
       <aside className="w-72 bg-white border-r border-slate-100 flex flex-col py-10 px-6 fixed h-full z-50">
         <div className="mb-12 px-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-[#00478d] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <Waves size={24} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <h1 className="text-2xl font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</h1>
           </div>

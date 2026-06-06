@@ -357,7 +357,17 @@ export default function LaporanKeuangan() {
               theme === 'blue' ? 'border-t-8 border-blue-900' : theme === 'dark' ? 'border-t-8 border-slate-900' : 'border-t-8 border-blue-600'
             }`}>
                <div className="text-center mb-10">
+                  <div className="flex justify-center mb-4">
+                    <img src="/logo-pdam.png" alt="Logo PDAM" className="w-20 h-20 object-contain" />
+                  </div>
                   <h1 className="text-2xl font-bold text-slate-900 tracking-widest uppercase">PDAM SERUYAN</h1>
+                  <h2 className="text-lg font-bold text-slate-700 tracking-wider mt-2">
+                    {activeReport === 'laba_rugi' && 'Laporan Laba Rugi'}
+                    {activeReport === 'ekuitas' && 'Laporan Perubahan Ekuitas'}
+                    {activeReport === 'neraca' && 'Neraca'}
+                    {activeReport === 'arus_kas' && 'Laporan Arus Kas'}
+                    {activeReport === 'rincian' && 'Rincian Saldo Akun'}
+                  </h2>
                   <p className="text-sm text-slate-500 italic mt-2">Periode {months[selectedMonth]} {selectedYear}</p>
                   <div className="w-24 h-1 bg-slate-900 mx-auto mt-6 mb-6"></div>
                   

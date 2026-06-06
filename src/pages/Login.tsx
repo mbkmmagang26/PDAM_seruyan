@@ -139,8 +139,8 @@ export default function Login() {
               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
             >
               <div className="flex flex-col items-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-tr from-[#00478d] to-[#005eb8] rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-[#00478d]/20">
-                  <Waves size={32} />
+                <div className="w-20 h-20 flex items-center justify-center mb-4">
+                  <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
                 <h1 className="text-2xl font-headline font-bold text-slate-800">{t('login.gate.title')}</h1>
                 <p className="text-slate-500 text-sm mt-1">{t('login.gate.subtitle')}</p>
