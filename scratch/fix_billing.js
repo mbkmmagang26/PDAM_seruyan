@@ -46,13 +46,13 @@ async function fix() {
 
     // 2. Delete from tb_meterpelanggan (fetch and filter in JS)
     console.log('Searching for 1000m3 readings...');
-    const meterQ = query(collection(db, 'tb_meterpelanggan'), where('customerId', '==', customerId));
+    const meterQ = query(collection(db, 'tb_meter_pelanggan'), where('customerId', '==', customerId));
     const meterSnap = await getDocs(meterQ);
     for (const meterDoc of meterSnap.docs) {
       const data = meterDoc.data();
       if (data.standAkhir === 1000) {
         console.log('Deleting meter reading:', meterDoc.id);
-        await deleteDoc(doc(db, 'tb_meterpelanggan', meterDoc.id));
+        await deleteDoc(doc(db, 'tb_meter_pelanggan', meterDoc.id));
       }
     }
 

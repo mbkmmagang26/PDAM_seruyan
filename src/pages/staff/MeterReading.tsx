@@ -75,7 +75,7 @@ export default function MeterReading() {
       setLoadingAwal(true);
       try {
         const meterQ = query(
-          collection(db, 'tb_meterpelanggan'),
+          collection(db, 'tb_meter_pelanggan'),
           where('customerId', '==', activeCustomer.id)
         );
         const snap = await getDocs(meterQ);

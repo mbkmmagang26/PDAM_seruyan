@@ -65,7 +65,7 @@ export const processMeterReadingAndBilling = async (
     // 3. Dapatkan stand meter bulan lalu (Stand Awal)
     let standAwal = 0;
     const meterQ = query(
-      collection(db, 'tb_meterpelanggan'), 
+      collection(db, 'tb_meter_pelanggan'), 
       where('customerId', '==', customerId)
     );
     
@@ -99,7 +99,7 @@ export const processMeterReadingAndBilling = async (
       createdAt: new Date().toISOString()
     };
     
-    const meterDocRef = await addDoc(collection(db, 'tb_meterpelanggan'), newMeterData);
+    const meterDocRef = await addDoc(collection(db, 'tb_meter_pelanggan'), newMeterData);
 
     // 5. Kalkulasi Tagihan (tb_billing)
     const biayaPemakaian = calculateBiayaPemakaian(pemakaian, golonganData);
