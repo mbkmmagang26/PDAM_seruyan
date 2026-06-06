@@ -73,7 +73,7 @@ async function seed() {
     }
 
     try {
-      await setDoc(doc(db, 'user', uid), {
+      await setDoc(doc(db, 'user_admin', uid), {
         id: uid,
         name: userConfig.name,
         email: userConfig.email,

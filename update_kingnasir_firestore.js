@@ -16,7 +16,7 @@ const db = getFirestore(app);
 
 async function findAndUpdateUser() {
   try {
-    const q = query(collection(db, 'user'), where('email', '==', 'fanntek71@gmail.com'));
+    const q = query(collection(db, 'user_admin'), where('email', '==', 'fanntek71@gmail.com'));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {

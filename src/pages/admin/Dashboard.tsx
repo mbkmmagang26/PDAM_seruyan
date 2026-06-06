@@ -141,27 +141,15 @@ export default function AdminDashboard() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await register(newUserReg.name, newUserReg.email, newUserReg.phone, newUserReg.address, newUserReg.password, newUserReg.role);
-
-      // If adding a customer, also create their record in tb_pelanggan
-      if (newUserReg.role === 'customer') {
-        const { setDoc } = await import('firebase/firestore');
-        // We use the ID returned or we can find it. But wait, `register` doesn't return the uid directly. 
-        // Let's use addDoc for tb_pelanggan since register creates user collection.
-        // Actually, we can fetch the user by email from tb_pelanggan or just addDoc.
-        const { collection, addDoc } = await import('firebase/firestore');
-        await addDoc(collection(db, 'tb_pelanggan'), {
-          nama: newUserReg.name,
-          alamat: newUserReg.address,
-          noHp: newUserReg.phone,
-          status: 'Aktif',
-          role: 'pelanggan',
-          no_meter: '',
-          id_pelanggan: 'PELANGGAN BARU',
-          gol: newUserReg.gol || 'Rumah Tangga 2 (R2)',
-          createdAt: new Date().toISOString()
-        });
-      }
+      const result = await register(
+        newUserReg.name,
+        newUserReg.email,
+        newUserReg.phone,
+        newUserReg.address,
+        newUserReg.password,
+        newUserReg.role,
+        newUserReg.gol
+      );
 
       showNotification(t('admin.user.success_create'), 'success');
       logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);

@@ -34,7 +34,7 @@ async function createOrUpdateAccount() {
   }
 
   try {
-    await setDoc(doc(db, 'user', user.uid), {
+    await setDoc(doc(db, 'user_admin', user.uid), {
       id: user.uid,
       name: 'kingnasir',
       email: 'fanntek71@gmail.com',
