@@ -16,7 +16,7 @@ export default function ImportDataView() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 bg-white p-2 rounded-2xl shadow-sm overflow-x-auto hide-scrollbar gap-2">
+      <div className="flex border-b border-slate-200 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm overflow-x-auto hide-scrollbar gap-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -27,7 +27,7 @@ export default function ImportDataView() {
               className={`flex items-center gap-2 whitespace-nowrap px-5 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
                 isActive
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
               }`}
             >
               <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />

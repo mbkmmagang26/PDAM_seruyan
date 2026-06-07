@@ -13,10 +13,12 @@ import AccountingDashboard from './pages/accounting/dashboard';
 import { TaskProvider } from './taskContext';
 import { LanguageProvider } from './languageContext';
 import { RequestProvider } from './requestContext';
+import { ThemeProvider } from './themeContext';
 
 export default function App() {
   return (
     <AuthProvider>
+      <ThemeProvider>
       <LanguageProvider>
       <TaskProvider>
       <RequestProvider>
@@ -71,10 +73,11 @@ export default function App() {
           
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Router>
+        </Router>
       </RequestProvider>
       </TaskProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

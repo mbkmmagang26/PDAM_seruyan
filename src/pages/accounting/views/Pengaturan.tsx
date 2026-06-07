@@ -79,8 +79,8 @@ export default function Pengaturan() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Pengaturan Sistem</h2>
-          <p className="text-slate-500 text-sm font-medium">Kelola profil, pengguna, dan konfigurasi aplikasi.</p>
+          <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Pengaturan Sistem</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kelola profil, pengguna, dan konfigurasi aplikasi.</p>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export default function Pengaturan() {
               className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-sm transition-all ${
                 activeTab === tab.id 
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                : 'bg-white text-slate-500 hover:bg-slate-50'
+                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
               }`}
             >
               <tab.icon size={18} />
@@ -109,14 +109,14 @@ export default function Pengaturan() {
 
         {/* Content Area */}
         <div className="lg:col-span-9">
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden min-h-[600px]">
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden min-h-[600px]">
             
             {activeTab === 'profile' && (
               <div className="p-8 lg:p-12 animate-in slide-in-from-right-4 duration-300">
                 <div className="flex items-center gap-6 mb-12">
                    <img src={user?.avatar} alt="Avatar" className="w-24 h-24 rounded-3xl border-4 border-slate-50 shadow-inner" />
                    <div>
-                      <h3 className="text-xl font-black text-slate-800">{user?.name}</h3>
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white">{user?.name}</h3>
                       <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{user?.role}</p>
                       <button className="mt-2 text-blue-600 text-xs font-black uppercase hover:underline">Ganti Foto Profil</button>
                    </div>
@@ -130,7 +130,7 @@ export default function Pengaturan() {
                         type="text" 
                         value={profileData.name} 
                         onChange={e => setProfileData({...profileData, name: e.target.value})}
-                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700" 
+                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -139,7 +139,7 @@ export default function Pengaturan() {
                         type="email" 
                         readOnly
                         value={profileData.email} 
-                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-100 text-slate-400 outline-none font-bold" 
+                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-100 dark:bg-slate-700 text-slate-400 outline-none font-bold" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -148,7 +148,7 @@ export default function Pengaturan() {
                         type="text" 
                         value={profileData.phone} 
                         onChange={e => setProfileData({...profileData, phone: e.target.value})}
-                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700" 
+                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -157,7 +157,7 @@ export default function Pengaturan() {
                         type="text" 
                         value={profileData.address} 
                         onChange={e => setProfileData({...profileData, address: e.target.value})}
-                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700" 
+                        className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:bg-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                       />
                     </div>
                   </div>
@@ -175,8 +175,8 @@ export default function Pengaturan() {
                 </form>
 
                 <div className="mt-16 pt-12 border-t border-slate-100">
-                   <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Keamanan</h4>
-                   <button className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 transition-all">
+                   <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-4">Keamanan</h4>
+                   <button className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 transition-all">
                       <Key size={18} />
                       Ganti Password Akun
                    </button>
@@ -187,7 +187,7 @@ export default function Pengaturan() {
             {activeTab === 'users' && (
               <div className="p-8 lg:p-12 animate-in slide-in-from-right-4 duration-300">
                 <div className="flex justify-between items-center mb-8">
-                   <h3 className="text-xl font-black text-slate-800 tracking-tight">Daftar Pengguna Sistem</h3>
+                   <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Daftar Pengguna Sistem</h3>
                    <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-600/10 flex items-center gap-2">
                       <Plus size={16} /> Tambah User
                    </button>
@@ -210,12 +210,12 @@ export default function Pengaturan() {
                                   <div className="flex items-center gap-3">
                                      <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-lg" />
                                      <div>
-                                        <p className="text-sm font-bold text-slate-700">{u.name}</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{u.name}</p>
                                         <p className="text-[10px] text-slate-400 font-medium">{u.email}</p>
                                      </div>
                                   </div>
                                </td>
-                               <td className="py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{u.role}</td>
+                               <td className="py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{u.role}</td>
                                <td className="py-4">
                                   <select 
                                     value={u.status} 
@@ -249,34 +249,34 @@ export default function Pengaturan() {
               <div className="p-8 lg:p-12 animate-in slide-in-from-right-4 duration-300">
                 <div className="space-y-12">
                    <section>
-                      <h3 className="text-xl font-black text-slate-800 mb-6 tracking-tight">Konfigurasi Entitas</h3>
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6 tracking-tight">Konfigurasi Entitas</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
+                         <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 space-y-4">
                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Informasi PDAM</h4>
                             <div className="space-y-4">
                                <div className="space-y-1">
                                   <p className="text-[10px] font-bold text-slate-400 uppercase">Nama Instansi</p>
-                                  <p className="text-sm font-black text-slate-700 underline decoration-blue-500/30 underline-offset-4">PDAM TIRTA SERUYAN</p>
+                                  <p className="text-sm font-black text-slate-700 dark:text-slate-200 underline decoration-blue-500/30 underline-offset-4">PDAM TIRTA SERUYAN</p>
                                </div>
                                <div className="space-y-1">
                                   <p className="text-[10px] font-bold text-slate-400 uppercase">Alamat Kantor</p>
-                                  <p className="text-sm font-medium text-slate-600">Jl. A. Yani No. 12, Kuala Pembuang, Kalimantan Tengah</p>
+                                  <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Jl. A. Yani No. 12, Kuala Pembuang, Kalimantan Tengah</p>
                                </div>
                             </div>
                          </div>
 
-                         <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
+                         <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 space-y-4">
                             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Periode Akuntansi</h4>
                             <div className="space-y-4">
                                <div className="flex justify-between items-center">
-                                  <span className="text-sm font-bold text-slate-700">Tahun Buku Aktif</span>
+                                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Tahun Buku Aktif</span>
                                   <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black rounded-lg">2026</span>
                                </div>
                                <div className="flex justify-between items-center">
-                                  <span className="text-sm font-bold text-slate-700">Status Periode</span>
+                                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Status Periode</span>
                                   <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg uppercase">Open</span>
                                </div>
-                               <button className="w-full mt-2 py-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all">
+                               <button className="w-full mt-2 py-2 bg-white dark:bg-slate-800 border border-slate-200 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 transition-all">
                                   Tutup Periode (Closing)
                                </button>
                             </div>
@@ -285,10 +285,10 @@ export default function Pengaturan() {
                    </section>
 
                    <section className="pt-12 border-t border-slate-100">
-                      <h3 className="text-xl font-black text-slate-800 mb-6 tracking-tight">Konektivitas Database</h3>
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6 tracking-tight">Konektivitas Database</h3>
                       <div className="flex items-center justify-between p-6 rounded-3xl bg-emerald-50 border border-emerald-100">
                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
+                            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
                                <Settings size={20} />
                             </div>
                             <div>

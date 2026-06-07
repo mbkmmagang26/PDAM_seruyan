@@ -15,8 +15,8 @@ export default function WaterFlow() {
   return (
     <div className="space-y-8">
       <header>
-        <h2 className="text-2xl font-headline font-bold">{t('admin.waterflow.title')}</h2>
-        <p className="text-sm text-slate-500">{t('admin.waterflow.subtitle')}</p>
+        <h2 className="text-2xl font-headline font-bold text-slate-900 dark:text-white">{t('admin.waterflow.title')}</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin.waterflow.subtitle')}</p>
       </header>
 
       {/* Real-time Graph Placeholder */}
@@ -56,7 +56,7 @@ export default function WaterFlow() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4"
+            className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm space-y-4"
           >
             <div className="flex justify-between items-start">
               <div>
@@ -67,7 +67,7 @@ export default function WaterFlow() {
                   {zone.status === 'optimal' ? t('admin.waterflow.stable') : t('common.urgent')}
                 </span>
               </div>
-              <div className={`p-2 rounded-xl ${zone.status === 'optimal' ? 'bg-slate-50 text-[#00478d]' : 'bg-amber-50 text-amber-500'}`}>
+              <div className={`p-2 rounded-xl ${zone.status === 'optimal' ? 'bg-slate-50 dark:bg-slate-900 text-[#00478d]' : 'bg-amber-50 text-amber-500'}`}>
                 {zone.status === 'optimal' ? <Droplets size={20} /> : <AlertTriangle size={20} />}
               </div>
             </div>

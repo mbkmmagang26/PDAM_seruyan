@@ -135,7 +135,7 @@ export default function Billing() {
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-headline font-bold">{t('admin.billing.title')}</h2>
-          <p className="text-sm text-slate-500">{t('admin.billing.subtitle')}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin.billing.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -183,14 +183,14 @@ export default function Billing() {
               <span className="font-bold">+12.4%</span> {t('admin.stats.vs_last_month')}
             </p>
           </div>
-          <div className="p-4 bg-white/20 rounded-3xl backdrop-blur-md">
+          <div className="p-4 bg-white dark:bg-slate-800/20 rounded-3xl backdrop-blur-md">
             <CreditCard size={32} />
           </div>
         </div>
       </section>
 
       {/* Transaction List */}
-      <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+      <section className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-50">
           <h3 className="font-bold">{t('admin.billing.recent')}</h3>
         </div>
@@ -203,7 +203,7 @@ export default function Billing() {
                 key={bill.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="px-8 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                className="px-8 py-5 flex items-center justify-between hover:bg-slate-50 dark:bg-slate-900/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className={`p-2 rounded-xl ${bill.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
@@ -252,12 +252,12 @@ export default function Billing() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+              className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
             >
-              <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+              <div className="p-10 pb-6 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
                 <div>
-                  <h3 className="text-2xl font-headline font-bold text-slate-800">Buat Tagihan Baru</h3>
-                  <p className="text-sm text-slate-500 font-medium">Kirimkan invoice ke aplikasi pelanggan</p>
+                  <h3 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">Buat Tagihan Baru</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Kirimkan invoice ke aplikasi pelanggan</p>
                 </div>
                 <button onClick={() => setIsAddingBill(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400">
                   <X size={24} />
@@ -266,7 +266,7 @@ export default function Billing() {
 
               <form onSubmit={handleAddBill} className="p-10 space-y-6">
                 <div className="space-y-1.5 relative">
-                  <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Pilih Pelanggan</label>
                   <div className="relative">
                     <input
                       type="text"
@@ -277,7 +277,7 @@ export default function Billing() {
                         setSearchQuery(e.target.value);
                         setIsDropdownOpen(true);
                       }}
-                      className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                      className="w-full px-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                       <Search size={18} />
@@ -290,7 +290,7 @@ export default function Billing() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-[70] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                        className="absolute z-[70] w-full mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden"
                       >
                         <div className="max-h-60 overflow-y-auto">
                           {customers.filter(c =>
@@ -315,7 +315,7 @@ export default function Billing() {
                                   setSearchQuery(c.nama || c.id);
                                   setIsDropdownOpen(false);
                                 }}
-                                className="w-full px-5 py-3 text-left hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
+                                className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:bg-slate-900 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
                               >
                                 <div>
                                   <p className="text-sm font-bold text-slate-700">{c.nama || 'Pelanggan'}</p>
@@ -335,12 +335,12 @@ export default function Billing() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Periode Bulan</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Periode Bulan</label>
                     <select 
                       required
                       value={newBillForm.periodeBulan}
                       onChange={e => setNewBillForm({ ...newBillForm, periodeBulan: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                     >
                       {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -348,12 +348,12 @@ export default function Billing() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Periode Tahun</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Periode Tahun</label>
                     <select
                       required
                       value={newBillForm.periodeTahun}
                       onChange={e => setNewBillForm({ ...newBillForm, periodeTahun: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                     >
                       {[2023, 2024, 2025, 2026, 2027].map(y => (
                         <option key={y} value={y}>{y}</option>
@@ -363,7 +363,7 @@ export default function Billing() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 ml-1">Total Tagihan (Rp)</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Total Tagihan (Rp)</label>
                   <input 
                     type="number" 
                     required 
@@ -371,7 +371,7 @@ export default function Billing() {
                     placeholder="Contoh: 50000"
                     value={newBillForm.totalTagihan} 
                     onChange={e => setNewBillForm({ ...newBillForm, totalTagihan: e.target.value })} 
-                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" 
+                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" 
                   />
                 </div>
 

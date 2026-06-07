@@ -93,8 +93,8 @@ export default function HutangAP() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Hutang Usaha (Accounts Payable)</h2>
-          <p className="text-slate-500 text-sm">Manajemen kewajiban dan hubungan pemasok (vendor).</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Hutang Usaha (Accounts Payable)</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Manajemen kewajiban dan hubungan pemasok (vendor).</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <button 
@@ -108,7 +108,7 @@ export default function HutangAP() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
             <Wallet size={28} />
           </div>
@@ -118,18 +118,18 @@ export default function HutangAP() {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
             <History size={28} />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Vendor Aktif</p>
-            <p className="text-2xl font-black text-slate-800">{activeVendors} <span className="text-sm text-slate-400 font-bold uppercase">Mitra</span></p>
+            <p className="text-2xl font-black text-slate-800 dark:text-white">{activeVendors} <span className="text-sm text-slate-400 font-bold uppercase">Mitra</span></p>
           </div>
         </div>
 
         <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <LayoutDashboard size={28} />
           </div>
           <div>
@@ -146,7 +146,7 @@ export default function HutangAP() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`whitespace-nowrap px-6 py-3 font-bold text-sm transition-colors relative ${
-              activeTab === tab ? 'text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === tab ? 'text-rose-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
             }`}
           >
             {tab}
@@ -167,29 +167,29 @@ export default function HutangAP() {
                 placeholder="Cari nama vendor atau kontak..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 outline-none text-sm bg-white shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 outline-none text-sm bg-white dark:bg-slate-800 shadow-sm"
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setShowFilter(true)}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterType !== 'Semua' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterType !== 'Semua' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
               >
                 <Filter size={18} /> {filterType !== 'Semua' ? `Status: ${filterType}` : 'Filter'}
               </button>
               <button 
                 onClick={handleExport}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-bold text-sm bg-white shadow-sm"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800 shadow-sm"
               >
                 <Download size={18} /> Export
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+                <thead className="bg-slate-50 dark:bg-slate-900/50/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
                   <tr>
                     <th className="p-4 uppercase tracking-wider text-xs">Vendor / Perusahaan</th>
                     <th className="p-4 uppercase tracking-wider text-xs">Kontak & Telepon</th>
@@ -201,25 +201,25 @@ export default function HutangAP() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-medium">Belum ada data vendor yang terdaftar.</td></tr>
+                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Belum ada data vendor yang terdaftar.</td></tr>
                   ) : filtered.map(v => (
-                    <tr key={v.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50/80 transition-colors group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold">
+                          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold">
                             {v.company?.substring(0, 1) || 'V'}
                           </div>
                           <div>
-                            <p className="font-black text-slate-800">{v.company}</p>
+                            <p className="font-black text-slate-800 dark:text-white">{v.company}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase">ID: {v.id.substring(0, 8)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-4">
-                        <p className="font-bold text-slate-700">{v.name}</p>
-                        <p className="text-xs text-slate-500">{v.phone}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-200">{v.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{v.phone}</p>
                       </td>
-                      <td className="p-4 text-slate-500 font-medium max-w-xs truncate">{v.address}</td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-medium max-w-xs truncate">{v.address}</td>
                       <td className="p-4 text-right">
                         <p className={`font-black ${ (v.balance || 0) > 0 ? 'text-rose-600' : 'text-slate-400' }`}>
                           {formatCurrency(v.balance || 0)}
@@ -251,25 +251,25 @@ export default function HutangAP() {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
+           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
              <History size={32} />
            </div>
-           <h3 className="text-lg font-bold text-slate-700">Modul Segera Hadir</h3>
-           <p className="text-slate-500 max-w-xs">Fitur riwayat pembayaran dan jadwal jatuh tempo sedang dalam tahap pengembangan.</p>
+           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Modul Segera Hadir</h3>
+           <p className="text-slate-500 dark:text-slate-400 max-w-xs">Fitur riwayat pembayaran dan jadwal jatuh tempo sedang dalam tahap pengembangan.</p>
         </div>
       )}
 
       {/* Add Vendor Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
               <div>
-                <h3 className="text-xl font-black text-slate-800">Registrasi Vendor Baru</h3>
-                <p className="text-sm text-slate-500 font-medium">Lengkapi detail informasi pemasok / mitra bisnis.</p>
+                <h3 className="text-xl font-black text-slate-800 dark:text-white">Registrasi Vendor Baru</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Lengkapi detail informasi pemasok / mitra bisnis.</p>
               </div>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
+              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white dark:bg-slate-800 hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
                 <X size={24}/>
               </button>
             </div>
@@ -277,7 +277,7 @@ export default function HutangAP() {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nama Kontak</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nama Kontak</label>
                   <input 
                     type="text" 
                     required 
@@ -288,7 +288,7 @@ export default function HutangAP() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nama Perusahaan / Toko</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nama Perusahaan / Toko</label>
                   <input 
                     type="text" 
                     required 
@@ -299,7 +299,7 @@ export default function HutangAP() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nomor Telepon</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nomor Telepon</label>
                   <input 
                     type="text" 
                     required 
@@ -310,7 +310,7 @@ export default function HutangAP() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Saldo Awal Hutang (Rp)</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Saldo Awal Hutang (Rp)</label>
                   <input 
                     type="number" 
                     min="0" 
@@ -320,7 +320,7 @@ export default function HutangAP() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Alamat Lengkap</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alamat Lengkap</label>
                   <textarea 
                     required 
                     rows={3}
@@ -336,7 +336,7 @@ export default function HutangAP() {
                 <button 
                   type="button" 
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all"
                 >
                   Batalkan
                 </button>
@@ -354,10 +354,10 @@ export default function HutangAP() {
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Filter Status Hutang</h3>
-              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Filter Status Hutang</h3>
+              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -368,7 +368,7 @@ export default function HutangAP() {
                     key={type}
                     onClick={() => { setFilterType(type); setShowFilter(false); }}
                     className={`w-full p-4 rounded-2xl text-left font-bold transition-all border ${
-                      filterType === type ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      filterType === type ? 'bg-rose-600 text-white border-rose-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
                     }`}
                   >
                     {type}

@@ -158,7 +158,7 @@ export default function DashboardUtama() {
             <LayoutGrid size={28} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard Utama</h2>
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Dashboard Utama</h2>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Sistem Informasi Akuntansi &bull; LIVE</p>
@@ -168,24 +168,24 @@ export default function DashboardUtama() {
         <div className="relative">
           <div 
             onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-            className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
+            className="bg-white dark:bg-slate-800 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Anggaran</p>
-              <p className="text-sm font-black text-slate-700 uppercase">Jan - Des {selectedYear}</p>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Periode Anggaran</p>
+              <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">Jan - Des {selectedYear}</p>
             </div>
-            <div className="w-px h-8 bg-slate-200"></div>
-            <div className="text-blue-600 p-2 rounded-xl transition-all">
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+            <div className="text-blue-600 dark:text-blue-400 p-2 rounded-xl transition-all">
                <Activity size={20} />
             </div>
           </div>
           {isYearDropdownOpen && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden z-50">
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-xl rounded-2xl overflow-hidden z-50">
               {['2024', '2025', '2026', '2027'].map(year => (
                 <button
                   key={year}
                   onClick={() => { setSelectedYear(year); setIsYearDropdownOpen(false); }}
-                  className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors ${selectedYear === year ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                  className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors ${selectedYear === year ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 >
                   Jan - Des {year}
                 </button>
@@ -199,27 +199,27 @@ export default function DashboardUtama() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Laba Rugi Card */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
               <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                   <div className="flex justify-between items-start">
-                    <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Laba Rugi Berjalan</p>
-                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <p className="text-xs font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">Laba Rugi Berjalan</p>
+                    <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                       <TrendingUp size={12} /> +12.5%
                     </span>
                   </div>
-                  <h3 className="text-4xl font-black text-slate-800 mt-4 leading-none">{formatCurrency(stats.income - stats.expense)}</h3>
-                  <p className="text-xs font-bold text-slate-400 mt-2">Akumulasi pendapatan dikurangi beban</p>
+                  <h3 className="text-4xl font-black text-slate-800 dark:text-white mt-4 leading-none">{formatCurrency(stats.income - stats.expense)}</h3>
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-2">Akumulasi pendapatan dikurangi beban</p>
                 </div>
                 
                 <div className="mt-12 flex items-center gap-4">
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 w-3/4 rounded-full shadow-lg shadow-emerald-500/20"></div>
                   </div>
-                  <span className="text-xs font-black text-slate-700">75%</span>
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-300">75%</span>
                 </div>
               </div>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-slate-50 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-slate-50 dark:bg-slate-700/30 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
             </div>
 
             {/* Posisi Kas Card */}
@@ -275,11 +275,11 @@ export default function DashboardUtama() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Financial Chart */}
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
                   <div>
-                    <h4 className="text-xl font-black text-slate-800 tracking-tight">Dinamika Keuangan</h4>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Cash Flow Analytics (Monthly)</p>
+                    <h4 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Dinamika Keuangan</h4>
+                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Cash Flow Analytics (Monthly)</p>
                   </div>
                   <div className="flex gap-4 items-center">
                     <div className="flex items-center gap-2">
@@ -287,12 +287,12 @@ export default function DashboardUtama() {
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Inflow</span>
                     </div>
                     <div className="flex items-center gap-2">
-                       <div className="w-3 h-3 rounded-full bg-slate-300"></div>
+                       <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600"></div>
                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Outflow</span>
                     </div>
                     <button 
                       onClick={handleExportChart}
-                      className="p-2 text-slate-400 hover:text-blue-600 transition-all hover:bg-slate-50 rounded-lg"
+                      className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"
                     >
                       <Download size={16} />
                     </button>
@@ -325,45 +325,45 @@ export default function DashboardUtama() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div 
                   onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'persediaan' } }))}
-                  className="bg-rose-50 border border-rose-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-rose-100 transition-colors"
+                  className="bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
                       <AlertCircle size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-rose-950 uppercase tracking-tight">Stok Menipis</p>
-                      <p className="text-xs font-bold text-rose-700/60">{stats.lowStock} ITEM PERLU RE-ORDER</p>
+                      <p className="text-sm font-black text-rose-950 dark:text-rose-100 uppercase tracking-tight">Stok Menipis</p>
+                      <p className="text-xs font-bold text-rose-700/60 dark:text-rose-400/80">{stats.lowStock} ITEM PERLU RE-ORDER</p>
                     </div>
                   </div>
                   <ArrowUpRight className="text-rose-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
                 <div 
                   onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'pengaduan' } }))}
-                  className="bg-blue-50 border border-blue-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-blue-100 transition-colors"
+                  className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
                       <MessageCircle size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-blue-955 uppercase tracking-tight">Pengaduan Baru</p>
-                      <p className="text-xs font-bold text-blue-700/60">{stats.pengaduanPending} LAPORAN MENUNGGU</p>
+                      <p className="text-sm font-black text-blue-950 dark:text-blue-100 uppercase tracking-tight">Pengaduan Baru</p>
+                      <p className="text-xs font-bold text-blue-700/60 dark:text-blue-400/80">{stats.pengaduanPending} LAPORAN MENUNGGU</p>
                     </div>
                   </div>
                   <ArrowUpRight className="text-blue-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
                 <div 
                   onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'operasional' } }))}
-                  className="bg-amber-50 border border-amber-100 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-amber-100 transition-colors"
+                  className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-600/20">
                       <CheckSquare size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-amber-955 uppercase tracking-tight">Tugas Lapangan</p>
-                      <p className="text-xs font-bold text-amber-700/60">{stats.tasksPending} PENDING / BERJALAN</p>
+                      <p className="text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-tight">Tugas Lapangan</p>
+                      <p className="text-xs font-bold text-amber-700/60 dark:text-amber-400/80">{stats.tasksPending} PENDING / BERJALAN</p>
                     </div>
                   </div>
                   <ArrowUpRight className="text-amber-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -373,68 +373,68 @@ export default function DashboardUtama() {
 
             <div className="space-y-6">
               {/* Asset Metrics */}
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-10">
                   <div>
-                    <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Fixed Assets</p>
-                    <h4 className="text-3xl font-black text-slate-800 tracking-tight">Aktiva Tetap</h4>
+                    <p className="text-xs font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">Fixed Assets</p>
+                    <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Aktiva Tetap</h4>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400">
                     <Package size={24} />
                   </div>
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    <div className="flex justify-between text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
                        <span>Total Valuasi</span>
-                       <span className="text-emerald-500">Appreciated</span>
+                       <span className="text-emerald-500 dark:text-emerald-400">Appreciated</span>
                     </div>
-                    <p className="text-2xl font-black text-slate-800">{formatCurrency(stats.assets)}</p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-white">{formatCurrency(stats.assets)}</p>
                   </div>
-                  <div className="pt-6 border-t border-slate-100">
+                  <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
                     <div className="flex justify-between items-center text-xs font-bold">
-                       <span className="text-slate-500">Asset Count</span>
-                       <span className="bg-slate-100 px-3 py-1 rounded-lg text-slate-700 font-black">{stats.assetCategoriesCount} Categories</span>
+                       <span className="text-slate-500 dark:text-slate-400">Asset Count</span>
+                       <span className="bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg text-slate-700 dark:text-slate-200 font-black">{stats.assetCategoriesCount} Categories</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Inventory Summary */}
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-10">
                     <div>
-                      <p className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">Inventory Value</p>
-                      <h4 className="text-3xl font-black text-slate-800 tracking-tight">Stok Material</h4>
+                      <p className="text-xs font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">Inventory Value</p>
+                      <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Stok Material</h4>
                     </div>
-                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400">
                       <Layers size={24} />
                     </div>
                   </div>
                   <div className="space-y-6">
                     <div>
-                      <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                      <div className="flex justify-between text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
                          <span>Stock Valuation</span>
-                         <span className="text-blue-500">Real-time</span>
+                         <span className="text-blue-500 dark:text-blue-400">Real-time</span>
                       </div>
-                      <p className="text-2xl font-black text-slate-800">{formatCurrency(stats.inventoryValue)}</p>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white">{formatCurrency(stats.inventoryValue)}</p>
                     </div>
-                    <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-6 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
                        <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                          <span className="text-xs font-bold text-slate-500">Operational Ready</span>
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Operational Ready</span>
                        </div>
                        <button 
                          onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'persediaan' } }))}
-                         className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                         className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline"
                        >
                          Detail Stok
                        </button>
                     </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
+                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-emerald-50 dark:bg-emerald-900/10 rounded-full blur-3xl opacity-50"></div>
               </div>
             </div>
           </div>
@@ -458,29 +458,29 @@ export default function DashboardUtama() {
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between group cursor-pointer hover:border-blue-300 transition-all">
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-all">
                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
                        <CheckSquare size={32} />
                     </div>
                     <div>
-                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Tugas Operasional</p>
-                       <p className="text-2xl font-black text-slate-800">{stats.tasksPending} Pending</p>
+                       <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Tugas Operasional</p>
+                       <p className="text-2xl font-black text-slate-800 dark:text-white">{stats.tasksPending} Pending</p>
                     </div>
                  </div>
-                 <ArrowUpRight size={24} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                 <ArrowUpRight size={24} className="text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
               </div>
-              <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between group cursor-pointer hover:border-rose-300 transition-all">
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-rose-300 dark:hover:border-rose-700 transition-all">
                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500">
+                    <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500">
                        <AlertCircle size={32} />
                     </div>
                     <div>
-                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Pengaduan Masuk</p>
-                       <p className="text-2xl font-black text-slate-800">{stats.pengaduanPending} Baru</p>
+                       <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Pengaduan Masuk</p>
+                       <p className="text-2xl font-black text-slate-800 dark:text-white">{stats.pengaduanPending} Baru</p>
                     </div>
                  </div>
-                 <ArrowUpRight size={24} className="text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                 <ArrowUpRight size={24} className="text-slate-300 dark:text-slate-600 group-hover:text-rose-600 dark:group-hover:text-rose-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
               </div>
            </div>
         </div>

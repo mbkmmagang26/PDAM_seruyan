@@ -155,15 +155,15 @@ export default function LPPView() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">LPP (Laporan Penerimaan Penagihan)</h2>
-          <p className="text-slate-500 text-sm">Input data harian kasir/loket penagihan untuk dicocokkan dengan uang fisik.</p>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">LPP (Laporan Penerimaan Penagihan)</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Input data harian kasir/loket penagihan untuk dicocokkan dengan uang fisik.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Input Panel */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-6">
             {uploadStatus === 'idle' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -172,7 +172,7 @@ export default function LPPView() {
                     <select 
                       value={loketType} 
                       onChange={e => setLoketType(e.target.value as any)}
-                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 bg-slate-50"
+                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50"
                     >
                       <option value="kantor">Loket Kantor Pusat</option>
                       <option value="cabang">Loket Cabang</option>
@@ -185,7 +185,7 @@ export default function LPPView() {
                       type="text" 
                       value={cashierName} 
                       onChange={e => setCashierName(e.target.value)}
-                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 bg-slate-50"
+                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -194,12 +194,12 @@ export default function LPPView() {
                       type="date" 
                       value={reportDate} 
                       onChange={e => setReportDate(e.target.value)}
-                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 bg-slate-50"
+                      className="w-full p-4 rounded-2xl border border-slate-200 outline-none font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50"
                     />
                   </div>
                 </div>
 
-                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center hover:bg-slate-50 transition-colors relative group cursor-pointer">
+                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors relative group cursor-pointer">
                   <input 
                     type="file" 
                     accept=".xls,.xlsx" 
@@ -209,7 +209,7 @@ export default function LPPView() {
                   <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <FileUp size={32} />
                   </div>
-                  <h4 className="font-bold text-slate-700 mb-1">Pilih File Excel LPP Harian</h4>
+                  <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-1">Pilih File Excel LPP Harian</h4>
                   <p className="text-xs text-slate-400">Pilih laporan penerimaan penagihan sesuai tanggal kasir hari ini.</p>
                 </div>
               </div>
@@ -217,31 +217,31 @@ export default function LPPView() {
 
             {uploadStatus === 'parsed' && (
               <div className="space-y-6">
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold">
                       <Landmark size={20} />
                     </div>
                     <div>
-                      <h4 className="font-black text-slate-800 text-sm">LPP {loketType.toUpperCase()} - {cashierName}</h4>
+                      <h4 className="font-black text-slate-800 dark:text-white text-sm">LPP {loketType.toUpperCase()} - {cashierName}</h4>
                       <p className="text-xs text-slate-400 font-bold">{reportDate} &bull; {parsedData.totalRecords} transaksi</p>
                     </div>
                   </div>
-                  <button onClick={resetForm} className="text-slate-500 hover:text-slate-700 text-xs font-bold uppercase tracking-wider bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">Ganti</button>
+                  <button onClick={resetForm} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">Ganti</button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-50 p-4 rounded-xl text-center border border-slate-100">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl text-center border border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Penerimaan Air</p>
-                    <p className="font-black text-slate-700">{formatCurrency(parsedData.totalAir)}</p>
+                    <p className="font-black text-slate-700 dark:text-slate-200">{formatCurrency(parsedData.totalAir)}</p>
                   </div>
-                  <div className="bg-slate-50 p-4 rounded-xl text-center border border-slate-100">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl text-center border border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Denda Tunggakan</p>
-                    <p className="font-black text-slate-700">{formatCurrency(parsedData.totalDenda)}</p>
+                    <p className="font-black text-slate-700 dark:text-slate-200">{formatCurrency(parsedData.totalDenda)}</p>
                   </div>
-                  <div className="bg-slate-50 p-4 rounded-xl text-center border border-slate-100">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl text-center border border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Administrasi & Adm</p>
-                    <p className="font-black text-slate-700">{formatCurrency(parsedData.totalNonAir)}</p>
+                    <p className="font-black text-slate-700 dark:text-slate-200">{formatCurrency(parsedData.totalNonAir)}</p>
                   </div>
                   <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-100">
                     <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Total Penerimaan</p>
@@ -250,7 +250,7 @@ export default function LPPView() {
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={resetForm} className="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-colors">Batal</button>
+                  <button onClick={resetForm} className="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">Batal</button>
                   <button onClick={handleRegisterLpp} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors">
                     Daftarkan Rekonsiliasi Harian
                   </button>
@@ -261,7 +261,7 @@ export default function LPPView() {
             {uploadStatus === 'saving' && (
               <div className="p-12 text-center space-y-4">
                 <RefreshCw className="animate-spin mx-auto text-blue-600" size={32} />
-                <p className="font-bold text-slate-500">Mendaftarkan data LPP ke antrean rekonsiliasi harian...</p>
+                <p className="font-bold text-slate-500 dark:text-slate-400">Mendaftarkan data LPP ke antrean rekonsiliasi harian...</p>
               </div>
             )}
 
@@ -271,7 +271,7 @@ export default function LPPView() {
                   <CheckCircle2 size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-800">LPP Berhasil Didaftarkan!</h3>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-white">LPP Berhasil Didaftarkan!</h3>
                   <p className="text-slate-400 text-sm mt-1">Data LPP kasir telah masuk dalam antrean rekonsiliasi harian. Hubungi Supervisor/Manajer Keuangan untuk proses verifikasi pencocokan kas fisik.</p>
                 </div>
                 <button onClick={resetForm} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-md">Daftarkan LPP Baru</button>
@@ -282,19 +282,19 @@ export default function LPPView() {
 
         {/* Sidebar Info */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 space-y-4">
-            <h4 className="font-black text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">Status LPP Hari Ini</h4>
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 shadow-sm p-6 space-y-4">
+            <h4 className="font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Status LPP Hari Ini</h4>
             <div className="space-y-4">
               {recentLpps.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-sm italic">Belum ada LPP terdaftar hari ini.</div>
               ) : recentLpps.map((lpp, idx) => (
                 <div key={idx} className="flex justify-between items-center text-xs border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                   <div>
-                    <p className="font-bold text-slate-700">{lpp.cashierName} ({lpp.loketType.toUpperCase()})</p>
+                    <p className="font-bold text-slate-700 dark:text-slate-200">{lpp.cashierName} ({lpp.loketType.toUpperCase()})</p>
                     <p className="text-[9px] text-slate-400 font-bold">{lpp.date}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-slate-800">{formatCurrency(lpp.totalPenerimaan)}</p>
+                    <p className="font-bold text-slate-800 dark:text-white">{formatCurrency(lpp.totalPenerimaan)}</p>
                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
                       lpp.status === 'locked' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                     }`}>
