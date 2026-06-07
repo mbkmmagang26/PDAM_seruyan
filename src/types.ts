@@ -84,4 +84,5 @@ export interface ConnectionRequest {
   address: string;
   status: 'pending' | 'approved' | 'rejected';
   date: string;
+  userId?: string;
 }

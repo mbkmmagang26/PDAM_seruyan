@@ -25,14 +25,37 @@ service cloud.firestore {
          get(/databases/$(database)/documents/user_admin/$(request.auth.uid)).data.role == 'admin');
     }
 
-    // Helper: Cek apakah dokumen milik user yang bersangkutan
+    // Helper: Cek apakah dokumen milik user yang bersangkutan (Auth UID)
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Rules: Koleksi tb_pelanggan (profil pelanggan)
+    // Helper: Cek apakah user memiliki permohonan baru
+    function isPermohonanOwner(permohonanId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/tb_permohonan/$(permohonanId)) &&
+        get(/databases/$(database)/documents/tb_permohonan/$(permohonanId)).data.userId == request.auth.uid;
+    }
+
+    // Helper: Cek apakah user adalah pemilik meter/connection (punya userId == request.auth.uid)
+    function isMeterOwner(customerId) {
+      return request.auth != null &&
+        (customerId == request.auth.uid || 
+         (exists(/databases/$(database)/documents/tb_pelanggan/$(customerId)) &&
+          get(/databases/$(database)/documents/tb_pelanggan/$(customerId)).data.userId == request.auth.uid) ||
+         isPermohonanOwner(customerId));
+    }
+
+    // Rules: Koleksi tb_pelanggan (profil pelanggan / meter connection)
     match /tb_pelanggan/{userId} {
-      allow read: if request.auth != null && (isOwner(userId) || isStaff() || isAdmin() || isAccounting());
+      allow read: if request.auth != null && (
+        isOwner(userId) || 
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        isPermohonanOwner(userId) || 
+        isStaff() || 
+        isAdmin() || 
+        isAccounting()
+      );
       // Pelanggan bisa register akun sendiri atau admin/staff bisa membuat/mengedit
       allow write: if isOwner(userId) || isAdmin() || isAccounting();
     }
@@ -46,30 +69,55 @@ service cloud.firestore {
 
     // Rules: Koleksi pengaduan_pelanggan
     match /pengaduan_pelanggan/{docId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff() || isAdmin() || isAccounting());
-      // Pelanggan bisa menulis pengaduan baru, admin/staff bisa update status
+      allow read: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        isStaff() || 
+        isAdmin() || 
+        isAccounting()
+      );
+      // Pelanggan bisa menulis pengaduan baru
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isStaff() || isAdmin() || isAccounting());
+      // Pelanggan bisa update pengaduan mereka sendiri, admin/staff bisa update status
+      allow update: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        isStaff() || 
+        isAdmin() || 
+        isAccounting()
+      );
       allow delete: if isAdmin();
     }
 
     // Rules: Koleksi tb_permohonan (pemasangan baru)
     match /tb_permohonan/{docId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin() || isAccounting());
+      allow read: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        isAdmin() || 
+        isAccounting()
+      );
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin() || isAccounting();
     }
 
     // Rules: Koleksi tb_billing (tagihan air)
     match /tb_billing/{docId} {
-      allow read: if request.auth != null && (resource.data.customerId == request.auth.uid || isAdmin() || isAccounting() || isStaff());
+      allow read: if request.auth != null && (
+        isMeterOwner(resource.data.customerId) || 
+        isAdmin() || 
+        isAccounting() || 
+        isStaff()
+      );
       // Hanya admin/accounting yang bisa create, update, delete tagihan
       allow write: if isAdmin() || isAccounting();
     }
 
     // Rules: Koleksi tb_meter_pelanggan (pembacaan meteran)
     match /tb_meter_pelanggan/{docId} {
-      allow read: if request.auth != null && (resource.data.customerId == request.auth.uid || isStaff() || isAdmin() || isAccounting());
+      allow read: if request.auth != null && (
+        isMeterOwner(resource.data.customerId) || 
+        isStaff() || 
+        isAdmin() || 
+        isAccounting()
+      );
       // Hanya staff lapangan atau admin/accounting yang bisa write
       allow write: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
     }
@@ -91,14 +139,22 @@ service cloud.firestore {
       allow update, delete: if false; // Log tidak boleh dimodifikasi/dihapus
     }
     match /customer_activity/{docId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin() || isAccounting());
+      allow read: if request.auth != null && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        isAdmin() || 
+        isAccounting()
+      );
       allow create: if request.auth != null;
       allow update, delete: if false;
     }
 
     // Rules: Koleksi notifications
     match /notifications/{docId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || resource.data.userId == 'all' || isAdmin() || isAccounting());
+      allow read: if request.auth != null && (
+        (resource != null && (resource.data.userId == request.auth.uid || resource.data.userId == 'all')) || 
+        isAdmin() || 
+        isAccounting()
+      );
       allow write: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
     }
   }
