@@ -11,19 +11,10 @@ export default function Pengaduan() {
 
   useEffect(() => {
     setLoading(true);
-    let q;
-    if (activeFilter !== 'all') {
-      q = query(
-        collection(db, 'pengaduan_pelanggan'),
-        where('status', '==', activeFilter),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'pengaduan_pelanggan'),
-        orderBy('createdAt', 'desc')
-      );
-    }
+    const q = query(
+      collection(db, 'pengaduan_pelanggan'),
+      orderBy('createdAt', 'desc')
+    );
 
     const unsub = onSnapshot(q, (snapshot) => {
       setPengaduan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -33,7 +24,7 @@ export default function Pengaduan() {
       setLoading(false);
     });
     return () => unsub();
-  }, [activeFilter]);
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini?')) return;
@@ -45,9 +36,22 @@ export default function Pengaduan() {
   };
 
   const filtered = pengaduan.filter(p => {
-    const matchesSearch = (p.namaPelanggan || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (p.deskripsi || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (p.nomorSambungan || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const name = p.userName || '';
+    const desc = p.description || '';
+    const noSamb = p.userNoMeter || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          noSamb.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeFilter === 'Menunggu Respon') {
+      return matchesSearch && p.status === 'Menunggu Respon';
+    }
+    if (activeFilter === 'Diproses') {
+      return matchesSearch && p.status === 'Diproses';
+    }
+    if (activeFilter === 'Selesai') {
+      return matchesSearch && p.status === 'Selesai';
+    }
     return matchesSearch;
   });
 
@@ -55,7 +59,7 @@ export default function Pengaduan() {
 
   const totalPengaduan = pengaduan.length;
   const selesaiCount = pengaduan.filter(p => p.status === 'Selesai').length;
-  const prosesCount = pengaduan.filter(p => p.status === 'Sedang Diproses').length;
+  const prosesCount = pengaduan.filter(p => p.status === 'Diproses').length;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -123,8 +127,8 @@ export default function Pengaduan() {
               className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs bg-white outline-none focus:border-blue-500"
             >
               <option value="all">Semua Status</option>
-              <option value="Menunggu">Menunggu</option>
-              <option value="Sedang Diproses">Sedang Diproses</option>
+              <option value="Menunggu Respon">Menunggu Respon</option>
+              <option value="Diproses">Sedang Diproses</option>
               <option value="Selesai">Selesai</option>
             </select>
           </div>
@@ -152,14 +156,14 @@ export default function Pengaduan() {
                         <User size={18} />
                       </div>
                       <div>
-                        <p className="font-black text-slate-800">{p.namaPelanggan}</p>
-                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">NO: {p.nomorSambungan}</p>
+                        <p className="font-black text-slate-800">{p.userName || 'Tanpa Nama'}</p>
+                        <p className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">NO: {p.userNoMeter || 'N/A'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-5">
                     <p className="text-slate-600 font-medium whitespace-normal min-w-[300px] max-w-lg leading-relaxed text-xs">
-                      {p.deskripsi}
+                      {p.description}
                     </p>
                   </td>
                   <td className="p-5 text-center text-slate-400 font-bold text-xs uppercase">
@@ -168,10 +172,10 @@ export default function Pengaduan() {
                   <td className="p-5 text-center">
                     <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                       p.status === 'Selesai' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      p.status === 'Sedang Diproses' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                      p.status === 'Diproses' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                       'bg-amber-50 text-amber-600 border-amber-100'
                     }`}>
-                      {p.status || 'Menunggu'}
+                      {p.status || 'Menunggu Respon'}
                     </span>
                   </td>
                   <td className="p-5 text-right flex justify-end gap-2">

@@ -28,7 +28,7 @@ interface AuthContextType {
   user: User | null;
   allUsers: User[];
   login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, phone: string, address: string, password: string, role: UserRole, gol?: string) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
+  register: (name: string, email: string, phone: string, address: string, password: string, role: UserRole, golongan?: string) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
   verifyCode: (emailOrPhone: string, code: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUserStatus: (userId: string, status: 'active' | 'pending' | 'blocked') => Promise<void>;
@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, phone: string, address: string, password: string, role: UserRole, gol?: string) => {
+  const register = async (name: string, email: string, phone: string, address: string, password: string, role: UserRole, golongan?: string) => {
     try {
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status_akun: status,
           no_meter: '',
           id_pelanggan: 'PELANGGAN BARU',
-          gol: gol || 'Rumah Tangga 2 (R2)',
+          golongan: golongan || 'Rumah Tangga 2 (R2)',
           createdAt: new Date().toISOString(),
           avatar
         };

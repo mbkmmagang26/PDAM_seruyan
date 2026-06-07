@@ -103,7 +103,7 @@ export default function DashboardUtama() {
       let pending = 0;
       snapshot.forEach(doc => {
         const status = doc.data().status;
-        if (status === 'Menunggu' || status === 'Menunggu Respon') pending++;
+        if (status === 'Menunggu Respon') pending++;
       });
       setStats(s => ({ ...s, pengaduanPending: pending }));
     });

@@ -81,7 +81,7 @@ export default function AdminDashboard() {
     address: '',
     password: '',
     role: 'staff' as UserRole,
-    gol: 'Rumah Tangga 2 (R2)'
+    golongan: 'Rumah Tangga 2 (R2)'
   });
 
   const [newTaskForm, setNewTaskForm] = useState({
@@ -148,20 +148,20 @@ export default function AdminDashboard() {
         newUserReg.address,
         newUserReg.password,
         newUserReg.role,
-        newUserReg.gol
+        newUserReg.golongan
       );
 
       showNotification(t('admin.user.success_create'), 'success');
       logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);
       setIsAddingUser(false);
-      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
+      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', golongan: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
       showNotification(err.message, 'error');
     }
   };
 
   const openAddUser = () => {
-    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter, gol: 'Rumah Tangga 2 (R2)' });
+    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter, golongan: 'Rumah Tangga 2 (R2)' });
     setIsAddingUser(true);
   };
 
@@ -231,6 +231,7 @@ export default function AdminDashboard() {
           no_meter: '',
           id_pelanggan: 'MENUNGGU PASANG',
           gol: 'Rumah Tangga 2 (R2)',
+          golongan: 'Rumah Tangga 2 (R2)',
           createdAt: new Date().toISOString()
         });
         finalPermohonanId = newPelangganRef.id;
@@ -286,7 +287,8 @@ export default function AdminDashboard() {
         noHp: editCustomerData.noHp || '',
         alamat: editCustomerData.alamat || '',
         no_meter: editCustomerData.no_meter || '',
-        gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
+        gol: editCustomerData.golongan || editCustomerData.gol || 'Rumah Tangga 2 (R2)',
+        golongan: editCustomerData.golongan || editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
       logActivity(user, 'Edit Pelanggan', `Mengupdate data pelanggan ${editCustomerData.nama || ''}`);
       showNotification('Data pelanggan berhasil diupdate', 'success');
@@ -568,7 +570,7 @@ export default function AdminDashboard() {
                             {(c.status || 'Aktif').toUpperCase()}
                           </div>
                           <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 bg-slate-100 rounded-md w-fit">
-                            {c.gol || 'Belum Ada Golongan'}
+                            {c.golongan || c.gol || 'Belum Ada Golongan'}
                           </span>
                         </div>
                       </td>
@@ -1351,8 +1353,8 @@ export default function AdminDashboard() {
                       <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
                       <select 
                         required
-                        value={newUserReg.gol} 
-                        onChange={e => setNewUserReg({ ...newUserReg, gol: e.target.value })} 
+                        value={newUserReg.golongan} 
+                        onChange={e => setNewUserReg({ ...newUserReg, golongan: e.target.value })} 
                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                       >
                         {golonganList.map(g => (
@@ -1416,8 +1418,8 @@ export default function AdminDashboard() {
                       <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
                       <select 
                         required
-                        value={editCustomerData.gol || ''} 
-                        onChange={e => setEditCustomerData({ ...editCustomerData, gol: e.target.value })} 
+                        value={editCustomerData.golongan || editCustomerData.gol || ''} 
+                        onChange={e => setEditCustomerData({ ...editCustomerData, golongan: e.target.value })} 
                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                       >
                         {golonganList.map(g => (

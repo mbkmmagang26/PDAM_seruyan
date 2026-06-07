@@ -47,13 +47,13 @@ export const processMeterReadingAndBilling = async (
     }
     
     const userData = userSnap.data();
-    
-    if (!userData.gol) {
+    const userGolongan = userData.golongan || userData.gol;
+    if (!userGolongan) {
        return { success: false, message: 'Pelanggan belum memiliki Golongan Tarif.' };
     }
 
     // 2. Dapatkan data Golongan berdasarkan nama
-    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userData.gol), limit(1));
+    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userGolongan), limit(1));
     const golSnap = await getDocs(golQ);
     
     if (golSnap.empty) {
@@ -139,9 +139,12 @@ export const processMeterReadingAndBilling = async (
       // Jika belum ada, buat baru
       await setDoc(tbPelangganRef, {
         nomorSambungan: customerId.substring(0, 8).toUpperCase(),
+        no_meter: customerId.substring(0, 8).toUpperCase(),
+        id_pelanggan: customerId.substring(0, 8).toUpperCase(),
         nama: userData.nama || 'Pelanggan',
         alamat: userData.alamat || '-',
         golongan: golonganData.name,
+        gol: golonganData.name,
         tagihanTunggakan: totalAmount,
         lastUpdated: new Date().toISOString()
       });
