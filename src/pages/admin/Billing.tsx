@@ -8,6 +8,13 @@ import { processPayment } from '../../lib/billingUtils';
 import { useAuth } from '../../authContext';
 import { logActivity } from '../../lib/logger';
 
+const getMonthName = (monthStr: string) => {
+  if (!monthStr || !monthStr.includes('-')) return '';
+  const [, m] = monthStr.split('-');
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  return monthNames[parseInt(m, 10) - 1] || '';
+};
+
 export default function Billing() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -205,7 +212,7 @@ export default function Billing() {
                   <div>
                     <p className="text-sm font-bold">{bill.customerName || 'Unknown'}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {bill.periodeBulan} {bill.periodeTahun} • {new Date(bill.createdAt).toLocaleDateString()}
+                      {bill.periodeBulan || getMonthName(bill.month)} {bill.periodeTahun || bill.year || ''} • {new Date(bill.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

@@ -72,6 +72,9 @@ export interface Bill {
   paidDate?: string;
   status: 'paid' | 'unpaid';
   createdAt: string;
+  periodeBulan?: string;
+  periodeTahun?: string;
+  totalTagihan?: number;
 }
 
 export interface ConnectionRequest {

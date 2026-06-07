@@ -106,12 +106,19 @@ export const processMeterReadingAndBilling = async (
     const biayaAdmin = golonganData.biayaAdmin || 0;
     const totalAmount = biayaPemakaian + biayaAdmin;
 
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const periodeBulan = monthNames[dateNow.getMonth()];
+    const periodeTahun = yearStr;
+
     const newBillData: Omit<Bill, 'id'> = {
       customerId,
       customerName: userData.nama || 'Pelanggan',
       meterReadingId: meterDocRef.id,
       month: currentMonth,
       year: yearStr,
+      periodeBulan,
+      periodeTahun,
+      totalTagihan: totalAmount,
       usage: pemakaian,
       biayaAdmin,
       biayaPemakaian,

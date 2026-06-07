@@ -6,6 +6,13 @@ import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calend
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
 
+const getMonthName = (monthStr: string) => {
+  if (!monthStr || !monthStr.includes('-')) return '';
+  const [, m] = monthStr.split('-');
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  return monthNames[parseInt(m, 10) - 1] || '';
+};
+
 export default function PiutangAR() {
   const { user } = useAuth();
   const [pelanggan, setPelanggan] = useState<any[]>([]);
@@ -68,8 +75,8 @@ export default function PiutangAR() {
       const data = bills.map(b => ({
         Tanggal: new Date(b.createdAt).toLocaleDateString('id-ID'),
         Pelanggan: b.customerName || 'Unknown',
-        Bulan: b.periodeBulan,
-        Tahun: b.periodeTahun,
+        Bulan: b.periodeBulan || getMonthName(b.month),
+        Tahun: b.periodeTahun || b.year || '',
         Nominal: b.totalTagihan || b.amount || 0,
         Status: b.status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'
       }));
@@ -260,7 +267,7 @@ export default function PiutangAR() {
                         <p className="font-black text-slate-800">{b.customerName || 'Unknown'}</p>
                       </td>
                       <td className="p-4">
-                        <p className="text-slate-600 font-medium">{b.periodeBulan} {b.periodeTahun}</p>
+                        <p className="text-slate-600 font-medium">{b.periodeBulan || getMonthName(b.month)} {b.periodeTahun || b.year || ''}</p>
                       </td>
                       <td className="p-4 text-right">
                         <p className="font-black text-slate-700">{formatCurrency(b.totalTagihan || b.amount || 0)}</p>
