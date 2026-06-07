@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, deleteDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, deleteDoc, doc, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calendar, LayoutDashboard, X, Trash2, FileText, CheckCircle } from 'lucide-react';
@@ -43,7 +43,24 @@ export default function PiutangAR() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data pelanggan ini?')) return;
     try {
-      await deleteDoc(doc(db, 'tb_pelanggan', id));
+      const targetRef = doc(db, 'tb_pelanggan', id);
+      const targetSnap = await getDoc(targetRef);
+      if (targetSnap.exists()) {
+        const targetData = targetSnap.data();
+        const customerUserId = targetData.userId;
+        if (customerUserId && customerUserId !== id) {
+          const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+          const parentSnap = await getDoc(parentRef);
+          if (parentSnap.exists()) {
+            const parentData = parentSnap.data();
+            const updatedMeters = (parentData.meters || []).filter((m: any) => m.idPelanggan !== id);
+            await updateDoc(parentRef, {
+              meters: updatedMeters
+            });
+          }
+        }
+      }
+      await deleteDoc(targetRef);
       logActivity(user, 'Hapus Data Pelanggan', `Menghapus data pelanggan dengan ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus pelanggan: ' + err.message);

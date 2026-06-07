@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, User, Building2, Bell, Shield, LogOut, ChevronRight, Save, Trash2, Plus, X, Loader2, Key } from 'lucide-react';
 import { useAuth } from '../../../authContext';
-import { collection, onSnapshot, query, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 
 export default function Pengaturan() {
@@ -47,12 +47,28 @@ export default function Pengaturan() {
     }
     if (!confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) return;
     try {
-      const { getDoc } = await import('firebase/firestore');
       const adminDoc = await getDoc(doc(db, 'user_admin', id));
       if (adminDoc.exists()) {
         await deleteDoc(doc(db, 'user_admin', id));
       } else {
-        await deleteDoc(doc(db, 'tb_pelanggan', id));
+        const targetRef = doc(db, 'tb_pelanggan', id);
+        const targetSnap = await getDoc(targetRef);
+        if (targetSnap.exists()) {
+          const targetData = targetSnap.data();
+          const customerUserId = targetData.userId;
+          if (customerUserId && customerUserId !== id) {
+            const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+            const parentSnap = await getDoc(parentRef);
+            if (parentSnap.exists()) {
+              const parentData = parentSnap.data();
+              const updatedMeters = (parentData.meters || []).filter((m: any) => m.idPelanggan !== id);
+              await updateDoc(parentRef, {
+                meters: updatedMeters
+              });
+            }
+          }
+        }
+        await deleteDoc(targetRef);
       }
     } catch (err: any) {
       alert('Gagal menghapus pengguna: ' + err.message);

@@ -40,7 +40,7 @@ import Billing from './Billing';
 import TarifGolongan from './TarifGolongan';
 import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { logActivity } from '../../lib/logger';
 
@@ -346,7 +346,24 @@ export default function AdminDashboard() {
   const handleDeleteCustomer = async (id: string, name: string) => {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
-        await deleteDoc(doc(db, 'tb_pelanggan', id));
+        const targetRef = doc(db, 'tb_pelanggan', id);
+        const targetSnap = await getDoc(targetRef);
+        if (targetSnap.exists()) {
+          const targetData = targetSnap.data();
+          const customerUserId = targetData.userId;
+          if (customerUserId && customerUserId !== id) {
+            const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+            const parentSnap = await getDoc(parentRef);
+            if (parentSnap.exists()) {
+              const parentData = parentSnap.data();
+              const updatedMeters = (parentData.meters || []).filter((m: any) => m.idPelanggan !== id);
+              await updateDoc(parentRef, {
+                meters: updatedMeters
+              });
+            }
+          }
+        }
+        await deleteDoc(targetRef);
         logActivity(user, 'Hapus Pelanggan', `Menghapus pelanggan ${name}`);
         showNotification('Pelanggan berhasil dihapus', 'success');
       } catch (error) {
