@@ -103,9 +103,29 @@ export default function AdminDashboard() {
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
 
-  const pendingRequests = requests.filter(req => req.status === 'pending');
-  const pendingComplaints = complaints.filter(c => !c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons');
+  const [clickedNotifIds, setClickedNotifIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('clicked_admin_notifs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const pendingRequests = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
+  const pendingComplaints = complaints.filter(c => 
+    (!c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons') &&
+    !clickedNotifIds.includes(`comp-${c.id}`)
+  );
   const unreadNotifs = pendingRequests.length + pendingComplaints.length;
+
+  const handleNotifClick = (id: string, targetView: AdminView) => {
+    const updated = [...clickedNotifIds, id];
+    setClickedNotifIds(updated);
+    localStorage.setItem('clicked_admin_notifs', JSON.stringify(updated));
+    setActiveView(targetView);
+    setIsNotifOpen(false);
+  };
 
   const searchResults = () => {
     if (!globalSearchQuery) return [];
@@ -1318,7 +1338,7 @@ export default function AdminDashboard() {
                         {pendingComplaints.map(c => (
                           <button
                             key={`comp-${c.id}`}
-                            onClick={() => { setActiveView('tasks'); setIsNotifOpen(false); }}
+                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tasks')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors"
                           >
                             <p className="text-xs font-bold text-slate-800">Pengaduan Baru</p>
@@ -1328,7 +1348,7 @@ export default function AdminDashboard() {
                         {pendingRequests.map(r => (
                           <button
                             key={`req-${r.id}`}
-                            onClick={() => { setActiveView('requests'); setIsNotifOpen(false); }}
+                            onClick={() => handleNotifClick(`req-${r.id}`, 'requests')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors"
                           >
                             <p className="text-xs font-bold text-slate-800">Permohonan Baru</p>
