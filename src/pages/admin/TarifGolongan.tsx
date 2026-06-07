@@ -104,14 +104,14 @@ export default function TarifGolongan() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500 font-medium">Memuat Data Master Golongan...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 dark:text-slate-400 font-medium">Memuat Data Master Golongan...</div>;
 
   return (
     <div className="space-y-8">
       <header className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-headline font-bold text-slate-800">Master Tarif Golongan</h2>
-          <p className="text-sm text-slate-500">Kelola harga air per kubik (m³) berdasarkan golongan pelanggan.</p>
+          <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">Master Tarif Golongan</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola harga air per kubik (m³) berdasarkan golongan pelanggan.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -136,7 +136,7 @@ export default function TarifGolongan() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             key={g.id} 
-            className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative group overflow-hidden"
+            className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm relative group overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -z-10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
             
@@ -157,20 +157,20 @@ export default function TarifGolongan() {
 
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500">Biaya Admin / Bulan</span>
-                <span className="font-bold text-slate-800">{formatCurrency(g.biayaAdmin)}</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Biaya Admin / Bulan</span>
+                <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.biayaAdmin)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500">Tarif 1 - 10 m³</span>
-                <span className="font-bold text-slate-800">{formatCurrency(g.tarif1_10)}</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 1 - 10 m³</span>
+                <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif1_10)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500">Tarif 11 - 20 m³</span>
-                <span className="font-bold text-slate-800">{formatCurrency(g.tarif11_20)}</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 11 - 20 m³</span>
+                <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif11_20)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-500">Tarif {'>'} 20 m³</span>
-                <span className="font-bold text-slate-800">{formatCurrency(g.tarif21_up)}</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif {'>'} 20 m³</span>
+                <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif21_up)}</span>
               </div>
             </div>
           </motion.div>
@@ -185,13 +185,13 @@ export default function TarifGolongan() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden"
+              className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h3 className="text-xl font-headline font-bold text-slate-800">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-xl font-headline font-bold text-slate-800 dark:text-white">
                   {editingId ? 'Edit Golongan' : 'Tambah Golongan'}
                 </h3>
-                <button onClick={resetForm} className="p-2 text-slate-400 hover:text-slate-600 bg-white rounded-full shadow-sm">
+                <button onClick={resetForm} className="p-2 text-slate-400 hover:text-slate-600 bg-white dark:bg-slate-800 rounded-full shadow-sm">
                   <X size={20} />
                 </button>
               </div>
@@ -205,7 +205,7 @@ export default function TarifGolongan() {
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="Contoh: Rumah Tangga A"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] focus:ring-1 focus:ring-[#00478d] outline-none"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] focus:ring-1 focus:ring-[#00478d] outline-none"
                   />
                 </div>
                 
@@ -217,7 +217,7 @@ export default function TarifGolongan() {
                       type="number" 
                       value={formData.biayaAdmin}
                       onChange={e => setFormData({...formData, biayaAdmin: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
                     />
                   </div>
                   <div>
@@ -227,7 +227,7 @@ export default function TarifGolongan() {
                       type="number" 
                       value={formData.tarif1_10}
                       onChange={e => setFormData({...formData, tarif1_10: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
                     />
                   </div>
                   <div>
@@ -237,7 +237,7 @@ export default function TarifGolongan() {
                       type="number" 
                       value={formData.tarif11_20}
                       onChange={e => setFormData({...formData, tarif11_20: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
                     />
                   </div>
                   <div>
@@ -247,7 +247,7 @@ export default function TarifGolongan() {
                       type="number" 
                       value={formData.tarif21_up}
                       onChange={e => setFormData({...formData, tarif21_up: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 rounded-xl text-slate-700 focus:border-[#00478d] outline-none"
                     />
                   </div>
                 </div>

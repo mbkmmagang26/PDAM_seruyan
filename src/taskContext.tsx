@@ -46,7 +46,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           type: isFromPelanggan ? 'new_connection' : data.type,
           location: isFromPelanggan ? data.alamat : data.location,
           priority: isFromPelanggan ? 'normal' : data.priority,
-          status: (data.status === 'Menunggu Verifikasi' || isFromPelanggan) && !data.assignedTo ? 'pending' : data.status,
+          status: (data.status === 'Menunggu Verifikasi' || isFromPelanggan) && !data.assignedTo ? 'pending' : (data.status === 'Selesai' || data.status === 'selesai' ? 'completed' : data.status),
           district: isFromPelanggan ? 'Seruyan' : data.district,
           customerName: isFromPelanggan ? data.nama : data.customerName,
         };

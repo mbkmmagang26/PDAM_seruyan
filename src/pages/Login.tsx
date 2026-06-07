@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../languageContext';
 import LanguageToggle from '../components/LanguageToggle';
+import ThemeToggle from '../components/ThemeToggle';
 
 type Step = 'role' | 'login' | 'forgot-password' | 'verify-code' | 'reset-password' | 'reset-success' | 'pending-info';
 type Role = 'admin' | 'staff' | 'direktur';
@@ -120,11 +121,12 @@ export default function Login() {
   const getRoleLabel = (role: Role) => role.charAt(0).toUpperCase() + role.slice(1);
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-surface dark:bg-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#00478d]/20 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-[#4b6175]/20 rounded-full blur-[100px] pointer-events-none" />
       
-      <div className="absolute top-8 right-8 z-50">
+      <div className="absolute top-8 right-8 z-50 flex items-center gap-3">
+        <ThemeToggle />
         <LanguageToggle />
       </div>
 
@@ -136,43 +138,43 @@ export default function Login() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
+              className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 dark:border-slate-700"
             >
               <div className="flex flex-col items-center mb-8">
                 <div className="w-20 h-20 flex items-center justify-center mb-4">
                   <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
-                <h1 className="text-2xl font-headline font-bold text-slate-800">{t('login.gate.title')}</h1>
-                <p className="text-slate-500 text-sm mt-1">{t('login.gate.subtitle')}</p>
+                <h1 className="text-2xl font-headline font-bold text-slate-800 dark:text-white text-center">{t('login.gate.title')}</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center">{t('login.gate.subtitle')}</p>
               </div>
 
               <div className="space-y-4 mb-8">
                 <div className="grid grid-cols-1 gap-3">
-                  <button onClick={() => { setSelectedRole('admin'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 hover:border-primary/50 transition-all bg-white">
-                    <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                  <button onClick={() => { setSelectedRole('admin'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <ShieldCheck size={24} />
                     </div>
                     <div className="text-left">
-                      <span className="block font-bold text-slate-800">{t('login.role.admin.title')}</span>
-                      <span className="text-xs text-slate-500">{t('login.role.admin.desc')}</span>
+                      <span className="block font-bold text-slate-800 dark:text-white">{t('login.role.admin.title')}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.admin.desc')}</span>
                     </div>
                   </button>
-                  <button onClick={() => { setSelectedRole('staff'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 hover:border-primary/50 transition-all bg-white">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                  <button onClick={() => { setSelectedRole('staff'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <Briefcase size={24} />
                     </div>
                     <div className="text-left">
-                      <span className="block font-bold text-slate-800">{t('login.role.staff.title')}</span>
-                      <span className="text-xs text-slate-500">{t('login.role.staff.desc')}</span>
+                      <span className="block font-bold text-slate-800 dark:text-white">{t('login.role.staff.title')}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.staff.desc')}</span>
                     </div>
                   </button>
-                  <button onClick={() => { setSelectedRole('direktur'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 hover:border-primary/50 transition-all bg-white">
-                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                  <button onClick={() => { setSelectedRole('direktur'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <UserIcon size={24} />
                     </div>
                     <div className="text-left">
-                      <span className="block font-bold text-slate-800">Direktur</span>
-                      <span className="text-xs text-slate-500">Akses Akuntansi</span>
+                      <span className="block font-bold text-slate-800 dark:text-white">{t('login.role.direktur.title')}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.direktur.desc')}</span>
                     </div>
                   </button>
                 </div>
@@ -183,7 +185,7 @@ export default function Login() {
                key="verify"
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
+               className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 dark:border-slate-700"
             >
               <button onClick={() => setStep('role')} className="mb-6 flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
                 <ArrowLeft size={16} className="mr-2" />
@@ -193,7 +195,7 @@ export default function Login() {
                 <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <KeyRound size={32} />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">{t('login.verify.title')}</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('login.verify.title')}</h2>
                 <p className="text-slate-500 text-sm mt-2">
                   {t('login.verify.subtitle')}
                 </p>
@@ -236,13 +238,13 @@ export default function Login() {
                key="reset"
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
+               className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 dark:border-slate-700"
             >
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Lock size={32} />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">{t('login.reset.new_password')}</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('login.reset.new_password')}</h2>
                 <p className="text-slate-500 text-sm mt-2">
                   {t('login.reset.subtitle')}
                 </p>
@@ -322,13 +324,12 @@ export default function Login() {
                key="pending"
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-10 border border-white/50 text-center relative overflow-hidden"
+               className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl p-10 border border-white/50 dark:border-slate-700 text-center relative overflow-hidden transition-colors"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
-              <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner ring-8 ring-amber-50 group-hover:scale-110 transition-transform">
+              <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner ring-8 ring-amber-50 dark:ring-amber-900/20 group-hover:scale-110 transition-transform">
                 <Clock size={40} />
               </div>
-              <h2 className="text-3xl font-headline font-bold text-slate-800 mb-4">{t('login.pending.title')}</h2>
               <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-100 mb-10">
                 <p className="text-slate-600 font-medium leading-relaxed">
                   {t('login.pending.subtitle')}
@@ -346,7 +347,7 @@ export default function Login() {
                key="success"
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 text-center"
+               className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 dark:border-slate-700 text-center transition-colors"
             >
               <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={32} />
@@ -368,7 +369,7 @@ export default function Login() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
+              className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50 dark:border-slate-700"
             >
               <button onClick={() => { setStep('role'); setError(''); }} className="mb-6 flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors" disabled={isSubmitting}>
                 <ArrowLeft size={16} className="mr-2" />
@@ -379,7 +380,7 @@ export default function Login() {
                 <span className="inline-block px-3 py-1 rounded-full bg-[#00478d]/10 text-[#00478d] text-xs font-bold mb-3">
                   {getRoleLabel(selectedRole)} Access
                 </span>
-                <h2 className="text-2xl font-bold text-slate-800">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
                   {step === 'login' ? t('login.title') : 'Recover Access'}
                 </h2>
                 <p className="text-slate-500 text-sm mt-1">
@@ -460,7 +461,7 @@ export default function Login() {
                 </button>
               </form>
 
-              <div className="mt-6 text-center text-sm text-slate-500">
+              <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 {step === 'login' ? null : (
                   <button onClick={() => setStep('login')} className="font-bold text-[#00478d]">{t('login.footer.back')}</button>
                 )}

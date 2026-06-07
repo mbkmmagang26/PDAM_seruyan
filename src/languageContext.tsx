@@ -14,6 +14,7 @@ const translations: Record<Language, Record<string, string>> = {
   id: {
     // Common
     'app.name': 'PDAM Seruyan',
+    'app.management': 'Badan Usaha Milik Daerah',
     'common.logout': 'Keluar',
     'common.search': 'Cari...',
     'common.cancel': 'Batal',
@@ -59,6 +60,8 @@ const translations: Record<Language, Record<string, string>> = {
     'login.role.staff.desc': 'Akses perintah kerja, pelaporan meter, dan pemeliharaan teknis.',
     'login.role.user.title': 'Portal Pelanggan',
     'login.role.user.desc': 'Cek tagihan mandiri, riwayat pemakaian, dan lapor keluhan.',
+    'login.role.direktur.title': 'Direktur',
+    'login.role.direktur.desc': 'Akses Akuntansi',
     'login.label.identity': 'Username, Email, atau No. WhatsApp',
     'login.placeholder.identity': 'nama_user atau nama@email.com',
     'login.label.password': 'Kata Sandi',
@@ -300,6 +303,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Common
     'app.name': 'Seruyan Utility',
+    'app.management': 'Regional-Owned Enterprise',
     'common.logout': 'Logout',
     'common.search': 'Search...',
     'common.cancel': 'Cancel',
@@ -345,6 +349,8 @@ const translations: Record<Language, Record<string, string>> = {
     'login.role.staff.desc': 'Access work orders, meter reporting, and technical maintenance.',
     'login.role.user.title': 'Customer Portal',
     'login.role.user.desc': 'Check bills, usage history, and report issues.',
+    'login.role.direktur.title': 'Director',
+    'login.role.direktur.desc': 'Accounting Access',
     'login.label.identity': 'Username, Email, or WhatsApp',
     'login.placeholder.identity': 'username or name@email.com',
     'login.label.password': 'Password',

@@ -273,15 +273,15 @@ export default function DRDView() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">DRD (Daftar Rekening Ditagihkan)</h2>
-          <p className="text-slate-500 text-sm">Upload rekapitulasi rekening air bulanan untuk pengakuan pendapatan hulu.</p>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">DRD (Daftar Rekening Ditagihkan)</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Upload rekapitulasi rekening air bulanan untuk pengakuan pendapatan hulu.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Upload Panel */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8">
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 shadow-sm p-8">
             {uploadStatus === 'idle' && (
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -291,12 +291,12 @@ export default function DRDView() {
                       type="month" 
                       value={parsedSummary.period} 
                       onChange={e => setParsedSummary({ ...parsedSummary, period: e.target.value })} 
-                      className="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-700 bg-slate-50"
+                      className="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50"
                     />
                   </div>
                 </div>
 
-                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center hover:bg-slate-50 transition-colors relative group cursor-pointer">
+                <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors relative group cursor-pointer">
                   <input 
                     type="file" 
                     accept=".xls,.xlsx" 
@@ -306,7 +306,7 @@ export default function DRDView() {
                   <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <FileUp size={32} />
                   </div>
-                  <h4 className="font-bold text-slate-700 mb-1">Pilih File Excel DRD</h4>
+                  <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-1">Pilih File Excel DRD</h4>
                   <p className="text-xs text-slate-400">Mendukung format .xls dan .xlsx (Contoh: rekap drd 04-2026.xls)</p>
                 </div>
               </div>
@@ -322,61 +322,61 @@ export default function DRDView() {
                       <p className="text-xs text-blue-700/70">{parsedSummary.totalRecords} Baris Pelanggan terdeteksi</p>
                     </div>
                   </div>
-                  <button onClick={resetForm} className="text-slate-500 hover:text-slate-700 text-xs font-bold uppercase tracking-wider bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all">Ganti File</button>
+                  <button onClick={resetForm} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm transition-all">Ganti File</button>
                 </div>
 
                 {/* Aggregated Totals Preview */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 text-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tagihan Air</p>
-                    <p className="text-lg font-black text-slate-800">{formatCurrency(parsedSummary.totalAir)}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white">{formatCurrency(parsedSummary.totalAir)}</p>
                   </div>
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 text-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Administrasi & Meter</p>
-                    <p className="text-lg font-black text-slate-800">{formatCurrency(parsedSummary.totalNonAir)}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white">{formatCurrency(parsedSummary.totalNonAir)}</p>
                   </div>
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 text-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Beban Denda</p>
-                    <p className="text-lg font-black text-slate-800">{formatCurrency(parsedSummary.totalDenda)}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white">{formatCurrency(parsedSummary.totalDenda)}</p>
                   </div>
                 </div>
 
                 {/* Double Entry Ledger Visual Preview */}
                 <div className="border border-slate-150 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="bg-slate-50/50 p-4 border-b border-slate-100 flex items-center justify-between">
-                    <h5 className="font-black text-xs text-slate-500 uppercase tracking-widest">Estimasi Double-Entry Jurnal</h5>
+                  <div className="bg-slate-50 dark:bg-slate-900/50/50 p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h5 className="font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest">Estimasi Double-Entry Jurnal</h5>
                     <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Seimbang (Balanced)</span>
                   </div>
                   <div className="divide-y divide-slate-100 text-sm">
                     {/* Debit Line */}
                     <div className="p-4 flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-slate-700">{piutangAccount} - Piutang Air</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-200">{piutangAccount} - Piutang Air</p>
                         <p className="text-[10px] font-black text-blue-600 uppercase tracking-wider">Debit (Aktiva)</p>
                       </div>
-                      <p className="font-black text-slate-800">{formatCurrency(parsedSummary.totalAir + parsedSummary.totalNonAir + parsedSummary.totalDenda)}</p>
+                      <p className="font-black text-slate-800 dark:text-white">{formatCurrency(parsedSummary.totalAir + parsedSummary.totalNonAir + parsedSummary.totalDenda)}</p>
                     </div>
 
                     {/* Credit Lines */}
                     <div className="p-4 flex justify-between items-center pl-8 bg-emerald-50/10">
                       <div>
-                        <p className="font-bold text-slate-700">{pendapatanAirAccount} - Pendapatan Air</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-200">{pendapatanAirAccount} - Pendapatan Air</p>
                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Kredit (Pendapatan)</p>
                       </div>
-                      <p className="font-black text-slate-800">({formatCurrency(parsedSummary.totalAir)})</p>
+                      <p className="font-black text-slate-800 dark:text-white">({formatCurrency(parsedSummary.totalAir)})</p>
                     </div>
                     <div className="p-4 flex justify-between items-center pl-8 bg-emerald-50/10">
                       <div>
-                        <p className="font-bold text-slate-700">{pendapatanNonAirAccount} - Pendapatan Non-Air & Denda</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-200">{pendapatanNonAirAccount} - Pendapatan Non-Air & Denda</p>
                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Kredit (Pendapatan)</p>
                       </div>
-                      <p className="font-black text-slate-800">({formatCurrency(parsedSummary.totalNonAir + parsedSummary.totalDenda)})</p>
+                      <p className="font-black text-slate-800 dark:text-white">({formatCurrency(parsedSummary.totalNonAir + parsedSummary.totalDenda)})</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={resetForm} className="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-colors">Batal</button>
+                  <button onClick={resetForm} className="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">Batal</button>
                   <button onClick={handlePostJournal} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
                     Posting ke Jurnal Umum <ArrowRight size={18} />
                   </button>
@@ -387,7 +387,7 @@ export default function DRDView() {
             {uploadStatus === 'posting' && (
               <div className="p-12 text-center space-y-4">
                 <RefreshCw className="animate-spin mx-auto text-blue-600" size={32} />
-                <p className="font-bold text-slate-500">Memposting Jurnal & Memutakhirkan Saldo Buku Besar...</p>
+                <p className="font-bold text-slate-500 dark:text-slate-400">Memposting Jurnal & Memutakhirkan Saldo Buku Besar...</p>
               </div>
             )}
 
@@ -397,7 +397,7 @@ export default function DRDView() {
                   <CheckCircle size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-800">Jurnal Pengakuan Pendapatan Sukses!</h3>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-white">Jurnal Pengakuan Pendapatan Sukses!</h3>
                   <p className="text-slate-400 text-sm mt-1">Seluruh ayat jurnal penyesuaian untuk periode {parsedSummary.period} telah dicatat ke Jurnal Umum secara otomatis.</p>
                 </div>
                 <button onClick={resetForm} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-md">Upload File Lain</button>
@@ -409,15 +409,15 @@ export default function DRDView() {
         {/* Sidebar Info */}
         <div className="lg:col-span-4 space-y-6">
           {/* Recent Uploads */}
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 space-y-4">
-            <h4 className="font-black text-xs text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">Riwayat DRD Diposting</h4>
+          <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 shadow-sm p-6 space-y-4">
+            <h4 className="font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Riwayat DRD Diposting</h4>
             <div className="space-y-4">
               {recentUploads.length === 0 ? (
                 <div className="text-center py-6 text-slate-400 text-sm italic">Belum ada pengakuan DRD bulan ini.</div>
               ) : recentUploads.map((up, idx) => (
                 <div key={idx} className="flex justify-between items-start text-xs border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-700">{up.reference}</p>
+                    <p className="font-bold text-slate-700 dark:text-slate-200">{up.reference}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{up.description}</p>
                   </div>
                   <div className="text-right">
@@ -430,7 +430,7 @@ export default function DRDView() {
           </div>
 
           <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 space-y-4 relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white dark:bg-slate-800/5 rounded-full blur-xl"></div>
             <div className="flex items-center gap-3">
               <AlertCircle className="text-blue-400 shrink-0" size={24} />
               <p className="text-xs font-black tracking-widest text-slate-400 uppercase">Peraturan Akuntansi</p>

@@ -93,8 +93,8 @@ export default function Anggaran() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Manajemen Anggaran</h2>
-          <p className="text-slate-500 text-sm font-medium">Pemantauan Pagu vs Realisasi Biaya Tahun Anggaran {selectedYear}</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Manajemen Anggaran</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Pemantauan Pagu vs Realisasi Biaya Tahun Anggaran {selectedYear}</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -108,23 +108,23 @@ export default function Anggaran() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6 group hover:border-blue-200 transition-colors">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6 group hover:border-blue-200 transition-colors">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Target size={32} />
           </div>
           <div className="flex-1">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Pagu Anggaran</p>
-            <p className="text-3xl font-black text-slate-800">{formatCurrency(totalBudget)}</p>
+            <p className="text-3xl font-black text-slate-800 dark:text-white">{formatCurrency(totalBudget)}</p>
           </div>
         </div>
         
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6 group hover:border-emerald-200 transition-colors">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6 group hover:border-emerald-200 transition-colors">
           <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Calendar size={32} />
           </div>
           <div className="flex-1">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Realisasi</p>
-            <p className="text-3xl font-black text-slate-800">{formatCurrency(totalRealized)}</p>
+            <p className="text-3xl font-black text-slate-800 dark:text-white">{formatCurrency(totalRealized)}</p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-black text-blue-600">{absorptionRate}%</p>
@@ -133,8 +133,8 @@ export default function Anggaran() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
-        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -142,14 +142,14 @@ export default function Anggaran() {
               placeholder="Cari mata anggaran atau kode akun..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white shadow-sm font-medium"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white dark:bg-slate-800 shadow-sm font-medium"
             />
           </div>
           <div className="flex gap-2">
              <select 
               value={selectedYear}
               onChange={e => setSelectedYear(Number(e.target.value))}
-              className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-sm outline-none focus:border-blue-500"
+              className="bg-white dark:bg-slate-800 border border-slate-200 text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm outline-none focus:border-blue-500"
             >
               {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
@@ -165,7 +165,7 @@ export default function Anggaran() {
                 }));
                 exportToCSV(data, `RKAP_${selectedYear}`);
               }}
-              className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm text-sm"
+              className="bg-white dark:bg-slate-800 border border-slate-200 text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all flex items-center gap-2 shadow-sm text-sm"
             >
               <Download size={18} /> Export RKAP
             </button>
@@ -174,7 +174,7 @@ export default function Anggaran() {
         
         {processedBudgets.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-slate-400">
-             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mb-4">
                 <Target size={40} className="opacity-20" />
              </div>
              <p className="font-bold text-sm">Belum ada data anggaran terdaftar.</p>
@@ -182,7 +182,7 @@ export default function Anggaran() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-white text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
+              <thead className="bg-white dark:bg-slate-800 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
                 <tr>
                   <th className="p-5">Mata Anggaran</th>
                   <th className="p-5">Kategori</th>
@@ -196,25 +196,25 @@ export default function Anggaran() {
                 {processedBudgets.map(b => {
                   const percent = b.amount > 0 ? Math.min(Math.round((b.realized / b.amount) * 100), 100) : 0;
                   return (
-                    <tr key={b.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50/80 transition-colors group">
                       <td className="p-5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-bold text-[10px]">
                             {b.coaCode}
                           </div>
-                          <span className="font-black text-slate-800">{b.name}</span>
+                          <span className="font-black text-slate-800 dark:text-white">{b.name}</span>
                         </div>
                       </td>
                       <td className="p-5">
-                        <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-wider">
                           {b.category}
                         </span>
                       </td>
-                      <td className="p-5 text-right font-black text-slate-700">{formatCurrency(b.amount)}</td>
+                      <td className="p-5 text-right font-black text-slate-700 dark:text-slate-200">{formatCurrency(b.amount)}</td>
                       <td className="p-5 text-right font-black text-blue-600">{formatCurrency(b.realized)}</td>
                       <td className="p-5 min-w-[200px]">
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div 
                               className={`h-full rounded-full transition-all duration-1000 ${
                                 percent > 90 ? 'bg-rose-500' : percent > 50 ? 'bg-amber-500' : 'bg-blue-600'
@@ -245,10 +245,10 @@ export default function Anggaran() {
       {/* Setup Budget Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-xl font-black text-slate-800 uppercase tracking-wider">Setup Alokasi Anggaran</h3>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">Setup Alokasi Anggaran</h3>
+              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white dark:bg-slate-800 hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
                 <X size={24}/>
               </button>
             </div>
@@ -261,7 +261,7 @@ export default function Anggaran() {
                     required 
                     value={formData.coaCode} 
                     onChange={e => setFormData({...formData, coaCode: e.target.value})} 
-                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-blue-600 bg-white"
+                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-blue-600 bg-white dark:bg-slate-800"
                   >
                     <option value="">-- Pilih Akun --</option>
                     {coa.filter(c => c.code && c.code.startsWith('5')).map(c => (
@@ -281,7 +281,7 @@ export default function Anggaran() {
                       placeholder="0"
                       value={formData.amount} 
                       onChange={e => setFormData({...formData, amount: Number(e.target.value)})} 
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-black text-slate-700" 
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-black text-slate-700 dark:text-slate-200" 
                     />
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export default function Anggaran() {
                     required 
                     value={formData.year} 
                     readOnly
-                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 outline-none font-bold" 
+                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50 dark:bg-slate-900/50 text-slate-400 outline-none font-bold" 
                   />
                 </div>
               </div>
@@ -302,7 +302,7 @@ export default function Anggaran() {
                 <button 
                   type="button" 
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
+                  className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all uppercase tracking-widest text-xs"
                 >
                   Batal
                 </button>

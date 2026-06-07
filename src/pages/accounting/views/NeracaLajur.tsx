@@ -211,24 +211,24 @@ export default function NeracaLajurView() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Neraca Lajur (Worksheet 10-Kolom)</h2>
-          <p className="text-slate-500 text-sm">Lembar kerja akuntansi komprehensif penutupan periode keuangan.</p>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Neraca Lajur (Worksheet 10-Kolom)</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Lembar kerja akuntansi komprehensif penutupan periode keuangan.</p>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 shadow-sm">
             <Calendar size={16} className="text-slate-400" />
-            <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 outline-none">
+            <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 outline-none">
               {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
             <div className="w-px h-3 bg-slate-200 mx-1"></div>
-            <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 outline-none">
+            <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 outline-none">
               {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <button 
             onClick={handleExport}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm"
           >
             <Download size={18} /> Export
           </button>
@@ -244,18 +244,18 @@ export default function NeracaLajurView() {
             placeholder="Cari kode atau nama akun..." 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white dark:bg-slate-800 shadow-sm"
           />
         </div>
       </div>
 
       {/* Worksheet Table Container with Frozen Column Left and Scroll Right */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex">
         
         {/* Left Side: Frozen Columns (Code and Name) */}
-        <div className="border-r border-slate-200 shrink-0 bg-slate-50/50 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
+        <div className="border-r border-slate-200 shrink-0 bg-slate-50 dark:bg-slate-900/50/50 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
           <table className="text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider h-[48px]">
+            <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider h-[48px]">
               <tr>
                 <th className="p-4 border-b border-slate-200">Kode</th>
                 <th className="p-4 border-b border-slate-200 w-52">Nama Akun</th>
@@ -263,20 +263,20 @@ export default function NeracaLajurView() {
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {worksheetData.rows.filter(r => r.code.includes(searchTerm) || r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((r, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors h-[48px]">
-                  <td className="p-4 font-bold text-slate-800">{r.code}</td>
-                  <td className="p-4 text-slate-700 max-w-[13rem] truncate font-semibold" title={r.name}>{r.name}</td>
+                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors h-[48px]">
+                  <td className="p-4 font-bold text-slate-800 dark:text-white">{r.code}</td>
+                  <td className="p-4 text-slate-700 dark:text-slate-200 max-w-[13rem] truncate font-semibold" title={r.name}>{r.name}</td>
                 </tr>
               ))}
               {/* Balancing/Net Income Label */}
-              <tr className="bg-slate-50 font-black h-[48px] border-t border-slate-200">
+              <tr className="bg-slate-50 dark:bg-slate-900/50 font-black h-[48px] border-t border-slate-200">
                 <td className="p-4"></td>
                 <td className="p-4 text-blue-600">LABA/RUGI BERJALAN</td>
               </tr>
               {/* Totals Row */}
-              <tr className="bg-slate-100 font-black h-[48px] border-t-2 border-slate-300">
+              <tr className="bg-slate-100 dark:bg-slate-700 font-black h-[48px] border-t-2 border-slate-300">
                 <td className="p-4"></td>
-                <td className="p-4 text-slate-800">TOTAL BALANCE</td>
+                <td className="p-4 text-slate-800 dark:text-white">TOTAL BALANCE</td>
               </tr>
             </tbody>
           </table>
@@ -285,13 +285,13 @@ export default function NeracaLajurView() {
         {/* Right Side: Scrollable Columns (Debit/Kredit sections) */}
         <div className="overflow-x-auto flex-1 scrollbar-thin">
           <table className="text-right text-sm whitespace-nowrap w-full">
-            <thead className="bg-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+            <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
               {/* Top Headers */}
               <tr className="border-b border-slate-200 text-center">
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50">Neraca Saldo</th>
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-100">Penyesuaian</th>
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50">Laba / Rugi</th>
-                <th colSpan={2} className="p-2 bg-slate-100">Neraca</th>
+                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Neraca Saldo</th>
+                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-100 dark:bg-slate-700">Penyesuaian</th>
+                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Laba / Rugi</th>
+                <th colSpan={2} className="p-2 bg-slate-100 dark:bg-slate-700">Neraca</th>
               </tr>
               {/* Sub Headers */}
               <tr className="border-b border-slate-200">
@@ -307,20 +307,20 @@ export default function NeracaLajurView() {
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {worksheetData.rows.filter(r => r.code.includes(searchTerm) || r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((r, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors h-[48px]">
-                  <td className="p-2 border-r border-slate-150 text-slate-600">{r.nsDebit > 0 ? formatCurrency(r.nsDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600">{r.nsKredit > 0 ? formatCurrency(r.nsKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600">{r.adjDebit > 0 ? formatCurrency(r.adjDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600">{r.adjKredit > 0 ? formatCurrency(r.adjKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600">{r.lrDebit > 0 ? formatCurrency(r.lrDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600">{r.lrKredit > 0 ? formatCurrency(r.lrKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600">{r.nDebit > 0 ? formatCurrency(r.nDebit) : '-'}</td>
-                  <td className="p-2 text-slate-600">{r.nKredit > 0 ? formatCurrency(r.nKredit) : '-'}</td>
+                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors h-[48px]">
+                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nsDebit > 0 ? formatCurrency(r.nsDebit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.nsKredit > 0 ? formatCurrency(r.nsKredit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.adjDebit > 0 ? formatCurrency(r.adjDebit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.adjKredit > 0 ? formatCurrency(r.adjKredit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.lrDebit > 0 ? formatCurrency(r.lrDebit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.lrKredit > 0 ? formatCurrency(r.lrKredit) : '-'}</td>
+                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nDebit > 0 ? formatCurrency(r.nDebit) : '-'}</td>
+                  <td className="p-2 text-slate-600 dark:text-slate-300">{r.nKredit > 0 ? formatCurrency(r.nKredit) : '-'}</td>
                 </tr>
               ))}
 
               {/* Balancing net Income Row */}
-              <tr className="bg-slate-50 font-black h-[48px] border-t border-slate-200">
+              <tr className="bg-slate-50 dark:bg-slate-900/50 font-black h-[48px] border-t border-slate-200">
                 {/* NS & Adjustments */}
                 <td className="p-2 border-r border-slate-150">-</td>
                 <td className="p-2 border-r border-slate-200">-</td>
@@ -335,25 +335,25 @@ export default function NeracaLajurView() {
               </tr>
 
               {/* Final Balance Row */}
-              <tr className="bg-slate-100 font-black h-[48px] border-t-2 border-slate-300">
+              <tr className="bg-slate-100 dark:bg-slate-700 font-black h-[48px] border-t-2 border-slate-300">
                 {/* NS Totals */}
-                <td className="p-2 border-r border-slate-150 text-slate-800">{formatCurrency(worksheetData.totals.nsDebit)}</td>
-                <td className="p-2 border-r border-slate-200 text-slate-800">{formatCurrency(worksheetData.totals.nsKredit)}</td>
+                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsDebit)}</td>
+                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsKredit)}</td>
                 {/* Adj Totals */}
-                <td className="p-2 border-r border-slate-150 text-slate-800">{formatCurrency(worksheetData.totals.adjDebit)}</td>
-                <td className="p-2 border-r border-slate-200 text-slate-800">{formatCurrency(worksheetData.totals.adjKredit)}</td>
+                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjDebit)}</td>
+                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjKredit)}</td>
                 {/* LR Totals + balancing */}
-                <td className="p-2 border-r border-slate-150 text-slate-800">
+                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">
                   {formatCurrency(worksheetData.totals.lrDebit + worksheetData.balancing.lrBalancingDebit)}
                 </td>
-                <td className="p-2 border-r border-slate-200 text-slate-800">
+                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">
                   {formatCurrency(worksheetData.totals.lrKredit + worksheetData.balancing.lrBalancingKredit)}
                 </td>
                 {/* Neraca Totals + balancing */}
-                <td className="p-2 border-r border-slate-150 text-slate-800">
+                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">
                   {formatCurrency(worksheetData.totals.nDebit + worksheetData.balancing.nBalancingDebit)}
                 </td>
-                <td className="p-2 text-slate-800">
+                <td className="p-2 text-slate-800 dark:text-white">
                   {formatCurrency(worksheetData.totals.nKredit + worksheetData.balancing.nBalancingKredit)}
                 </td>
               </tr>

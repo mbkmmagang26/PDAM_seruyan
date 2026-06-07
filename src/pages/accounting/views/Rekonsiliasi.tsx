@@ -168,20 +168,20 @@ export default function RekonsiliasiView() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">End of Day (EOD) & Rekonsiliasi</h2>
-          <p className="text-slate-500 text-sm">Otorisasi dan pencocokan uang fisik dengan total penerimaan kasir harian.</p>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">End of Day (EOD) & Rekonsiliasi</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Otorisasi dan pencocokan uang fisik dengan total penerimaan kasir harian.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-slate-700">Daftar Antrean Rekonsiliasi Kasir</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="font-bold text-slate-700 dark:text-slate-200">Daftar Antrean Rekonsiliasi Kasir</h3>
           <span className="text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">{lppList.length} Menunggu Otorisasi</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-150">
+            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-150">
               <tr>
                 <th className="p-4">Tanggal</th>
                 <th className="p-4">Loket & Kasir</th>
@@ -205,13 +205,13 @@ export default function RekonsiliasiView() {
                 const isMatch = diff === 0;
 
                 return (
-                  <tr key={lpp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 text-slate-600 font-medium">{lpp.date}</td>
+                  <tr key={lpp.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">
+                    <td className="p-4 text-slate-600 dark:text-slate-300 font-medium">{lpp.date}</td>
                     <td className="p-4">
-                      <p className="font-bold text-slate-800">{lpp.cashierName}</p>
+                      <p className="font-bold text-slate-800 dark:text-white">{lpp.cashierName}</p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{lpp.loketType}</p>
                     </td>
-                    <td className="p-4 text-right font-bold text-slate-800">{formatCurrency(lpp.totalPenerimaan)}</td>
+                    <td className="p-4 text-right font-bold text-slate-800 dark:text-white">{formatCurrency(lpp.totalPenerimaan)}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
@@ -230,7 +230,7 @@ export default function RekonsiliasiView() {
                         />
                       </div>
                     </td>
-                    <td className={`p-4 text-right font-bold ${diff === 0 ? 'text-slate-600' : diff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <td className={`p-4 text-right font-bold ${diff === 0 ? 'text-slate-600 dark:text-slate-300' : diff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {diff === 0 ? 'Rp 0' : formatCurrency(diff)}
                     </td>
                     <td className="p-4 text-center">
@@ -260,18 +260,18 @@ export default function RekonsiliasiView() {
       {/* Denomination Calculator Modal */}
       {showCalcModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
               <div>
-                <h3 className="font-bold text-slate-800">Kalkulator Kas Fisik</h3>
+                <h3 className="font-bold text-slate-800 dark:text-white">Kalkulator Kas Fisik</h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Hitung Uang Denominasi Rupiah</p>
               </div>
-              <button onClick={() => setShowCalcModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">Tutup</button>
+              <button onClick={() => setShowCalcModal(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm font-bold">Tutup</button>
             </div>
             <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
               {Object.keys(denominations).map(denom => (
                 <div key={denom} className="flex items-center justify-between gap-4 text-sm">
-                  <span className="font-bold text-slate-600 w-24">{formatCurrency(Number(denom))}</span>
+                  <span className="font-bold text-slate-600 dark:text-slate-300 w-24">{formatCurrency(Number(denom))}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-slate-400 font-bold">x</span>
                     <input 
@@ -282,13 +282,13 @@ export default function RekonsiliasiView() {
                       className="w-20 p-2 border border-slate-200 rounded-xl text-center font-bold"
                     />
                   </div>
-                  <span className="font-bold text-slate-700 w-28 text-right">
+                  <span className="font-bold text-slate-700 dark:text-slate-200 w-28 text-right">
                     {formatCurrency(Number(denom) * (denominations[denom] || 0))}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+            <div className="p-6 border-t border-slate-100 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Terhitung</p>
                 <p className="text-lg font-black text-blue-600">{formatCurrency(calculateTotalDenominations())}</p>
