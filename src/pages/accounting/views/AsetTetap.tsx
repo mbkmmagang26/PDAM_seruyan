@@ -103,8 +103,8 @@ export default function AsetTetap() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Aset Tetap (Fixed Assets)</h2>
-          <p className="text-slate-500 text-sm">Pengelolaan inventaris, nilai buku, dan penyusutan aset.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Aset Tetap (Fixed Assets)</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Pengelolaan inventaris, nilai buku, dan penyusutan aset.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <button 
@@ -118,28 +118,28 @@ export default function AsetTetap() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
             <HardDrive size={28} />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Nilai Buku</p>
-            <p className="text-2xl font-black text-slate-800">{formatCurrency(totalAssetValue)}</p>
+            <p className="text-2xl font-black text-slate-800 dark:text-white">{formatCurrency(totalAssetValue)}</p>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
             <Briefcase size={28} />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori Aset</p>
-            <p className="text-2xl font-black text-slate-800">{categoriesCount} <span className="text-sm text-slate-400 font-bold uppercase">Grup</span></p>
+            <p className="text-2xl font-black text-slate-800 dark:text-white">{categoriesCount} <span className="text-sm text-slate-400 font-bold uppercase">Grup</span></p>
           </div>
         </div>
 
         <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <Activity size={28} />
           </div>
           <div>
@@ -156,7 +156,7 @@ export default function AsetTetap() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`whitespace-nowrap px-6 py-3 font-bold text-sm transition-colors relative ${
-              activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === tab ? 'text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
             }`}
           >
             {tab}
@@ -177,29 +177,29 @@ export default function AsetTetap() {
                 placeholder="Cari nama aset atau kategori..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white shadow-sm font-medium"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 outline-none text-sm bg-white dark:bg-slate-800 shadow-sm font-medium"
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setShowFilter(true)}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterCategory !== 'Semua' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterCategory !== 'Semua' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
               >
                 <Filter size={18} /> {filterCategory !== 'Semua' ? `Kat: ${filterCategory}` : 'Filter'}
               </button>
               <button 
                 onClick={handleExport}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-bold text-sm bg-white"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800"
               >
                 <Download size={18} /> Export
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+                <thead className="bg-slate-50 dark:bg-slate-900/50/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
                   <tr>
                     <th className="p-4 uppercase tracking-wider text-xs">Informasi Aset</th>
                     <th className="p-4 uppercase tracking-wider text-xs">Kategori</th>
@@ -212,27 +212,27 @@ export default function AsetTetap() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-medium">Belum ada data aset yang terdaftar.</td></tr>
+                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Belum ada data aset yang terdaftar.</td></tr>
                   ) : filtered.map(a => (
-                    <tr key={a.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50/80 transition-colors group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold">
                             <Briefcase size={20} />
                           </div>
                           <div>
-                            <p className="font-black text-slate-800">{a.name}</p>
+                            <p className="font-black text-slate-800 dark:text-white">{a.name}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">REF: {a.id.substring(0, 8)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase">
+                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase">
                           {a.category}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-500 font-bold text-xs">{a.acquisitionDate}</td>
-                      <td className="p-4 text-right text-slate-600 font-medium">{formatCurrency(a.acquisitionCost || 0)}</td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-bold text-xs">{a.acquisitionDate}</td>
+                      <td className="p-4 text-right text-slate-600 dark:text-slate-300 font-medium">{formatCurrency(a.acquisitionCost || 0)}</td>
                       <td className="p-4 text-right">
                         <p className="font-black text-blue-600">{formatCurrency(a.bookValue || a.acquisitionCost || 0)}</p>
                       </td>
@@ -260,25 +260,25 @@ export default function AsetTetap() {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
+           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
               <PieChart size={32} />
            </div>
-           <h3 className="text-lg font-bold text-slate-700">Analisis Aset & Penyusutan</h3>
-           <p className="text-slate-500 max-w-xs font-medium">Modul perhitungan penyusutan otomatis dan laporan mutasi aset sedang disiapkan.</p>
+           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Analisis Aset & Penyusutan</h3>
+           <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Modul perhitungan penyusutan otomatis dan laporan mutasi aset sedang disiapkan.</p>
         </div>
       )}
 
       {/* Add Asset Modal (Revamped per Screenshot) */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">Tambah Aset Tetap</h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Registrasi aset inventaris atau operasional baru.</p>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white">Tambah Aset Tetap</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Registrasi aset inventaris atau operasional baru.</p>
               </div>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white hover:text-rose-500 p-2 rounded-full transition-all shadow-sm border border-slate-100">
+              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white dark:bg-slate-800 hover:text-rose-500 p-2 rounded-full transition-all shadow-sm border border-slate-100">
                 <X size={20}/>
               </button>
             </div>
@@ -292,7 +292,7 @@ export default function AsetTetap() {
                   placeholder="Cth: Pompa Air Sentrifugal 50HP"
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
-                  className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-medium text-slate-700" 
+                  className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-200" 
                 />
               </div>
 
@@ -302,7 +302,7 @@ export default function AsetTetap() {
                   <select 
                     value={formData.category} 
                     onChange={e => setFormData({...formData, category: e.target.value})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 bg-white"
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
                   >
                     <option value="Peralatan & Mesin">Peralatan & Mesin</option>
                     <option value="Kendaraan">Kendaraan</option>
@@ -317,7 +317,7 @@ export default function AsetTetap() {
                     required 
                     value={formData.acquisitionDate} 
                     onChange={e => setFormData({...formData, acquisitionDate: e.target.value})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                   />
                 </div>
               </div>
@@ -332,7 +332,7 @@ export default function AsetTetap() {
                     placeholder="0"
                     value={formData.acquisitionCost} 
                     onChange={e => setFormData({...formData, acquisitionCost: Number(e.target.value)})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                   />
                 </div>
                 <div className="space-y-2">
@@ -340,7 +340,7 @@ export default function AsetTetap() {
                   <select 
                     value={formData.depreciationMethod} 
                     onChange={e => setFormData({...formData, depreciationMethod: e.target.value})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 bg-white"
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
                   >
                     <option value="Garis Lurus">Garis Lurus</option>
                     <option value="Saldo Menurun">Saldo Menurun</option>
@@ -358,7 +358,7 @@ export default function AsetTetap() {
                     min="1"
                     value={formData.usefulLife} 
                     onChange={e => setFormData({...formData, usefulLife: Number(e.target.value)})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                   />
                 </div>
                 <div className="space-y-2">
@@ -370,7 +370,7 @@ export default function AsetTetap() {
                     placeholder="0"
                     value={formData.residualValue} 
                     onChange={e => setFormData({...formData, residualValue: Number(e.target.value)})} 
-                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200" 
                   />
                 </div>
               </div>
@@ -383,7 +383,7 @@ export default function AsetTetap() {
                 <button 
                   type="button" 
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm"
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all text-sm"
                 >
                   Batal
                 </button>
@@ -401,10 +401,10 @@ export default function AsetTetap() {
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Filter Kategori Aset</h3>
-              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Filter Kategori Aset</h3>
+              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -415,7 +415,7 @@ export default function AsetTetap() {
                     key={cat}
                     onClick={() => { setFilterCategory(cat); setShowFilter(false); }}
                     className={`w-full p-4 rounded-2xl text-left font-bold transition-all border ${
-                      filterCategory === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      filterCategory === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
                     }`}
                   >
                     {cat}

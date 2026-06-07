@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from './firebase'; 
-import { collection, onSnapshot, doc, setDoc, updateDoc, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { Task } from './types';
 import { useAuth } from './authContext';
 
@@ -27,7 +27,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Listener tanpa orderBy dulu agar tidak nyangkut di masalah Index
-    const unsubscribe = onSnapshot(collection(db, 'tasks'), (snapshot) => {
+    let q = query(collection(db, 'aksi_pengaduan'));
+    if (user?.role === 'staff') {
+      q = query(collection(db, 'aksi_pengaduan'), where('assignedTo', '==', user.id));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasksData = snapshot.docs.map(doc => {
         const data = doc.data();
         
@@ -41,7 +46,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           type: isFromPelanggan ? 'new_connection' : data.type,
           location: isFromPelanggan ? data.alamat : data.location,
           priority: isFromPelanggan ? 'normal' : data.priority,
-          status: (data.status === 'Menunggu Verifikasi' || isFromPelanggan) && !data.assignedTo ? 'pending' : data.status,
+          status: (data.status === 'Menunggu Verifikasi' || isFromPelanggan) && !data.assignedTo ? 'pending' : (data.status === 'Selesai' || data.status === 'selesai' ? 'completed' : data.status),
           district: isFromPelanggan ? 'Seruyan' : data.district,
           customerName: isFromPelanggan ? data.nama : data.customerName,
         };
@@ -74,7 +79,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         assignedTo: cleanTaskData.assignedTo || null,
         ...cleanTaskData
       };
-      await setDoc(doc(db, 'tasks', newId), newTask);
+      await setDoc(doc(db, 'aksi_pengaduan', newId), newTask);
     } catch (error) {
       console.error("Gagal buat tugas:", error);
       throw error;
@@ -83,7 +88,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const assignTask = async (taskId: string, staffId: string) => {
     try {
-      await updateDoc(doc(db, 'tasks', taskId), {
+      await updateDoc(doc(db, 'aksi_pengaduan', taskId), {
         status: 'assigned',
         assignedTo: staffId
       });
@@ -95,7 +100,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const updateTaskStatus = async (taskId: string, status: string, updates?: any) => {
     try {
       const updateData = { status, ...(updates || {}) };
-      await updateDoc(doc(db, 'tasks', taskId), updateData);
+      await updateDoc(doc(db, 'aksi_pengaduan', taskId), updateData);
     } catch (error) {
       console.error("Gagal update status:", error);
     }

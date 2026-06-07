@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
 import { sendNotification } from '../../../lib/notifications';
 import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function JurnalUmum() {
   const { user: currentUser } = useAuth();
@@ -13,10 +14,30 @@ export default function JurnalUmum() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Semua Jurnal');
   const [showFilter, setShowFilter] = useState(false);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debouncing effect
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -32,7 +53,7 @@ export default function JurnalUmum() {
 
   useEffect(() => {
     // Listen to Transactions
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'));
+    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'), limit(100));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -98,6 +119,8 @@ export default function JurnalUmum() {
 
       await Promise.all(batchPromises);
 
+      logActivity(currentUser, 'Catat Jurnal Umum', `Mencatat transaksi jurnal: ${formData.reference} - ${formData.description}`);
+
       // Send Notification
       await sendNotification({
         title: 'Jurnal Umum Baru',
@@ -129,9 +152,15 @@ export default function JurnalUmum() {
   };
 
   const handleDelete = async (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (tx?.isLocked) {
+      alert('Transaksi ini telah dikunci (EOD) dan tidak dapat dihapus!');
+      return;
+    }
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
     try {
       await deleteDoc(doc(db, 'transactions', id));
+      logActivity(currentUser, 'Hapus Jurnal', `Menghapus transaksi jurnal ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus transaksi: ' + err.message);
     }
@@ -162,9 +191,9 @@ export default function JurnalUmum() {
   };
 
   const filteredTx = transactions.filter(t => {
-    const matchSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = t.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.category?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      t.reference?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
     let matchDate = true;
     if (filterDates.start) matchDate = matchDate && t.date >= filterDates.start;
@@ -193,6 +222,7 @@ export default function JurnalUmum() {
       Status: t.status || 'pending'
     }));
     exportToCSV(dataToExport, `Jurnal_Umum_${new Date().toISOString().split('T')[0]}`);
+    logActivity(currentUser, 'Export Jurnal', 'Mengekspor data jurnal ke CSV');
   };
 
   const tabs = ["Semua Jurnal", "Kas Masuk (JKM)", "Bank Masuk (JBM)", "Kas Keluar (JKK)", "Bank Keluar (JBK)"];
@@ -203,7 +233,7 @@ export default function JurnalUmum() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-slate-800">Jurnal Umum</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Jurnal Umum</h2>
           <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Periode Aktif: 2026</span>
         </div>
       </div>
@@ -214,7 +244,7 @@ export default function JurnalUmum() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`whitespace-nowrap px-6 py-3 font-medium text-sm transition-colors relative ${activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            className={`whitespace-nowrap px-6 py-3 font-medium text-sm transition-colors relative ${activeTab === tab ? 'text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
               }`}
           >
             {tab}
@@ -240,13 +270,13 @@ export default function JurnalUmum() {
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowFilter(true)}
-            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm transition-all ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm transition-all ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
           >
             <Filter size={18} /> {filterDates.start || filterDates.end ? 'Filter Aktif' : 'Filter'}
           </button>
           <button
             onClick={handleExport}
-            className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm"
+            className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm"
           >
             <Download size={18} /> Export
           </button>
@@ -260,19 +290,19 @@ export default function JurnalUmum() {
       </div>
 
       {/* Table / Empty State */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
         {filteredTx.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[400px] text-center p-8">
-            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
+            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
               <FileText className="text-slate-300" size={32} />
             </div>
-            <p className="text-slate-500 font-medium mb-1">Belum ada transaksi jurnal terdaftar.</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mb-1">Belum ada transaksi jurnal terdaftar.</p>
             <p className="text-sm text-slate-400">Gunakan tombol "Jurnal Baru" untuk memulai pencatatan.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+              <thead className="bg-slate-50 dark:bg-slate-900/50/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
                 <tr>
                   <th className="p-4">Tanggal</th>
                   <th className="p-4">No. Ref</th>
@@ -286,15 +316,15 @@ export default function JurnalUmum() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                  {filteredTx.map(t => (
-                   <tr key={t.id} className="group hover:bg-slate-50 transition-colors">
-                     <td className="p-4 text-slate-600">{t.date}</td>
-                     <td className="p-4 text-slate-600 font-mono text-xs">{t.reference || '-'}</td>
-                     <td className="p-4 font-medium text-slate-800">{t.description}</td>
-                     <td className="p-4 text-slate-600">
-                       <span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono">{t.category || '-'}</span>
+                   <tr key={t.id} className="group hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">
+                     <td className="p-4 text-slate-600 dark:text-slate-300">{t.date}</td>
+                     <td className="p-4 text-slate-600 dark:text-slate-300 font-mono text-xs">{t.reference || '-'}</td>
+                     <td className="p-4 font-medium text-slate-800 dark:text-white">{t.description}</td>
+                     <td className="p-4 text-slate-600 dark:text-slate-300">
+                       <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-mono">{t.category || '-'}</span>
                      </td>
-                     <td className="p-4 text-right font-medium text-slate-700">{t.type === 'income' ? formatCurrency(t.amount) : '-'}</td>
-                     <td className="p-4 text-right font-medium text-slate-700">{t.type === 'expense' ? formatCurrency(t.amount) : '-'}</td>
+                     <td className="p-4 text-right font-medium text-slate-700 dark:text-slate-200">{t.type === 'income' ? formatCurrency(t.amount) : '-'}</td>
+                     <td className="p-4 text-right font-medium text-slate-700 dark:text-slate-200">{t.type === 'expense' ? formatCurrency(t.amount) : '-'}</td>
                      <td className="p-4 text-center">
                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${t.status === 'posted' ? 'bg-emerald-100 text-emerald-700' :
                            t.status === 'verified' ? 'bg-blue-100 text-blue-700' :
@@ -303,14 +333,20 @@ export default function JurnalUmum() {
                          {t.status || 'pending'}
                        </span>
                      </td>
-                     <td className="p-4 text-right">
-                       <button
-                         onClick={() => handleDelete(t.id)}
-                         className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
-                       >
-                         <Trash2 size={18} />
-                       </button>
-                     </td>
+                      <td className="p-4 text-right">
+                        {t.isLocked ? (
+                          <div className="text-slate-400 p-1.5 flex items-center justify-end" title="Terkunci (EOD Rekonsiliasi)">
+                            <Lock size={16} />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-slate-300 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </td>
                    </tr>
                  ))}
               </tbody>
@@ -322,10 +358,10 @@ export default function JurnalUmum() {
       {/* Modal Jurnal Baru */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Catat Jurnal Baru</h3>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Catat Jurnal Baru</h3>
+              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -333,22 +369,22 @@ export default function JurnalUmum() {
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal</label>
                   <input type="date" required value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">No. Referensi</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">No. Referensi</label>
                   <input type="text" placeholder="Contoh: BKM-001" value={formData.reference} onChange={e => setFormData({ ...formData, reference: e.target.value })} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
                 </div>
               </div>
 
               <div className="space-y-1.5 mb-8">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Keterangan</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Keterangan</label>
                 <input type="text" required placeholder="Deskripsi transaksi..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
               </div>
 
               <div className="mb-4 flex justify-between items-end relative">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Input Akun & Nilai</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Input Akun & Nilai</label>
                 <div className="relative">
                   <button 
                     type="button" 
@@ -359,11 +395,11 @@ export default function JurnalUmum() {
                   </button>
                   
                   {showAddDropdown && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <button 
                         type="button"
                         onClick={() => addRow('debit')}
-                        className="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2"
                       >
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                         Tambah Debit
@@ -371,7 +407,7 @@ export default function JurnalUmum() {
                       <button 
                         type="button"
                         onClick={() => addRow('kredit')}
-                        className="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center gap-2"
                       >
                         <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                         Tambah Kredit
@@ -388,17 +424,17 @@ export default function JurnalUmum() {
                       required
                       value={row.account}
                       onChange={e => updateRow(row.id, 'account', e.target.value)}
-                      className="w-full sm:w-[40%] p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all bg-white"
+                      className="w-full sm:w-[40%] p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800"
                     >
                       <option value="">Pilih Akun...</option>
                       {coa.map(c => (
                         <option 
                           key={c.id} 
                           value={c.code} 
-                          disabled={c.level < 3}
-                          className={c.level < 3 ? 'font-bold text-slate-900 bg-slate-50' : ''}
+                          disabled={['1', '2', '3', '4', '5'].includes(c.code)}
+                          className={c.level < 3 || c.isHeader ? 'font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/50' : ''}
                         >
-                          {c.level === 2 ? '　' : c.level === 3 ? '　　' : ''}
+                          {c.level === 2 ? '　' : c.level >= 3 ? '　　' : ''}
                           {c.code} - {c.name}
                         </option>
                       ))}
@@ -460,8 +496,8 @@ export default function JurnalUmum() {
               <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-slate-100 gap-4">
                 <div className="w-full sm:w-auto">
                   <div className="flex gap-6 text-sm mb-1">
-                    <span className="text-slate-500">Total Debit: <span className="font-bold text-slate-800">{formatCurrency(totalDebit)}</span></span>
-                    <span className="text-slate-500">Total Kredit: <span className="font-bold text-slate-800">{formatCurrency(totalKredit)}</span></span>
+                    <span className="text-slate-500 dark:text-slate-400">Total Debit: <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(totalDebit)}</span></span>
+                    <span className="text-slate-500 dark:text-slate-400">Total Kredit: <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(totalKredit)}</span></span>
                   </div>
                   {isBalanced ? (
                     <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">✓ Jurnal seimbang.</span>
@@ -471,7 +507,7 @@ export default function JurnalUmum() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 sm:flex-none px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                  <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 sm:flex-none px-6 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 transition-colors">
                     Batal
                   </button>
                   <button
@@ -490,26 +526,26 @@ export default function JurnalUmum() {
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Filter Periode</h3>
-              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Filter Periode</h3>
+              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Mulai</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal Mulai</label>
                 <input type="date" value={filterDates.start} onChange={e => setFilterDates({ ...filterDates, start: e.target.value })} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Selesai</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal Selesai</label>
                 <input type="date" value={filterDates.end} onChange={e => setFilterDates({ ...filterDates, end: e.target.value })} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => { setFilterDates({ start: '', end: '' }); setShowFilter(false); }}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 transition-colors"
                 >
                   Reset
                 </button>

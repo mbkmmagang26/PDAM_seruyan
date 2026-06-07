@@ -35,13 +35,15 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import { useRequests } from '../../requestContext';
 import LanguageToggle from '../../components/LanguageToggle';
+import ThemeToggle from '../../components/ThemeToggle';
 import WaterFlow from './WaterFlow';
 import Billing from './Billing';
 import TarifGolongan from './TarifGolongan';
 import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { logActivity } from '../../lib/logger';
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
@@ -80,7 +82,7 @@ export default function AdminDashboard() {
     address: '',
     password: '',
     role: 'staff' as UserRole,
-    gol: 'Rumah Tangga 2 (R2)'
+    golongan: 'Rumah Tangga 2 (R2)'
   });
 
   const [newTaskForm, setNewTaskForm] = useState({
@@ -98,6 +100,109 @@ export default function AdminDashboard() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+
+  const fetchHistoryLogs = async () => {
+    try {
+      const q = query(collection(db, 'tb_activity_user_admin'), orderBy('timestamp', 'desc'), limit(50));
+      const snap = await getDocs(q);
+      const logs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setHistoryLogs(logs);
+      setIsHistoryModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch history', error);
+      setNotification({ message: 'Gagal mengambil riwayat aktivitas', type: 'error' });
+    }
+  };
+
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editProfileName, setEditProfileName] = useState('');
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (user?.name) {
+      setEditProfileName(user.name);
+    }
+  }, [user?.name]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'users', user.id), { name: editProfileName });
+      setIsProfileModalOpen(false);
+      setNotification({ message: 'Profil berhasil diperbarui', type: 'success' });
+    } catch (error) {
+      setNotification({ message: 'Gagal memperbarui profil', type: 'error' });
+    }
+  };
+
+  const [clickedNotifIds, setClickedNotifIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('clicked_admin_notifs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const pendingRequests = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
+  const pendingComplaints = complaints.filter(c => 
+    (!c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons') &&
+    !clickedNotifIds.includes(`comp-${c.id}`)
+  );
+  const unreadNotifs = pendingRequests.length + pendingComplaints.length;
+
+  const handleNotifClick = (id: string, targetView: AdminView) => {
+    const updated = [...clickedNotifIds, id];
+    setClickedNotifIds(updated);
+    localStorage.setItem('clicked_admin_notifs', JSON.stringify(updated));
+    setActiveView(targetView);
+    setIsNotifOpen(false);
+  };
+
+  const searchResults = () => {
+    if (!globalSearchQuery) return [];
+    const lowerQuery = globalSearchQuery.toLowerCase();
+    const res: any[] = [];
+    
+    allUsers.forEach(u => {
+      if (u.name?.toLowerCase().includes(lowerQuery) || u.email?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `user-${u.id}`, type: 'User', title: u.name, sub: u.role, onClick: () => { setActiveView('users'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+    
+    requests.forEach(r => {
+      if (r.name?.toLowerCase().includes(lowerQuery) || r.address?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `req-${r.id}`, type: 'Permohonan', title: r.name, sub: r.address, onClick: () => { setActiveView('requests'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+    
+    tasks.forEach(t => {
+      if (t.customerName?.toLowerCase().includes(lowerQuery) || t.id?.toLowerCase().includes(lowerQuery) || t.reason?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `task-${t.id}`, type: 'Tugas', title: t.customerName || t.id, sub: t.type, onClick: () => { setActiveView('tasks'); setTaskTab('tasks'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    complaints.forEach(c => {
+      if (c.userName?.toLowerCase().includes(lowerQuery) || c.description?.toLowerCase().includes(lowerQuery) || c.userNoMeter?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `comp-${c.id}`, type: 'Pengaduan', title: c.userName || 'Tanpa Nama', sub: c.category || 'Keluhan Pelanggan', onClick: () => { setActiveView('tasks'); setTaskTab('complaints'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    customers.forEach(cust => {
+      if (cust.nama?.toLowerCase().includes(lowerQuery) || cust.noMeter?.toLowerCase().includes(lowerQuery) || cust.alamat?.toLowerCase().includes(lowerQuery)) {
+        res.push({ id: `cust-${cust.id}`, type: 'Pelanggan', title: cust.nama, sub: cust.noMeter, onClick: () => { setActiveView('dashboard'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+      }
+    });
+
+    return res;
+  };
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
@@ -107,7 +212,7 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -140,38 +245,27 @@ export default function AdminDashboard() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await register(newUserReg.name, newUserReg.email, newUserReg.phone, newUserReg.address, newUserReg.password, newUserReg.role);
-
-      // If adding a customer, also create their record in tb_pelanggan
-      if (newUserReg.role === 'customer') {
-        const { setDoc } = await import('firebase/firestore');
-        // We use the ID returned or we can find it. But wait, `register` doesn't return the uid directly. 
-        // Let's use addDoc for tb_pelanggan since register creates user collection.
-        // Actually, we can fetch the user by email from tb_pelanggan or just addDoc.
-        const { collection, addDoc } = await import('firebase/firestore');
-        await addDoc(collection(db, 'tb_pelanggan'), {
-          nama: newUserReg.name,
-          alamat: newUserReg.address,
-          noHp: newUserReg.phone,
-          status: 'Aktif',
-          role: 'pelanggan',
-          no_meter: '',
-          id_pelanggan: 'PELANGGAN BARU',
-          gol: newUserReg.gol || 'Rumah Tangga 2 (R2)',
-          createdAt: new Date().toISOString()
-        });
-      }
+      const result = await register(
+        newUserReg.name,
+        newUserReg.email,
+        newUserReg.phone,
+        newUserReg.address,
+        newUserReg.password,
+        newUserReg.role,
+        newUserReg.golongan
+      );
 
       showNotification(t('admin.user.success_create'), 'success');
+      logActivity(user, 'Buat Pengguna', `Menambahkan pengguna baru ${newUserReg.name} dengan peran ${newUserReg.role}`);
       setIsAddingUser(false);
-      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', gol: 'Rumah Tangga 2 (R2)' });
+      setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: 'staff', golongan: 'Rumah Tangga 2 (R2)' });
     } catch (err: any) {
       showNotification(err.message, 'error');
     }
   };
 
   const openAddUser = () => {
-    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter, gol: 'Rumah Tangga 2 (R2)' });
+    setNewUserReg({ name: '', email: '', phone: '', address: '', password: '', role: userFilter, golongan: 'Rumah Tangga 2 (R2)' });
     setIsAddingUser(true);
   };
 
@@ -179,6 +273,7 @@ export default function AdminDashboard() {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
+      logActivity(user, 'Ubah Status Pengguna', `Mengubah status pengguna ${userId} menjadi ${newStatus}`);
       showNotification(t('admin.user.msg.status_updated'), 'success');
     } catch (err: any) {
       showNotification(t('admin.user.msg.status_error'), 'error');
@@ -201,11 +296,13 @@ export default function AdminDashboard() {
           status: 'Aktif',
           no_meter: noMeter.trim()
         });
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
         showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'tb_pelanggan', customerId);
           await updateDoc(docRef, { status: 'Nonaktif' });
+          logActivity(user, 'Nonaktifkan Pelanggan', `Menonaktifkan pelanggan ${customerId}`);
           showNotification(`Status pelanggan berhasil diubah menjadi Nonaktif`, 'success');
         }
       }
@@ -238,6 +335,7 @@ export default function AdminDashboard() {
           no_meter: '',
           id_pelanggan: 'MENUNGGU PASANG',
           gol: 'Rumah Tangga 2 (R2)',
+          golongan: 'Rumah Tangga 2 (R2)',
           createdAt: new Date().toISOString()
         });
         finalPermohonanId = newPelangganRef.id;
@@ -257,6 +355,7 @@ export default function AdminDashboard() {
         permohonanId: finalPermohonanId || undefined
       });
 
+      logActivity(user, 'Buat Perintah Kerja', `Menambahkan perintah kerja baru: ${taskTitle} untuk pelanggan ${newTaskForm.customerName || '-'}`);
       showNotification('Perintah Kerja berhasil ditambahkan', 'success');
       setIsAddingTask(false);
       setNewTaskForm({
@@ -276,6 +375,7 @@ export default function AdminDashboard() {
     }
   };
 
+
   const handleEditClick = (customer: any) => {
     setEditCustomerData(customer);
     setIsEditingCustomer(true);
@@ -291,8 +391,10 @@ export default function AdminDashboard() {
         noHp: editCustomerData.noHp || '',
         alamat: editCustomerData.alamat || '',
         no_meter: editCustomerData.no_meter || '',
-        gol: editCustomerData.gol || 'Rumah Tangga 2 (R2)'
+        gol: editCustomerData.golongan || editCustomerData.gol || 'Rumah Tangga 2 (R2)',
+        golongan: editCustomerData.golongan || editCustomerData.gol || 'Rumah Tangga 2 (R2)'
       });
+      logActivity(user, 'Edit Pelanggan', `Mengupdate data pelanggan ${editCustomerData.nama || ''}`);
       showNotification('Data pelanggan berhasil diupdate', 'success');
       setIsEditingCustomer(false);
     } catch (error) {
@@ -303,7 +405,25 @@ export default function AdminDashboard() {
   const handleDeleteCustomer = async (id: string, name: string) => {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
-        await deleteDoc(doc(db, 'tb_pelanggan', id));
+        const targetRef = doc(db, 'tb_pelanggan', id);
+        const targetSnap = await getDoc(targetRef);
+        if (targetSnap.exists()) {
+          const targetData = targetSnap.data();
+          const customerUserId = targetData.userId;
+          if (customerUserId && customerUserId !== id) {
+            const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+            const parentSnap = await getDoc(parentRef);
+            if (parentSnap.exists()) {
+              const parentData = parentSnap.data();
+              const updatedMeters = (parentData.meters || []).filter((m: any) => m.idPelanggan !== id);
+              await updateDoc(parentRef, {
+                meters: updatedMeters
+              });
+            }
+          }
+        }
+        await deleteDoc(targetRef);
+        logActivity(user, 'Hapus Pelanggan', `Menghapus pelanggan ${name}`);
         showNotification('Pelanggan berhasil dihapus', 'success');
       } catch (error) {
         showNotification('Gagal menghapus pelanggan', 'error');
@@ -344,7 +464,7 @@ export default function AdminDashboard() {
         pengaduanId: processComplaintData.id
       });
 
-      await updateDoc(doc(db, 'pengaduan', processComplaintData.id), { status: 'Diproses' });
+      await updateDoc(doc(db, 'pengaduan_pelanggan', processComplaintData.id), { status: 'Diproses' });
       showNotification('Pengaduan berhasil ditugaskan ke staff', 'success');
       setProcessComplaintData(null);
       setSelectedStaffForComplaint('');
@@ -366,17 +486,17 @@ export default function AdminDashboard() {
 
     if (activeView === 'requests') {
       return (
-        <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-8 py-8 flex justify-between items-center bg-white border-b border-slate-100">
+        <section className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div className="px-8 py-8 flex justify-between items-center bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
             <div>
-              <h2 className="text-2xl font-headline font-bold text-slate-800">{t('admin.requests.title')}</h2>
-              <p className="text-sm text-slate-500 font-medium">{t('admin.requests.subtitle')}</p>
+              <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{t('admin.requests.title')}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('admin.requests.subtitle')}</p>
             </div>
           </div>
 
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <th className="px-8 py-5">{t('admin.requests.table.details')}</th>
                 <th className="px-8 py-5">{t('admin.requests.table.contact')}</th>
                 <th className="px-8 py-5">{t('admin.requests.table.date')}</th>
@@ -393,21 +513,21 @@ export default function AdminDashboard() {
                 </tr>
               ) : (
                 requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                           {req.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 text-sm">{req.name}</p>
+                          <p className="font-bold text-slate-800 dark:text-white text-sm">{req.name}</p>
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.id}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-5">
                       <p className="text-xs font-bold text-slate-700">{req.phone}</p>
-                      <p className="text-xs text-slate-500 font-medium">{req.address}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{req.address}</p>
                     </td>
                     <td className="px-8 py-5">
                       <p className="text-xs font-bold text-slate-600">
@@ -464,21 +584,21 @@ export default function AdminDashboard() {
 
     if (activeView === 'users') {
       return (
-        <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-8 py-8 flex justify-between items-center bg-white">
+        <section className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+          <div className="px-8 py-8 flex justify-between items-center bg-white dark:bg-slate-800">
             <div>
-              <h2 className="text-2xl font-headline font-bold text-slate-800">
+              <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">
                 {userFilter === 'staff' ? t('admin.user.management') : 'Manajemen Pelanggan'}
               </h2>
-              <p className="text-sm text-slate-500 font-medium">{t('admin.user.management_sub')}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('admin.user.management_sub')}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1">
                 <button
                   onClick={() => setUserFilter('staff')}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'staff'
-                      ? 'bg-white text-[#00478d] shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   {t('admin.user.role.staff')}
@@ -486,8 +606,8 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter('customer')}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'customer'
-                      ? 'bg-white text-[#00478d] shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   {t('admin.user.role.customer')}
@@ -495,8 +615,8 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter('direktur')}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${userFilter === 'direktur'
-                      ? 'bg-white text-[#00478d] shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   Direktur
@@ -513,7 +633,7 @@ export default function AdminDashboard() {
           </div>
 
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
               <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <th className="px-8 py-5">IDENTITAS</th>
                 <th className="px-8 py-5">KONTAK</th>
@@ -536,29 +656,29 @@ export default function AdminDashboard() {
                   </tr>
                 ) : (
                   customers.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {c.nama ? c.nama.substring(0, 2).toUpperCase() : 'PL'}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-800 text-sm">{c.nama || 'Tanpa Nama'}</p>
+                            <p className="font-bold text-slate-800 dark:text-white text-sm">{c.nama || 'Tanpa Nama'}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{c.id.substring(0, 8)}...</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
                         <p className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{c.alamat || '-'}</p>
-                        <p className="text-xs text-slate-500 font-medium">{c.noHp || '-'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{c.noHp || '-'}</p>
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex flex-col gap-1.5 items-start">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-700">
                             <Activity size={14} className="text-blue-500" />
                             Meter: {c.no_meter || '-'}
                           </div>
-                          <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">Utama</span>
+                          <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Utama</span>
                         </div>
                       </td>
                       <td className="px-8 py-5">
@@ -570,8 +690,8 @@ export default function AdminDashboard() {
                             <div className={`w-1.5 h-1.5 rounded-full ${(c.status || 'Aktif') === 'Aktif' ? 'bg-emerald-500' : 'bg-amber-500 pulse'}`}></div>
                             {(c.status || 'Aktif').toUpperCase()}
                           </div>
-                          <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 bg-slate-100 rounded-md w-fit">
-                            {c.gol || 'Belum Ada Golongan'}
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-md w-fit">
+                            {c.golongan || c.gol || 'Belum Ada Golongan'}
                           </span>
                         </div>
                       </td>
@@ -617,25 +737,25 @@ export default function AdminDashboard() {
                   </tr>
                 ) : (
                   allUsers.filter((u: User) => u.role === userFilter).map((u: User) => (
-                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {u.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-800 text-sm">{u.name}</p>
+                            <p className="font-bold text-slate-800 dark:text-white text-sm">{u.name}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{u.id}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5">
                         <p className="text-xs font-bold text-slate-700">{u.email}</p>
-                        <p className="text-xs text-slate-500 font-medium">{u.phone}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{u.phone}</p>
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2 group/pass">
-                          <p className="text-xs font-mono font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                          <p className="text-xs font-mono font-bold text-slate-600 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
                             {visiblePasswords.includes(u.id) ? (u.password || '••••••••') : '••••••••'}
                           </p>
                           <button
@@ -660,7 +780,6 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                          <button className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-[#00478d] transition-all active:scale-95"><Edit size={18} /></button>
                           {(u.status || 'active') === 'active' ? (
                             <button
                               onClick={() => handleToggleStatus(u.id, u.status || 'active')}
@@ -695,21 +814,21 @@ export default function AdminDashboard() {
         <section className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-headline font-bold text-slate-800">{t('admin.tasks.management')}</h2>
-              <p className="text-sm text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
+              <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{t('admin.tasks.management')}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('admin.tasks.management_sub')}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1">
                 <button
                   onClick={() => setTaskTab('tasks')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${taskTab === 'tasks' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${taskTab === 'tasks' ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   Perintah Kerja
                 </button>
                 <button
                   onClick={() => setTaskTab('complaints')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${taskTab === 'complaints' ? 'bg-white text-[#00478d] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${taskTab === 'complaints' ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   Pengaduan Masuk
@@ -733,27 +852,27 @@ export default function AdminDashboard() {
           {taskTab === 'tasks' ? (
             <>
               <div className="grid grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.status.pending')}</p>
-                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'pending').length}</h4>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{tasks.filter(t => t.status === 'pending').length}</h4>
                 </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-blue-500">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm border-l-4 border-l-blue-500">
                   <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{t('admin.tasks.status.assigned')}</p>
-                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'assigned').length}</h4>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{tasks.filter(t => t.status === 'assigned').length}</h4>
                 </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm border-l-4 border-l-emerald-500">
                   <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{t('admin.tasks.status.completed')}</p>
-                  <h4 className="text-2xl font-headline font-bold text-slate-800">{tasks.filter(t => t.status === 'completed').length}</h4>
+                  <h4 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{tasks.filter(t => t.status === 'completed').length}</h4>
                 </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm border-l-4 border-l-red-500">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm border-l-4 border-l-red-500">
                   <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{t('admin.tasks.priority.high').toUpperCase()}</p>
                   <h4 className="text-2xl font-headline font-bold text-red-600">{tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length}</h4>
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                 <table className="w-full text-left">
-                  <thead className="bg-slate-50 border-b border-slate-100">
+                  <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
                     <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                       <th className="px-8 py-4">{t('admin.tasks.table.details')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.reason')}</th>
@@ -771,7 +890,7 @@ export default function AdminDashboard() {
                       </tr>
                     ) : (
                       tasks.map(task => (
-                        <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
+                        <tr key={task.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                           <td className="px-8 py-5">
                             <div className="flex items-center gap-3">
                               <div className={`p-2.5 rounded-xl ${task.type === 'repair' ? 'bg-red-50 text-red-500' :
@@ -784,7 +903,7 @@ export default function AdminDashboard() {
                                       task.type === 'disconnection' ? <Scissors size={18} /> : <Wrench size={18} />}
                               </div>
                               <div>
-                                <p className="font-bold text-slate-800 text-sm">
+                                <p className="font-bold text-slate-800 dark:text-white text-sm">
                                   {task.type === 'reading' && 'Pencatatan Meter'}
                                   {task.type === 'new_connection' && `Penyambungan Baru: ${task.customerName || 'Pelanggan Baru'}`}
                                   {task.type === 'disconnection' && `Pemutusan: ${task.customerName || 'Pelanggan'}`}
@@ -800,7 +919,7 @@ export default function AdminDashboard() {
                                 }`}>
                                 {task.priority === 'high' ? 'PRIORITAS TINGGI' : 'PRIORITAS NORMAL'}
                               </span>
-                              <p className="text-xs text-slate-500 font-medium italic truncate max-w-[200px]">{task.reason || task.title || 'Pemeliharaan Rutin'}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium italic truncate max-w-[200px]">{task.reason || task.title || 'Pemeliharaan Rutin'}</p>
                             </div>
                           </td>
                           <td className="px-8 py-5">
@@ -844,9 +963,9 @@ export default function AdminDashboard() {
                                       initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                       animate={{ opacity: 1, scale: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                      className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden"
+                                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden"
                                     >
-                                      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
+                                      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
                                       <div className="max-h-48 overflow-y-auto">
                                         {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
                                           <button
@@ -883,9 +1002,9 @@ export default function AdminDashboard() {
               </div>
             </>
           ) : (
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
               <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-100">
+                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <th className="px-8 py-4">PELAPOR</th>
                     <th className="px-8 py-4">KATEGORI & LAPORAN</th>
@@ -903,18 +1022,18 @@ export default function AdminDashboard() {
                     </tr>
                   ) : (
                     complaints.map(complaint => (
-                      <tr key={complaint.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={complaint.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                         <td className="px-8 py-5">
-                          <p className="font-bold text-slate-800 text-sm">{complaint.userName || 'Tanpa Nama'}</p>
+                          <p className="font-bold text-slate-800 dark:text-white text-sm">{complaint.userName || 'Tanpa Nama'}</p>
                           <p className="text-[10px] text-slate-400 font-bold uppercase">{complaint.userNoMeter ? `Meter: ${complaint.userNoMeter}` : 'Tanpa No Meter'}</p>
-                          <p className="text-xs text-slate-500 mt-1 max-w-[150px] truncate">{complaint.userAlamat}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-[150px] truncate">{complaint.userAlamat}</p>
                         </td>
                         <td className="px-8 py-5">
                           <div className="flex flex-col gap-1">
                             <span className="text-[10px] font-bold w-fit px-2 py-0.5 rounded bg-orange-100 text-orange-700">
                               {complaint.category}
                             </span>
-                            <p className="text-xs text-slate-500 font-medium italic max-w-xs">{complaint.description}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium italic max-w-xs">{complaint.description}</p>
                           </div>
                         </td>
                         <td className="px-8 py-5">
@@ -946,7 +1065,7 @@ export default function AdminDashboard() {
                             <button
                               onClick={async () => {
                                 if (window.confirm('Hapus pengaduan ini?')) {
-                                  await deleteDoc(doc(db, 'pengaduan', complaint.id));
+                                  await deleteDoc(doc(db, 'pengaduan_pelanggan', complaint.id));
                                   showNotification('Pengaduan dihapus', 'success');
                                 }
                               }}
@@ -976,7 +1095,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-xl hover:shadow-primary/5 transition-all"
+              className="bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 dark:border-slate-700 flex flex-col justify-between group hover:shadow-xl hover:shadow-primary/5 transition-all"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -988,12 +1107,12 @@ export default function AdminDashboard() {
                 </div>
               </div>
               {stat.change ? (
-                <p className="text-xs text-slate-500 mt-4 flex items-center gap-1 font-medium">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 flex items-center gap-1 font-medium">
                   <TrendingUp size={14} className="text-emerald-500" />
                   <span className="font-bold text-emerald-600">{stat.change}</span> {t('admin.stats.vs_last_month')}
                 </p>
               ) : (
-                <p className="text-xs text-slate-500 mt-4 font-medium italic opacity-80">{stat.sub}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 font-medium italic opacity-80">{stat.sub}</p>
               )}
             </motion.div>
           ))}
@@ -1002,36 +1121,36 @@ export default function AdminDashboard() {
         <section className="flex gap-4">
           <button
             onClick={() => setActiveView('users')}
-            className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
+            className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white transition-all">
                 <Users size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800">{t('admin.user.management')}</h4>
-                <p className="text-xs text-slate-500 font-medium">{t('admin.user.management_sub')}</p>
+                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.user.management')}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.user.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
               <Plus size={20} />
             </div>
           </button>
 
           <button
             onClick={() => setActiveView('tasks')}
-            className="flex-1 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
+            className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white transition-all">
                 <Wrench size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800">{t('admin.tasks.management')}</h4>
-                <p className="text-xs text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
+                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.tasks.management')}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.tasks.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
               <Plus size={20} />
             </div>
           </button>
@@ -1046,22 +1165,22 @@ export default function AdminDashboard() {
             <h2 className="font-bold text-xl font-headline tracking-tight">{t('common.history')}</h2>
           </div>
           <div className="space-y-8 relative z-10">
-            <div className="flex gap-6 items-start group">
+            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
               <div className="w-2.5 h-2.5 mt-2 rounded-full bg-[#00478d] ring-4 ring-primary/20 shrink-0 group-hover:scale-125 transition-transform"></div>
               <div className="flex-grow">
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-sm font-bold text-slate-100">{t('admin.activity.tariff_update')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">14 MINS AGO</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">14 MINS AGO</span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.tariff_desc')}</p>
               </div>
             </div>
-            <div className="flex gap-6 items-start group">
+            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
               <div className="w-2.5 h-2.5 mt-2 rounded-full bg-slate-700 shrink-0 group-hover:scale-125 transition-transform"></div>
               <div className="flex-grow">
                 <div className="flex justify-between items-center mb-1">
                   <p className="text-sm font-bold text-slate-100">{t('admin.activity.new_staff')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">2 HOURS AGO</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">2 HOURS AGO</span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.staff_desc')}</p>
               </div>
@@ -1073,65 +1192,65 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
-      <aside className="w-72 bg-white border-r border-slate-100 flex flex-col py-10 px-6 fixed h-full z-50">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900 transition-colors">
+      <aside className="w-72 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700 flex flex-col py-10 px-6 fixed h-full z-50">
         <div className="mb-12 px-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-[#00478d] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <Waves size={24} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <h1 className="text-2xl font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</h1>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-extrabold">{t('common.search')} MANAGEMENT</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-extrabold">{t('app.management')}</p>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto hide-scrollbar pb-4">
           <button
             onClick={() => setActiveView('dashboard')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'dashboard' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'dashboard' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <div className="flex items-center gap-4">
               <LayoutDashboard size={20} />
               <span className="text-sm">{t('admin.sidebar.dashboard')}</span>
             </div>
-            {activeView === 'dashboard' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+            {activeView === 'dashboard' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
           </button>
 
           <button
             onClick={() => setActiveView('users')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'users' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'users' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <div className="flex items-center gap-4">
               <Users size={20} />
               <span className="text-sm">{t('admin.user.management')}</span>
             </div>
-            {activeView === 'users' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+            {activeView === 'users' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
           </button>
 
           <button
             onClick={() => setActiveView('requests')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'requests' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'requests' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <div className="flex items-center gap-4">
               <FileText size={20} />
               <span className="text-sm">{t('admin.sidebar.requests')}</span>
             </div>
-            {activeView === 'requests' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+            {activeView === 'requests' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
           </button>
 
           <button
             onClick={() => setActiveView('tasks')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'tasks' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'tasks' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <div className="flex items-center gap-4">
               <Wrench size={20} />
               <span className="text-sm">{t('admin.sidebar.tasks')}</span>
             </div>
-            {activeView === 'tasks' && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+            {activeView === 'tasks' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
           </button>
 
           <div className="pt-4 pb-2 px-5">
@@ -1140,7 +1259,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setActiveView('waterflow')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'waterflow' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'waterflow' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <Waves size={20} />
@@ -1148,7 +1267,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveView('billing')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'billing' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'billing' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <CreditCard size={20} />
@@ -1156,7 +1275,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveView('tarif')}
-            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'tarif' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 hover:bg-slate-50'
+            className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${activeView === 'tarif' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <Activity size={20} />
@@ -1176,25 +1295,113 @@ export default function AdminDashboard() {
       </aside>
 
       <main className="flex-1 ml-72 min-h-screen relative">
-        <header className="h-20 bg-white/80 backdrop-blur-2xl border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+        <header className="h-20 bg-white dark:bg-slate-800/80 backdrop-blur-2xl border-b border-slate-100 dark:border-slate-700 flex items-center justify-between px-10 sticky top-0 z-40">
+          <div className="flex items-center gap-4 relative">
             <div className="relative group">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00478d] transition-colors" />
               <input
                 type="text"
+                value={globalSearchQuery}
+                onChange={e => {
+                  setGlobalSearchQuery(e.target.value);
+                  setIsGlobalSearchOpen(true);
+                }}
+                onFocus={() => setIsGlobalSearchOpen(true)}
                 placeholder={t('common.search')}
-                className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm w-80 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                className="pl-12 pr-6 py-3 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl text-sm w-80 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
+            
+            <AnimatePresence>
+              {isGlobalSearchOpen && globalSearchQuery && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full left-0 mt-3 w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50 max-h-96 overflow-y-auto"
+                >
+                  <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-widest">Hasil Pencarian</h3>
+                    <button onClick={() => setIsGlobalSearchOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
+                  </div>
+                  {searchResults().length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400">Tidak ada hasil ditemukan</div>
+                  ) : (
+                    searchResults().map(res => (
+                      <button
+                        key={res.id}
+                        onClick={res.onClick}
+                        className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 last:border-0"
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">{res.title}</p>
+                          <span className="text-[9px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">{res.type}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{res.sub}</p>
+                      </button>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="flex gap-2">
-              <button className="p-3 bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl relative transition-all border border-slate-50">
+            <ThemeToggle />
+            <div className="flex gap-2 relative">
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)} 
+                className={`p-3 rounded-2xl relative transition-all border border-slate-50 ${isNotifOpen ? 'bg-[#00478d] text-white' : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5'}`}
+              >
                 <Bell size={20} />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                )}
               </button>
-              <button className="p-3 bg-white text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl transition-all border border-slate-50">
+
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-3 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 py-2 z-50 max-h-96 overflow-y-auto"
+                  >
+                    <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-widest">Notifikasi</h3>
+                      <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">{unreadNotifs} Baru</span>
+                    </div>
+                    {unreadNotifs === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">Tidak ada notifikasi baru</div>
+                    ) : (
+                      <>
+                        {pendingComplaints.map(c => (
+                          <button
+                            key={`comp-${c.id}`}
+                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tasks')}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Pengaduan Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{c.userName || 'Tanpa Nama'} - {c.category}</p>
+                          </button>
+                        ))}
+                        {pendingRequests.map(r => (
+                          <button
+                            key={`req-${r.id}`}
+                            onClick={() => handleNotifClick(`req-${r.id}`, 'requests')}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Permohonan Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.name}</p>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button onClick={() => setIsHelpModalOpen(true)} className="p-3 bg-white dark:bg-slate-800 text-slate-400 hover:text-[#00478d] hover:bg-[#00478d]/5 rounded-2xl transition-all border border-slate-50 dark:border-slate-700">
                 <HelpCircle size={20} />
               </button>
             </div>
@@ -1203,24 +1410,28 @@ export default function AdminDashboard() {
 
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm font-bold text-slate-800">{user?.name}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{user?.name}</p>
                 <p className="text-[10px] text-[#00478d] font-extrabold uppercase tracking-tighter">{t('admin.profile.role')}</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={logout}
-                  className="p-2.5 text-slate-400 hover:text-error hover:bg-red-50 rounded-xl transition-all border border-slate-100 hover:border-red-100"
+                  className="p-2.5 text-slate-400 hover:text-error hover:bg-red-50 rounded-xl transition-all border border-slate-100 dark:border-slate-700 hover:border-red-100"
                   title={t('common.logout')}
                 >
                   <LogOut size={18} />
                 </button>
-                <div className="w-12 h-12 rounded-2xl overflow-hidden ring-4 ring-primary/5 shadow-inner">
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  title="Edit Profil"
+                  className="w-12 h-12 rounded-2xl overflow-hidden ring-4 ring-primary/5 shadow-inner hover:ring-primary/20 transition-all cursor-pointer"
+                >
                   <img
                     src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"}
                     alt="Admin"
                     className="w-full h-full object-cover"
                   />
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1236,6 +1447,172 @@ export default function AdminDashboard() {
               transition={{ duration: 0.2 }}
             >
               {renderContent()}
+              <AnimatePresence>
+                {isProfileModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                      onClick={() => setIsProfileModalOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
+                    >
+                      <div className="p-8 pb-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <div>
+                          <h3 className="text-xl font-headline font-bold text-slate-800 dark:text-white">Edit Profil</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Ubah nama tampilan Anda</p>
+                        </div>
+                        <button type="button" onClick={() => setIsProfileModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <form onSubmit={handleUpdateProfile} className="p-8 space-y-6">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nama Lengkap</label>
+                          <input
+                            type="text"
+                            required
+                            value={editProfileName}
+                            onChange={(e) => setEditProfileName(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                            placeholder="Masukkan nama..."
+                          />
+                        </div>
+                        <div className="flex gap-4">
+                          <button
+                            type="button"
+                            onClick={() => setIsProfileModalOpen(false)}
+                            className="flex-1 py-3.5 px-5 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-sm"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 py-3.5 px-5 rounded-2xl font-bold text-white bg-[#00478d] hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all text-sm"
+                          >
+                            Simpan Perubahan
+                          </button>
+                        </div>
+                      </form>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence>
+                {isHelpModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                      onClick={() => setIsHelpModalOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
+                    >
+                      <div className="p-8 pb-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <div>
+                          <h3 className="text-xl font-headline font-bold text-slate-800 dark:text-white">Pusat Bantuan</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Informasi dan panduan sistem</p>
+                        </div>
+                        <button type="button" onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="p-8 space-y-6">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                          <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2">Versi Sistem: 1.0.0 (BETA)</h4>
+                          <p className="text-sm text-blue-600 dark:text-blue-400/80 leading-relaxed">
+                            Aplikasi Manajemen PDAM Seruyan saat ini sedang dalam versi Beta. Jika Anda menemukan bug atau memiliki pertanyaan, silakan hubungi tim IT Support.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <h4 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-widest">Kontak Support</h4>
+                          <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700">
+                            <div className="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center">
+                              <span className="font-bold">WA</span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-white">WhatsApp IT Support</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">+62 812-3456-7890</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700">
+                            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                              <span className="font-bold">@</span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-white">Email Bantuan</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">support@pdam-seruyan.com</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence>
+                {isHistoryModalOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                      onClick={() => setIsHistoryModalOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700 flex flex-col max-h-[80vh]"
+                    >
+                      <div className="p-8 pb-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center shrink-0">
+                        <div>
+                          <h3 className="text-xl font-headline font-bold text-slate-800 dark:text-white">Riwayat Aktivitas</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Log sistem dan tindakan pengguna</p>
+                        </div>
+                        <button type="button" onClick={() => setIsHistoryModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="p-8 overflow-y-auto space-y-6">
+                        {historyLogs.length === 0 ? (
+                          <div className="text-center py-10 text-slate-500 dark:text-slate-400">Belum ada riwayat aktivitas</div>
+                        ) : (
+                          historyLogs.map(log => (
+                            <div key={log.id} className="flex gap-6 items-start">
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-[#00478d] shrink-0 border border-slate-200 dark:border-slate-700">
+                                <History size={20} />
+                              </div>
+                              <div className="flex-grow">
+                                <div className="flex justify-between items-center mb-1">
+                                  <p className="text-sm font-bold text-slate-800 dark:text-white">{log.action}</p>
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{new Date(log.timestamp).toLocaleString('id-ID')}</span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">{log.details}</p>
+                                <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">{log.userName || log.userId} • {log.userRole || 'Sistem'}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1251,7 +1628,7 @@ export default function AdminDashboard() {
             >
               {notification.type === 'success' ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
               <p className="font-bold text-sm tracking-tight">{notification.message}</p>
-              <button onClick={() => setNotification(null)} className="ml-2 hover:bg-white/20 rounded-lg p-1 transition-all"><X size={18} /></button>
+              <button onClick={() => setNotification(null)} className="ml-2 hover:bg-white dark:bg-slate-800/20 rounded-lg p-1 transition-all"><X size={18} /></button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1267,19 +1644,19 @@ export default function AdminDashboard() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+                className="bg-white dark:bg-slate-800 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
               >
-                <div className="p-8 pb-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                <div className="p-8 pb-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-headline font-bold text-slate-800">Tugaskan Staff</h3>
-                    <p className="text-sm text-slate-500">Pilih staff untuk pengaduan ini</p>
+                    <h3 className="text-xl font-headline font-bold text-slate-800 dark:text-white">Tugaskan Staff</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Pilih staff untuk pengaduan ini</p>
                   </div>
                   <button onClick={() => setProcessComplaintData(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400"><X size={20} /></button>
                 </div>
                 <form onSubmit={submitProcessComplaint} className="p-8 space-y-5">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Pilih Staff Lapangan</label>
-                    <select required value={selectedStaffForComplaint} onChange={e => setSelectedStaffForComplaint(e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Pilih Staff Lapangan</label>
+                    <select required value={selectedStaffForComplaint} onChange={e => setSelectedStaffForComplaint(e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
                       <option value="">Pilih Staff...</option>
                       {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(u => (
                         <option key={u.id} value={u.id}>{u.name}</option>
@@ -1309,38 +1686,38 @@ export default function AdminDashboard() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+                className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
               >
-                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
                   <div>
-                    <h3 className="text-2xl font-headline font-bold text-slate-800">{t('admin.user.add_title')}</h3>
-                    <p className="text-sm text-slate-500 font-medium">{t('admin.user.management_sub')}</p>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{t('admin.user.add_title')}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('admin.user.management_sub')}</p>
                   </div>
                   <button onClick={() => setIsAddingUser(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
                 </div>
                 <form onSubmit={handleCreateUser} className="p-10 space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.name')}</label>
-                    <input type="text" required value={newUserReg.name} onChange={e => setNewUserReg({ ...newUserReg, name: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. John Doe" />
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.user.label.name')}</label>
+                    <input type="text" required value={newUserReg.name} onChange={e => setNewUserReg({ ...newUserReg, name: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. John Doe" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.email')}</label>
-                      <input type="email" required value={newUserReg.email} onChange={e => setNewUserReg({ ...newUserReg, email: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="john@example.com" />
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.user.label.email')}</label>
+                      <input type="email" required value={newUserReg.email} onChange={e => setNewUserReg({ ...newUserReg, email: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="john@example.com" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.phone')}</label>
-                      <input type="tel" required value={newUserReg.phone} onChange={e => setNewUserReg({ ...newUserReg, phone: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="08..." />
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.user.label.phone')}</label>
+                      <input type="tel" required value={newUserReg.phone} onChange={e => setNewUserReg({ ...newUserReg, phone: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="08..." />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Alamat Domisili</label>
-                    <textarea required value={newUserReg.address} onChange={e => setNewUserReg({ ...newUserReg, address: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Alamat lengkap..."></textarea>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Alamat Domisili</label>
+                    <textarea required value={newUserReg.address} onChange={e => setNewUserReg({ ...newUserReg, address: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none" placeholder="Alamat lengkap..."></textarea>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.user.label.password')}</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.user.label.password')}</label>
                     <div className="relative">
-                      <input type={showPassword ? 'text' : 'password'} required value={newUserReg.password} onChange={e => setNewUserReg({ ...newUserReg, password: e.target.value })} className="w-full pl-5 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                      <input type={showPassword ? 'text' : 'password'} required value={newUserReg.password} onChange={e => setNewUserReg({ ...newUserReg, password: e.target.value })} className="w-full pl-5 pr-12 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
@@ -1352,12 +1729,12 @@ export default function AdminDashboard() {
                   </div>
                   {newUserReg.role === 'customer' && (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Golongan Tarif</label>
                       <select 
                         required
-                        value={newUserReg.gol} 
-                        onChange={e => setNewUserReg({ ...newUserReg, gol: e.target.value })} 
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={newUserReg.golongan} 
+                        onChange={e => setNewUserReg({ ...newUserReg, golongan: e.target.value })} 
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                       >
                         {golonganList.map(g => (
                           <option key={g.id} value={g.name}>{g.name}</option>
@@ -1375,6 +1752,7 @@ export default function AdminDashboard() {
           )}
         </AnimatePresence>
 
+
         <AnimatePresence>
           {isEditingCustomer && editCustomerData && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
@@ -1386,42 +1764,42 @@ export default function AdminDashboard() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+                className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
               >
-                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
                   <div>
-                    <h3 className="text-2xl font-headline font-bold text-slate-800">Edit Pelanggan</h3>
-                    <p className="text-sm text-slate-500 font-medium">Update data profil dan meteran</p>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">Edit Pelanggan</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Update data profil dan meteran</p>
                   </div>
                   <button onClick={() => setIsEditingCustomer(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
                 </div>
                 <form onSubmit={submitEditCustomer} className="p-10 space-y-5">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">Nama Lengkap</label>
-                    <input type="text" required value={editCustomerData.nama || ''} onChange={e => setEditCustomerData({ ...editCustomerData, nama: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nama Lengkap</label>
+                    <input type="text" required value={editCustomerData.nama || ''} onChange={e => setEditCustomerData({ ...editCustomerData, nama: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">No HP</label>
-                      <input type="tel" required value={editCustomerData.noHp || ''} onChange={e => setEditCustomerData({ ...editCustomerData, noHp: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">No HP</label>
+                      <input type="tel" required value={editCustomerData.noHp || ''} onChange={e => setEditCustomerData({ ...editCustomerData, noHp: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">No Meter</label>
-                      <input type="text" value={editCustomerData.no_meter || ''} onChange={e => setEditCustomerData({ ...editCustomerData, no_meter: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Belum ada" />
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">No Meter</label>
+                      <input type="text" value={editCustomerData.no_meter || ''} onChange={e => setEditCustomerData({ ...editCustomerData, no_meter: e.target.value })} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Belum ada" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">Alamat</label>
-                      <textarea required value={editCustomerData.alamat || ''} onChange={e => setEditCustomerData({ ...editCustomerData, alamat: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"></textarea>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Alamat</label>
+                      <textarea required value={editCustomerData.alamat || ''} onChange={e => setEditCustomerData({ ...editCustomerData, alamat: e.target.value })} rows={2} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"></textarea>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">Golongan Tarif</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Golongan Tarif</label>
                       <select 
                         required
-                        value={editCustomerData.gol || ''} 
-                        onChange={e => setEditCustomerData({ ...editCustomerData, gol: e.target.value })} 
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={editCustomerData.golongan || editCustomerData.gol || ''} 
+                        onChange={e => setEditCustomerData({ ...editCustomerData, golongan: e.target.value })} 
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                       >
                         {golonganList.map(g => (
                           <option key={g.id} value={g.name}>{g.name}</option>
@@ -1454,12 +1832,12 @@ export default function AdminDashboard() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+                className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 dark:border-slate-700"
               >
-                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                <div className="p-10 pb-6 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
                   <div>
-                    <h3 className="text-2xl font-headline font-bold text-slate-800">{t('admin.tasks.add_title')}</h3>
-                    <p className="text-sm text-slate-500 font-medium">{t('admin.tasks.management_sub')}</p>
+                    <h3 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{t('admin.tasks.add_title')}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('admin.tasks.management_sub')}</p>
                   </div>
                   <button onClick={() => setIsAddingTask(false)} className="p-3 hover:bg-slate-200 rounded-full transition-all text-slate-400"><X size={24} /></button>
                 </div>
@@ -1467,14 +1845,14 @@ export default function AdminDashboard() {
                 <form onSubmit={handleCreateTask} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto">
                   <div className="grid grid-cols-1 gap-6">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.type')}</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.tasks.label.type')}</label>
                       <div className="grid grid-cols-4 gap-2">
                         {(['repair', 'reading', 'disconnection', 'new_connection'] as const).map(type => (
                           <button
                             key={type}
                             type="button"
                             onClick={() => setNewTaskForm({ ...newTaskForm, type })}
-                            className={`px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center gap-1.5 border ${newTaskForm.type === type ? 'bg-[#00478d] text-white border-[#00478d] shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'
+                            className={`px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center gap-1.5 border ${newTaskForm.type === type ? 'bg-[#00478d] text-white border-[#00478d] shadow-lg shadow-primary/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                               }`}
                           >
                             {type === 'repair' ? <Wrench size={14} /> : type === 'reading' ? <TrendingUp size={14} /> : type === 'new_connection' ? <Plus size={14} /> : <Scissors size={14} />}
@@ -1487,11 +1865,11 @@ export default function AdminDashboard() {
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.staff')}</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.tasks.label.staff')}</label>
                       <select
                         value={newTaskForm.assignedTo}
                         onChange={e => setNewTaskForm({ ...newTaskForm, assignedTo: e.target.value })}
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
                       >
                         <option value="">{t('admin.tasks.unassigned')}</option>
                         {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(u => (
@@ -1501,11 +1879,11 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">Prioritas</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Prioritas</label>
                       <select
                         value={newTaskForm.priority}
                         onChange={e => setNewTaskForm({ ...newTaskForm, priority: e.target.value as 'high' | 'normal' })}
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
                       >
                         <option value="normal">Normal</option>
                         <option value="high">Tinggi (High)</option>
@@ -1517,7 +1895,7 @@ export default function AdminDashboard() {
                   <div className="space-y-4">
                     {newTaskForm.type !== 'new_connection' ? (
                       <div className="space-y-1.5 relative">
-                        <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan (Database)</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Pilih Pelanggan (Database)</label>
                         <div className="relative">
                           <input
                             type="text"
@@ -1528,7 +1906,7 @@ export default function AdminDashboard() {
                               setSearchQuery(e.target.value);
                               setIsDropdownOpen(true);
                             }}
-                            className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                            className="w-full px-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
                           />
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Search size={18} />
@@ -1541,7 +1919,7 @@ export default function AdminDashboard() {
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                              className="absolute z-[60] w-full mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden"
                             >
                               <div className="max-h-60 overflow-y-auto">
                                 {customers.filter(c =>
@@ -1568,7 +1946,7 @@ export default function AdminDashboard() {
                                         setSearchQuery(c.nama);
                                         setIsDropdownOpen(false);
                                       }}
-                                      className="w-full px-5 py-3 text-left hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
+                                      className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors"
                                     >
                                       <div>
                                         <p className="text-sm font-bold text-slate-700">{c.nama}</p>
@@ -1589,7 +1967,7 @@ export default function AdminDashboard() {
                     ) : (
                       <div className="space-y-4">
                         <div className="space-y-1.5 relative">
-                          <label className="text-xs font-bold text-slate-500 ml-1">Hubungkan dengan Permohonan Baru (Opsional)</label>
+                          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Hubungkan dengan Permohonan Baru (Opsional)</label>
                           <div className="relative">
                             <input
                               type="text"
@@ -1600,7 +1978,7 @@ export default function AdminDashboard() {
                                 setSearchQuery(e.target.value);
                                 setIsDropdownOpen(true);
                               }}
-                              className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                              className="w-full px-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
                             />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                               <Search size={18} />
@@ -1613,7 +1991,7 @@ export default function AdminDashboard() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                                className="absolute z-[60] w-full mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden"
                               >
                                 <div className="max-h-60 overflow-y-auto">
                                   <button
@@ -1623,7 +2001,7 @@ export default function AdminDashboard() {
                                       setSearchQuery('');
                                       setIsDropdownOpen(false);
                                     }}
-                                    className="w-full px-5 py-3 text-left hover:bg-slate-50 text-xs font-bold text-slate-400 border-b border-slate-50"
+                                    className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold text-slate-400 border-b border-slate-50"
                                   >
                                     -- Tanpa Hubungkan Permohonan (Input Manual) --
                                   </button>
@@ -1653,7 +2031,7 @@ export default function AdminDashboard() {
                                           setSearchQuery(req.name);
                                           setIsDropdownOpen(false);
                                         }}
-                                        className="w-full px-5 py-3 text-left hover:bg-slate-50 flex flex-col gap-1 border-b border-slate-50 last:border-0 transition-colors"
+                                        className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-col gap-1 border-b border-slate-50 last:border-0 transition-colors"
                                       >
                                         <div className="flex justify-between items-center">
                                           <p className="text-sm font-bold text-slate-700">{req.name}</p>
@@ -1661,7 +2039,7 @@ export default function AdminDashboard() {
                                             {req.status.toUpperCase()}
                                           </span>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 font-medium">{req.address}</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{req.address}</p>
                                       </button>
                                     ))
                                   )}
@@ -1672,9 +2050,9 @@ export default function AdminDashboard() {
                         </div>
 
                         {!newTaskForm.permohonanId && (
-                          <div className="space-y-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                          <div className="space-y-6 bg-slate-50 dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
                             <div className="space-y-1.5 relative">
-                              <label className="text-xs font-bold text-slate-500 ml-1">Pilih Pelanggan Terdaftar (Tanpa Meter)</label>
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Pilih Pelanggan Terdaftar (Tanpa Meter)</label>
                               <div className="relative">
                                 <input
                                   type="text"
@@ -1686,7 +2064,7 @@ export default function AdminDashboard() {
                                     setIsDropdownOpen(true);
                                   }}
                                   placeholder="Cari nama atau ketik nama baru..."
-                                  className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
+                                  className="w-full px-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium pr-10"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                                   <Users size={18} />
@@ -1699,7 +2077,7 @@ export default function AdminDashboard() {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="absolute z-[60] w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                                    className="absolute z-[60] w-full mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden"
                                   >
                                     <div className="max-h-48 overflow-y-auto">
                                       {customers
@@ -1725,7 +2103,7 @@ export default function AdminDashboard() {
                                                 setSearchQuery(c.nama);
                                                 setIsDropdownOpen(false);
                                               }}
-                                              className="w-full px-5 py-3 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
+                                              className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 last:border-0 transition-colors"
                                             >
                                               <p className="text-sm font-bold text-slate-700">{c.nama}</p>
                                               <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} • {c.alamat || 'Tanpa Alamat'}</p>
@@ -1737,7 +2115,7 @@ export default function AdminDashboard() {
                                         <button
                                           type="button"
                                           onClick={() => setIsDropdownOpen(false)}
-                                          className="w-full px-5 py-3 text-left bg-slate-50 text-[10px] font-bold text-primary uppercase tracking-wider"
+                                          className="w-full px-5 py-3 text-left bg-slate-50 dark:bg-slate-900 text-[10px] font-bold text-primary uppercase tracking-wider"
                                         >
                                           + Gunakan Nama Baru "{searchQuery}"
                                         </button>
@@ -1750,23 +2128,23 @@ export default function AdminDashboard() {
 
                             <div className="grid grid-cols-2 gap-6">
                               <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 ml-1">Nama Final</label>
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nama Final</label>
                                 <input
                                   type="text"
                                   readOnly
                                   value={newTaskForm.customerName}
-                                  className="w-full px-5 py-3.5 bg-slate-100/50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700"
+                                  className="w-full px-5 py-3.5 bg-slate-100/50 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700"
                                 />
                               </div>
                               <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 ml-1">Nomor HP Pelanggan</label>
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">Nomor HP Pelanggan</label>
                                 <input
                                   type="tel"
                                   required
                                   value={newTaskForm.customerPhone}
                                   onChange={e => setNewTaskForm({ ...newTaskForm, customerPhone: e.target.value })}
                                   placeholder="0812..."
-                                  className="w-full px-5 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                                  className="w-full px-5 py-3.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
                                 />
                               </div>
                             </div>
@@ -1778,38 +2156,38 @@ export default function AdminDashboard() {
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.district')}</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.tasks.label.district')}</label>
                       <input
                         type="text"
                         required
                         value={newTaskForm.district}
                         onChange={e => setNewTaskForm({ ...newTaskForm, district: e.target.value })}
                         placeholder={t('admin.tasks.placeholder.district')}
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.location')}</label>
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.tasks.label.location')}</label>
                       <input
                         type="text"
                         required
                         value={newTaskForm.location}
                         onChange={e => setNewTaskForm({ ...newTaskForm, location: e.target.value })}
                         placeholder={t('admin.tasks.placeholder.location')}
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
+                        className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 ml-1">{t('admin.tasks.label.reason')}</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">{t('admin.tasks.label.reason')}</label>
                     <textarea
                       required
                       rows={3}
                       value={newTaskForm.reason}
                       onChange={e => setNewTaskForm({ ...newTaskForm, reason: e.target.value })}
                       placeholder={newTaskForm.type === 'disconnection' ? t('admin.tasks.placeholder.reason_disconnect') : t('admin.tasks.placeholder.reason_leak')}
-                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium resize-none"
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none font-medium resize-none"
                     />
                   </div>
 

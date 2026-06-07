@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Bill, Golongan, MeterReading, User } from '../types';
 
@@ -47,13 +47,13 @@ export const processMeterReadingAndBilling = async (
     }
     
     const userData = userSnap.data();
-    
-    if (!userData.gol) {
+    const userGolongan = userData.golongan || userData.gol;
+    if (!userGolongan) {
        return { success: false, message: 'Pelanggan belum memiliki Golongan Tarif.' };
     }
 
     // 2. Dapatkan data Golongan berdasarkan nama
-    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userData.gol), limit(1));
+    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userGolongan), limit(1));
     const golSnap = await getDocs(golQ);
     
     if (golSnap.empty) {
@@ -65,7 +65,7 @@ export const processMeterReadingAndBilling = async (
     // 3. Dapatkan stand meter bulan lalu (Stand Awal)
     let standAwal = 0;
     const meterQ = query(
-      collection(db, 'tb_meterpelanggan'), 
+      collection(db, 'tb_meter_pelanggan'), 
       where('customerId', '==', customerId)
     );
     
@@ -99,12 +99,16 @@ export const processMeterReadingAndBilling = async (
       createdAt: new Date().toISOString()
     };
     
-    const meterDocRef = await addDoc(collection(db, 'tb_meterpelanggan'), newMeterData);
+    const meterDocRef = await addDoc(collection(db, 'tb_meter_pelanggan'), newMeterData);
 
     // 5. Kalkulasi Tagihan (tb_billing)
     const biayaPemakaian = calculateBiayaPemakaian(pemakaian, golonganData);
     const biayaAdmin = golonganData.biayaAdmin || 0;
     const totalAmount = biayaPemakaian + biayaAdmin;
+
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const periodeBulan = monthNames[dateNow.getMonth()];
+    const periodeTahun = yearStr;
 
     const newBillData: Omit<Bill, 'id'> = {
       customerId,
@@ -112,6 +116,9 @@ export const processMeterReadingAndBilling = async (
       meterReadingId: meterDocRef.id,
       month: currentMonth,
       year: yearStr,
+      periodeBulan,
+      periodeTahun,
+      totalTagihan: totalAmount,
       usage: pemakaian,
       biayaAdmin,
       biayaPemakaian,
@@ -139,9 +146,12 @@ export const processMeterReadingAndBilling = async (
       // Jika belum ada, buat baru
       await setDoc(tbPelangganRef, {
         nomorSambungan: customerId.substring(0, 8).toUpperCase(),
+        no_meter: customerId.substring(0, 8).toUpperCase(),
+        id_pelanggan: customerId.substring(0, 8).toUpperCase(),
         nama: userData.nama || 'Pelanggan',
         alamat: userData.alamat || '-',
         golongan: golonganData.name,
+        gol: golonganData.name,
         tagihanTunggakan: totalAmount,
         lastUpdated: new Date().toISOString()
       });
@@ -164,29 +174,87 @@ export const processMeterReadingAndBilling = async (
  */
 export const processPayment = async (billId: string, customerId: string, amount: number): Promise<{ success: boolean; message: string }> => {
   try {
-    // 1. Update status tb_billing jadi paid
     const billRef = doc(db, 'tb_billing', billId);
-    await updateDoc(billRef, {
-      status: 'paid',
-      paidDate: new Date().toISOString()
+    const tbPelangganRef = doc(db, 'tb_pelanggan', customerId);
+
+    // 1. Jalankan Transaksi Firestore untuk mengupdate status tagihan dan tunggakan secara atomik
+    await runTransaction(db, async (transaction) => {
+      const billSnap = await transaction.get(billRef);
+      const tbPelangganSnap = await transaction.get(tbPelangganRef);
+
+      if (!billSnap.exists()) {
+        throw new Error('Data tagihan tidak ditemukan.');
+      }
+
+      // Update status tb_billing jadi paid
+      transaction.update(billRef, {
+        status: 'paid',
+        paidDate: new Date().toISOString()
+      });
+
+      // Kurangi tagihanTunggakan di tb_pelanggan
+      if (tbPelangganSnap.exists()) {
+        const currentData = tbPelangganSnap.data();
+        const currentTunggakan = currentData.tagihanTunggakan || 0;
+        const newTunggakan = Math.max(0, currentTunggakan - amount);
+        
+        transaction.update(tbPelangganRef, {
+          tagihanTunggakan: newTunggakan,
+          lastUpdated: new Date().toISOString()
+        });
+      }
     });
 
-    // 2. Kurangi tagihanTunggakan di tb_pelanggan (panel accounting)
-    const tbPelangganRef = doc(db, 'tb_pelanggan', customerId);
-    const tbPelangganSnap = await getDoc(tbPelangganRef);
-    
-    if (tbPelangganSnap.exists()) {
-      const currentData = tbPelangganSnap.data();
-      const currentTunggakan = currentData.tagihanTunggakan || 0;
-      const newTunggakan = Math.max(0, currentTunggakan - amount);
+    // 2. Catat Ayat Jurnal otomatis untuk penerimaan kas air (Cash Receipt Journal) secara asinkron
+    try {
+      const coaSnap = await getDocs(collection(db, 'coa'));
+      const coaList = coaSnap.docs.map(doc => doc.data());
       
-      await updateDoc(tbPelangganRef, {
-        tagihanTunggakan: newTunggakan,
-        lastUpdated: new Date().toISOString()
+      const findCoaCode = (prefix: string) => {
+        const matched = coaList.find(c => c.code && c.code.startsWith(prefix) && c.level === 3);
+        return matched ? matched.code : prefix;
+      };
+
+      const kasAccount = findCoaCode('1.1.1.01'); // Kas Loket Kantor
+      const piutangAccount = findCoaCode('1.1.3');  // Piutang Air
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const billSnap = await getDoc(billRef);
+      const billData = billSnap.exists() ? billSnap.data() : {};
+      const desc = `Pembayaran Tagihan Air a/n ${billData.customerName || 'Pelanggan'} - Periode ${billData.periodeBulan || ''} ${billData.periodeTahun || ''}`;
+      
+      // Debit: Kas Loket Kantor
+      await addDoc(collection(db, 'transactions'), {
+        date: todayStr,
+        reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
+        description: desc,
+        category: kasAccount,
+        type: 'income', // Debit
+        amount: amount,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        authorId: 'system-billing',
+        authorName: 'Sistem Billing Otomatis'
       });
+
+      // Kredit: Piutang Air
+      await addDoc(collection(db, 'transactions'), {
+        date: todayStr,
+        reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
+        description: desc,
+        category: piutangAccount,
+        type: 'expense', // Kredit
+        amount: amount,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        authorId: 'system-billing',
+        authorName: 'Sistem Billing Otomatis'
+      });
+    } catch (journalErr) {
+      console.error('Gagal mencatatkan ayat jurnal otomatis:', journalErr);
     }
 
-    return { success: true, message: 'Pembayaran berhasil dikonfirmasi.' };
+    return { success: true, message: 'Pembayaran berhasil dikonfirmasi dan dicatat ke keuangan.' };
   } catch (err: any) {
     console.error('Error processing payment:', err);
     return { success: false, message: 'Gagal memproses pembayaran: ' + err.message };

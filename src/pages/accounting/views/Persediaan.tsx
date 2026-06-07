@@ -91,8 +91,8 @@ export default function Persediaan() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Manajemen Persediaan</h2>
-          <p className="text-slate-500 text-sm">Pemantauan stok barang, material, dan suku cadang operasional.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Manajemen Persediaan</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Pemantauan stok barang, material, dan suku cadang operasional.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <button 
@@ -106,17 +106,17 @@ export default function Persediaan() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
             <Package size={28} />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nilai Inventaris</p>
-            <p className="text-2xl font-black text-slate-800">{formatCurrency(totalValue)}</p>
+            <p className="text-2xl font-black text-slate-800 dark:text-white">{formatCurrency(totalValue)}</p>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shrink-0">
             <AlertTriangle size={28} />
           </div>
@@ -127,7 +127,7 @@ export default function Persediaan() {
         </div>
 
         <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <Layers size={28} />
           </div>
           <div>
@@ -144,7 +144,7 @@ export default function Persediaan() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`whitespace-nowrap px-6 py-3 font-bold text-sm transition-colors relative ${
-              activeTab === tab ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === tab ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
             }`}
           >
             {tab}
@@ -165,26 +165,26 @@ export default function Persediaan() {
                 placeholder="Cari nama barang atau kategori..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none text-sm bg-white shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none text-sm bg-white dark:bg-slate-800 shadow-sm"
               />
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setShowFilter(true)}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterCategory !== 'Semua' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-sm transition-all ${filterCategory !== 'Semua' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
               >
                 <Filter size={18} /> {filterCategory !== 'Semua' ? `Kat: ${filterCategory}` : 'Filter'}
               </button>
               <button 
                 onClick={handleExport}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-bold text-sm bg-white"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800"
               >
                 <Download size={18} /> Export
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                   <tr>
@@ -198,28 +198,28 @@ export default function Persediaan() {
                   </tr>
                 <tbody className="divide-y divide-slate-100">
                   {filtered.length === 0 ? (
-                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-medium">Belum ada data barang dalam inventaris.</td></tr>
+                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Belum ada data barang dalam inventaris.</td></tr>
                   ) : filtered.map(item => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50/80 transition-colors group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 font-bold group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
                             <Package size={20} />
                           </div>
                           <div>
-                            <p className="font-black text-slate-800">{item.name}</p>
+                            <p className="font-black text-slate-800 dark:text-white">{item.name}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">REF: {item.id.substring(0, 8)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase">
+                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase">
                           {item.category || 'Lainnya'}
                         </span>
                       </td>
-                      <td className="p-4 text-center font-black text-slate-700">{item.stock || 0}</td>
-                      <td className="p-4 text-slate-500 font-bold text-xs uppercase">{item.unit || 'pcs'}</td>
-                      <td className="p-4 text-right font-black text-slate-800">{formatCurrency(item.price || 0)}</td>
+                      <td className="p-4 text-center font-black text-slate-700 dark:text-slate-200">{item.stock || 0}</td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase">{item.unit || 'pcs'}</td>
+                      <td className="p-4 text-right font-black text-slate-800 dark:text-white">{formatCurrency(item.price || 0)}</td>
                       <td className="p-4 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                           (item.stock || 0) <= (item.minStock || 0) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
@@ -243,25 +243,25 @@ export default function Persediaan() {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
+           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
              <ArrowRightLeft size={32} />
            </div>
-           <h3 className="text-lg font-bold text-slate-700">Modul Segera Hadir</h3>
-           <p className="text-slate-500 max-w-xs">Fitur mutasi stok dan manajemen kategori sedang dalam tahap pengembangan.</p>
+           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Modul Segera Hadir</h3>
+           <p className="text-slate-500 dark:text-slate-400 max-w-xs">Fitur mutasi stok dan manajemen kategori sedang dalam tahap pengembangan.</p>
         </div>
       )}
 
       {/* Add Item Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
               <div>
-                <h3 className="text-xl font-black text-slate-800">Tambah Barang Baru</h3>
-                <p className="text-sm text-slate-500 font-medium">Registrasi stok barang atau material baru ke sistem.</p>
+                <h3 className="text-xl font-black text-slate-800 dark:text-white">Tambah Barang Baru</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Registrasi stok barang atau material baru ke sistem.</p>
               </div>
-              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
+              <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:bg-white dark:bg-slate-800 hover:text-rose-500 p-2 rounded-xl transition-all shadow-sm">
                 <X size={24}/>
               </button>
             </div>
@@ -269,7 +269,7 @@ export default function Persediaan() {
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nama Barang</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nama Barang</label>
                   <input 
                     type="text" 
                     required 
@@ -280,12 +280,12 @@ export default function Persediaan() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Kategori</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Kategori</label>
                   <select 
                     required 
                     value={formData.category} 
                     onChange={e => setFormData({...formData, category: e.target.value})} 
-                    className="w-full p-3.5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium bg-white"
+                    className="w-full p-3.5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium bg-white dark:bg-slate-800"
                   >
                     <option value="">Pilih Kategori</option>
                     <option value="Pipa & Sambungan">Pipa & Sambungan</option>
@@ -296,7 +296,7 @@ export default function Persediaan() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Satuan</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Satuan</label>
                   <input 
                     type="text" 
                     required 
@@ -307,7 +307,7 @@ export default function Persediaan() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Stok Awal</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stok Awal</label>
                   <input 
                     type="number" 
                     required 
@@ -318,7 +318,7 @@ export default function Persediaan() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Minimum Stok</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Minimum Stok</label>
                   <input 
                     type="number" 
                     required 
@@ -329,14 +329,14 @@ export default function Persediaan() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Harga Satuan (Rp)</label>
+                  <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Harga Satuan (Rp)</label>
                   <input 
                     type="number" 
                     required 
                     min="0" 
                     value={formData.price} 
                     onChange={e => setFormData({...formData, price: Number(e.target.value)})} 
-                    className="w-full p-3.5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-black text-slate-900" 
+                    className="w-full p-3.5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-black text-slate-900 dark:text-white" 
                   />
                 </div>
               </div>
@@ -345,7 +345,7 @@ export default function Persediaan() {
                 <button 
                   type="button" 
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all"
                 >
                   Batalkan
                 </button>
@@ -363,10 +363,10 @@ export default function Persediaan() {
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Filter Kategori Barang</h3>
-              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Filter Kategori Barang</h3>
+              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -377,7 +377,7 @@ export default function Persediaan() {
                     key={cat}
                     onClick={() => { setFilterCategory(cat); setShowFilter(false); }}
                     className={`w-full p-4 rounded-2xl text-left font-bold transition-all border ${
-                      filterCategory === cat ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      filterCategory === cat ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
                     }`}
                   >
                     {cat}

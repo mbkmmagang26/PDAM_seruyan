@@ -27,8 +27,8 @@ import { User, UserRole } from './types';
 interface AuthContextType {
   user: User | null;
   allUsers: User[];
-  login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, phone: string, address: string, password: string, role: UserRole) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
+  login: (emailOrPhone: string, password?: string, expectedRole?: string) => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, phone: string, address: string, password: string, role: UserRole, golongan?: string) => Promise<{ success: boolean; status: 'active' | 'pending' }>;
   verifyCode: (emailOrPhone: string, code: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUserStatus: (userId: string, status: 'active' | 'pending' | 'blocked') => Promise<void>;
@@ -43,22 +43,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isAuthenticatingRef = React.useRef(false);
+
+  // Helper to fetch user details from either user_admin or tb_pelanggan
+  const fetchUserById = async (uid: string): Promise<User | null> => {
+    try {
+      // 1. Cek di user_admin
+      const userAdminRef = doc(db, 'user_admin', uid);
+      const userAdminDoc = await getDoc(userAdminRef);
+      if (userAdminDoc.exists()) {
+        const data = userAdminDoc.data();
+        return { ...data, id: uid } as User;
+      }
+
+      // 2. Cek di tb_pelanggan
+      const pelangganRef = doc(db, 'tb_pelanggan', uid);
+      const pelangganDoc = await getDoc(pelangganRef);
+      if (pelangganDoc.exists()) {
+        const data = pelangganDoc.data();
+        return {
+          id: uid,
+          name: data.nama || 'Pelanggan',
+          email: data.email || '',
+          phone: data.noHp || '',
+          address: data.alamat || '',
+          role: 'pelanggan',
+          status: data.status_akun || (data.status === 'Nonaktif' ? 'blocked' : 'active'),
+          avatar: data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nama || 'Pelanggan')}&background=random`
+        } as User;
+      }
+
+      // 3. Fallback query by userId field in tb_pelanggan
+      const { query, collection, where, getDocs } = await import('firebase/firestore');
+      const q = query(collection(db, 'tb_pelanggan'), where('userId', '==', uid));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        const docSnap = querySnap.docs[0];
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          name: data.nama || 'Pelanggan',
+          email: data.email || '',
+          phone: data.noHp || '',
+          address: data.alamat || '',
+          role: 'pelanggan',
+          status: data.status_akun || (data.status === 'Nonaktif' ? 'blocked' : 'active'),
+          avatar: data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nama || 'Pelanggan')}&background=random`
+        } as User;
+      }
+    } catch (err) {
+      console.error('Error fetching user by ID:', err);
+    }
+    return null;
+  };
 
   // Sync current user profile from Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Fetch additional profile data from Firestore
-        const userDocRef = doc(db, 'user', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+      if (isAuthenticatingRef.current) return;
+      // Drop stale queued events if auth.currentUser has changed since this event was queued
+      if (firebaseUser && firebaseUser.uid !== auth.currentUser?.uid) return;
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
+      if (firebaseUser) {
+        const userData = await fetchUserById(firebaseUser.uid);
+        if (userData) {
           if (userData.status === 'active') {
-            setUser({ ...userData, id: firebaseUser.uid });
+            setUser(userData);
           } else {
-            // User is pending or blocked, don't set user state
-            // Let the login function handle the error message
             setUser(null);
             await signOut(auth);
           }
@@ -74,10 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Sync all users for Admin
+  // Sync all users for Admin (only from user_admin)
   useEffect(() => {
     if (user?.role === 'admin') {
-      const q = collection(db, 'user');
+      const q = collection(db, 'user_admin');
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const usersList: User[] = [];
         snapshot.forEach((doc) => {
@@ -91,24 +142,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const login = async (emailOrPhone: string, password?: string) => {
+  const login = async (emailOrPhone: string, password?: string, expectedRole?: string) => {
     try {
+      isAuthenticatingRef.current = true;
       if (!password) {
         return { success: false, message: 'Password is required' };
       }
 
-      // Simplified: Assuming email for now. 
-      // For phone login, we would need to map phone to email or use sign-in with phone.
       const userCredential = await signInWithEmailAndPassword(auth, emailOrPhone, password);
       const firebaseUser = userCredential.user;
 
-      const userDoc = await getDoc(doc(db, 'user', firebaseUser.uid));
-      if (!userDoc.exists()) {
+      const userData = await fetchUserById(firebaseUser.uid);
+      if (!userData) {
         await signOut(auth);
         return { success: false, message: 'Account details not found in database' };
       }
 
-      const userData = userDoc.data() as User;
+      // Validasi apakah role user sesuai dengan portal yang dipilih
+      if (expectedRole && userData.role !== expectedRole) {
+        await signOut(auth);
+        return { success: false, message: `Invalid credentials for ${expectedRole} portal. Your account is registered as ${userData.role}.` };
+      }
 
       if (userData.status === 'pending') {
         await signOut(auth);
@@ -122,9 +176,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Backfill password to Firestore if missing
       if (!userData.password) {
-        await updateDoc(doc(db, 'user', firebaseUser.uid), { password });
+        if (userData.role === 'pelanggan' || userData.role === 'customer') {
+          await updateDoc(doc(db, 'tb_pelanggan', userData.id), { password });
+        } else {
+          await updateDoc(doc(db, 'user_admin', firebaseUser.uid), { password });
+        }
       }
 
+      setUser(userData);
       return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -132,14 +191,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.code === 'auth/user-not-found') message = 'Account not found';
       if (error.code === 'auth/wrong-password') message = 'Invalid password';
       return { success: false, message };
+    } finally {
+      isAuthenticatingRef.current = false;
     }
   };
 
-
-
-  const register = async (name: string, email: string, phone: string, address: string, password: string, role: UserRole) => {
+  const register = async (name: string, email: string, phone: string, address: string, password: string, role: UserRole, golongan?: string) => {
     try {
-      // Menggunakan instansi aplikasi sekunder agar tidak melogout admin yang sedang login
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
 
@@ -151,27 +209,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const verificationCode = isStaff
         ? Math.floor(100000 + Math.random() * 900000).toString()
-        : null; // Firebase does not allow undefined, use null instead
+        : null;
 
-      const newUser: any = {
-        id: firebaseUser.uid,
-        name,
-        email,
-        phone,
-        address,
-        password, // Store password in Firestore
-        role,
-        status,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
-      };
+      const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 
-      if (verificationCode) {
-        newUser.verificationCode = verificationCode;
+      if (role === 'customer' || role === 'pelanggan') {
+        // Simpan langsung ke tb_pelanggan menggunakan UID Auth
+        const newUserPelanggan: any = {
+          userId: firebaseUser.uid,
+          nama: name,
+          email,
+          username: email,
+          noHp: phone,
+          alamat: address,
+          password,
+          role: 'pelanggan',
+          status: 'Aktif',
+          status_akun: status,
+          no_meter: '',
+          id_pelanggan: 'PELANGGAN BARU',
+          golongan: golongan || 'Rumah Tangga 2 (R2)',
+          createdAt: new Date().toISOString(),
+          avatar
+        };
+        await setDoc(doc(db, 'tb_pelanggan', firebaseUser.uid), newUserPelanggan);
+      } else {
+        // Simpan ke user_admin
+        const newUserAdmin: any = {
+          id: firebaseUser.uid,
+          name,
+          email,
+          phone,
+          address,
+          password,
+          role,
+          status,
+          avatar
+        };
+        if (verificationCode) {
+          newUserAdmin.verificationCode = verificationCode;
+        }
+        await setDoc(doc(db, 'user_admin', firebaseUser.uid), newUserAdmin);
       }
 
-      await setDoc(doc(db, 'user', firebaseUser.uid), newUser as User);
-
-      // Membersihkan instansi aplikasi sekunder
       await signOut(secondaryAuth);
       await deleteApp(secondaryApp);
 
@@ -186,22 +266,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const verifyCode = async (emailOrPhone: string, code: string) => {
-    // This is tricky with Firebase Auth because the user is already registered but signed out.
-    // We need to find the user in Firestore by email/phone first.
     try {
-      const q = query(collection(db, 'user'), where('email', '==', emailOrPhone));
-      // Note: In a real app, you'd also check phone.
-
-      // We'll use a simplified approach since this is a refactor:
-      // In a real Firebase app, you usually don't use "verification codes" like this 
-      // unless you're doing custom email links or SMS.
-      // But for this project, we'll keep the logic: find user, check code, update status.
-
-      // I'll fetch the user, update their status to active, then they can login.
-      // Or auto-login if they have the password (which they should).
-
-      // For now, let's just update the status in Firestore.
-      return { success: false, message: 'Verification logic requires manual admin approval or SMS service integration' };
+      const { query, collection, where, getDocs } = await import('firebase/firestore');
+      const q = query(collection(db, 'user_admin'), where('email', '==', emailOrPhone));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        const userDoc = querySnap.docs[0];
+        const userData = userDoc.data();
+        if (userData.verificationCode === code) {
+          await updateDoc(doc(db, 'user_admin', userDoc.id), { status: 'active', verificationCode: null });
+          return { success: true };
+        }
+      }
+      return { success: false, message: 'Invalid verification code' };
     } catch (error) {
       return { success: false, message: 'Verification failed' };
     }
@@ -213,7 +290,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserStatus = async (userId: string, status: 'active' | 'pending' | 'blocked') => {
     try {
-      await updateDoc(doc(db, 'user', userId), { status });
+      const adminDoc = await getDoc(doc(db, 'user_admin', userId));
+      if (adminDoc.exists()) {
+        await updateDoc(doc(db, 'user_admin', userId), { status });
+      } else {
+        await updateDoc(doc(db, 'tb_pelanggan', userId), { status_akun: status });
+      }
     } catch (error) {
       console.error('Update user status error:', error);
     }

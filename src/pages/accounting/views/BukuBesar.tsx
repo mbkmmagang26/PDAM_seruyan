@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { Book, Loader2, Filter, Search, Plus, Download, X, Layers, Calendar, Trash2, Pencil } from 'lucide-react';
+import { useAuth } from '../../../authContext';
+import { logActivity } from '../../../lib/logger';
 
 export default function BukuBesar() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,9 +15,29 @@ export default function BukuBesar() {
   
   const [activeTab, setActiveTab] = useState('Daftar Akun (COA)');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Listen to global dashboard search event
+  useEffect(() => {
+    const handleGlobalSearch = (e: any) => {
+      if (e.detail?.query !== undefined) {
+        setSearchTerm(e.detail.query);
+      }
+    };
+    window.addEventListener('app-search', handleGlobalSearch);
+    return () => window.removeEventListener('app-search', handleGlobalSearch);
+  }, []);
   const [coaForm, setCoaForm] = useState({
     code: '',
     name: '',
@@ -59,12 +82,14 @@ export default function BukuBesar() {
           level: Number(coaForm.level),
           updatedAt: serverTimestamp()
         });
+        logActivity(user, 'Edit Akun COA', `Mengedit akun COA: ${coaForm.code} - ${coaForm.name}`);
       } else {
         await addDoc(collection(db, 'coa'), {
           ...coaForm,
           level: Number(coaForm.level),
           createdAt: serverTimestamp()
         });
+        logActivity(user, 'Tambah Akun COA', `Menambahkan akun COA baru: ${coaForm.code} - ${coaForm.name}`);
       }
       setShowAddForm(false);
       setEditingCoa(null);
@@ -78,6 +103,7 @@ export default function BukuBesar() {
     if (!confirm('Apakah Anda yakin ingin menghapus akun ini?')) return;
     try {
       await deleteDoc(doc(db, 'coa', id));
+      logActivity(user, 'Hapus Akun COA', `Menghapus akun COA ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus akun: ' + err.message);
     }
@@ -125,6 +151,7 @@ export default function BukuBesar() {
       Level: c.level
     }));
     exportToCSV(data, 'Daftar_COA');
+    logActivity(user, 'Export COA', 'Mengekspor daftar akun COA ke CSV');
   };
 
   const handleExportLedger = () => {
@@ -137,6 +164,7 @@ export default function BukuBesar() {
       Saldo: t.balance
     }));
     exportToCSV(data, `Buku_Besar_${selectedCoa}`);
+    logActivity(user, 'Export Buku Besar', `Mengekspor laporan buku besar untuk akun: ${selectedCoa}`);
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Buku Besar...</div>;
@@ -147,8 +175,8 @@ export default function BukuBesar() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Buku Besar (General Ledger)</h2>
-          <p className="text-slate-500">Buku besar merangkum transaksi berdasarkan akun.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Buku Besar (General Ledger)</h2>
+          <p className="text-slate-500 dark:text-slate-400">Buku besar merangkum transaksi berdasarkan akun.</p>
         </div>
       </div>
 
@@ -159,7 +187,7 @@ export default function BukuBesar() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`whitespace-nowrap px-6 py-3 font-medium text-sm transition-colors relative ${
-              activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === tab ? 'text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'
             }`}
           >
             {tab}
@@ -186,13 +214,13 @@ export default function BukuBesar() {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <button 
                 onClick={() => setShowFilter(true)}
-                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl border flex items-center justify-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
               >
                 <Filter size={18} /> {filterDates.start || filterDates.end ? 'Filter Aktif' : 'Filter'}
               </button>
               <button 
                 onClick={handleExportCoa}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 font-medium text-sm bg-white shadow-sm"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm"
               >
                 <Download size={18} /> Export
               </button>
@@ -205,10 +233,10 @@ export default function BukuBesar() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+                <thead className="bg-slate-50 dark:bg-slate-900/50/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
                   <tr>
                     <th className="p-4 uppercase tracking-wider text-xs">Kode Akun</th>
                     <th className="p-4 uppercase tracking-wider text-xs">Nama Akun</th>
@@ -219,19 +247,19 @@ export default function BukuBesar() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {coa.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (c.code || '').includes(searchTerm)).map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-bold text-slate-800">{c.code}</td>
-                      <td className="p-4 text-slate-700 font-medium" style={{ paddingLeft: c.level === 1 ? '1rem' : c.level === 2 ? '2.5rem' : '4rem' }}>
+                  {coa.filter(c => (c.name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || (c.code || '').includes(debouncedSearchTerm)).map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">
+                      <td className="p-4 font-bold text-slate-800 dark:text-white">{c.code}</td>
+                      <td className="p-4 text-slate-700 dark:text-slate-200 font-medium" style={{ paddingLeft: c.level === 1 ? '1rem' : c.level === 2 ? '2.5rem' : '4rem' }}>
                         {c.name}
                       </td>
                       <td className="p-4">
-                        <span className="font-bold text-xs text-slate-600 uppercase">{c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE')}</span>
+                        <span className="font-bold text-xs text-slate-600 dark:text-slate-300 uppercase">{c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE')}</span>
                       </td>
-                      <td className="p-4 text-center font-bold text-slate-600">{c.level}</td>
+                      <td className="p-4 text-center font-bold text-slate-600 dark:text-slate-300">{c.level}</td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold border ${c.level === 1 || c.level === 2 ? 'bg-slate-50 text-slate-500 border-slate-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold border ${c.level === 1 || c.level === 2 ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-slate-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
                             {c.level === 1 || c.level === 2 ? 'HEADER' : 'POSTING'}
                           </span>
                           <span className="px-2 py-1 rounded text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-200">
@@ -269,7 +297,7 @@ export default function BukuBesar() {
                     </tr>
                   ))}
                   {coa.length === 0 && (
-                     <tr><td colSpan={6} className="p-8 text-center text-slate-500">Belum ada data COA terdaftar.</td></tr>
+                     <tr><td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400">Belum ada data COA terdaftar.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -278,10 +306,10 @@ export default function BukuBesar() {
         </div>
       ) : (
         <div className="space-y-6 animate-in fade-in">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-center">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-center">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Book className="text-blue-600" />
-              <span className="font-bold text-slate-700">Pilih Akun COA:</span>
+              <span className="font-bold text-slate-700 dark:text-slate-200">Pilih Akun COA:</span>
             </div>
             <select 
               value={selectedCoa} 
@@ -294,29 +322,29 @@ export default function BukuBesar() {
             </select>
             <button 
               onClick={() => setShowFilter(true)}
-              className={`px-4 py-2.5 rounded-xl border flex items-center gap-2 font-medium text-sm ml-auto bg-white shadow-sm ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              className={`px-4 py-2.5 rounded-xl border flex items-center gap-2 font-medium text-sm ml-auto bg-white dark:bg-slate-800 shadow-sm ${filterDates.start || filterDates.end ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50'}`}
             >
               <Filter size={18} /> {filterDates.start || filterDates.end ? 'Filter Periode' : 'Filter Periode'}
             </button>
             <button 
               onClick={handleExportLedger}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-2 font-medium text-sm bg-white shadow-sm"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center gap-2 font-medium text-sm bg-white dark:bg-slate-800 shadow-sm"
             >
               <Download size={18} /> Export
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50/50 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 dark:text-white">
                 Riwayat Transaksi: <span className="text-blue-600">{currentAccount?.name || '-'}</span>
               </h3>
-              <span className="text-sm font-bold text-slate-500">Saldo Normal: {selectedCoa.startsWith('1') || selectedCoa.startsWith('5') ? 'Debit' : 'Kredit'}</span>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Saldo Normal: {selectedCoa.startsWith('1') || selectedCoa.startsWith('5') ? 'Debit' : 'Kredit'}</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold">
+                <thead className="bg-slate-50 dark:bg-slate-900/50/50 text-slate-500 dark:text-slate-400 font-bold">
                   <tr>
                     <th className="p-4">Tanggal</th>
                     <th className="p-4">Keterangan</th>
@@ -327,14 +355,14 @@ export default function BukuBesar() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {ledgerData.length === 0 ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">Belum ada transaksi pada akun ini.</td></tr>
+                    <tr><td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400">Belum ada transaksi pada akun ini.</td></tr>
                   ) : ledgerData.map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-slate-600">{t.date}</td>
-                      <td className="p-4 font-medium text-slate-800">{t.description}</td>
-                      <td className="p-4 text-right text-slate-600">{t.debit > 0 ? formatCurrency(t.debit) : '-'}</td>
-                      <td className="p-4 text-right text-slate-600">{t.kredit > 0 ? formatCurrency(t.kredit) : '-'}</td>
-                      <td className="p-4 text-right font-black text-slate-800">{formatCurrency(t.balance)}</td>
+                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors">
+                      <td className="p-4 text-slate-600 dark:text-slate-300">{t.date}</td>
+                      <td className="p-4 font-medium text-slate-800 dark:text-white">{t.description}</td>
+                      <td className="p-4 text-right text-slate-600 dark:text-slate-300">{t.debit > 0 ? formatCurrency(t.debit) : '-'}</td>
+                      <td className="p-4 text-right text-slate-600 dark:text-slate-300">{t.kredit > 0 ? formatCurrency(t.kredit) : '-'}</td>
+                      <td className="p-4 text-right font-black text-slate-800 dark:text-white">{formatCurrency(t.balance)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -347,18 +375,18 @@ export default function BukuBesar() {
       {showAddForm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowAddForm(false); setEditingCoa(null); setCoaForm({ code: '', name: '', type: 'ASSET', level: 1 }); }} />
-          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in duration-300">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="relative bg-white dark:bg-slate-800 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50/50">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 ${editingCoa ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'} rounded-2xl flex items-center justify-center`}>
                   {editingCoa ? <Pencil size={20} /> : <Layers size={20} />}
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 uppercase tracking-tight">{editingCoa ? 'Edit Akun' : 'Tambah Akun'}</h3>
+                  <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tight">{editingCoa ? 'Edit Akun' : 'Tambah Akun'}</h3>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chart of Accounts</p>
                 </div>
               </div>
-              <button onClick={() => { setShowAddForm(false); setEditingCoa(null); setCoaForm({ code: '', name: '', type: 'ASSET', level: 1 }); }} className="p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-slate-600 shadow-sm border border-transparent hover:border-slate-100">
+              <button onClick={() => { setShowAddForm(false); setEditingCoa(null); setCoaForm({ code: '', name: '', type: 'ASSET', level: 1 }); }} className="p-2 hover:bg-white dark:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-slate-600 dark:text-slate-300 shadow-sm border border-transparent hover:border-slate-100">
                 <X size={20} />
               </button>
             </div>
@@ -372,7 +400,7 @@ export default function BukuBesar() {
                   placeholder="Contoh: 1.1.1" 
                   value={coaForm.code}
                   onChange={e => setCoaForm({...coaForm, code: e.target.value})}
-                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50/50"
                 />
               </div>
 
@@ -384,7 +412,7 @@ export default function BukuBesar() {
                   placeholder="Contoh: Kas Besar" 
                   value={coaForm.name}
                   onChange={e => setCoaForm({...coaForm, name: e.target.value})}
-                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                  className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50/50"
                 />
               </div>
 
@@ -394,7 +422,7 @@ export default function BukuBesar() {
                   <select 
                     value={coaForm.type}
                     onChange={e => setCoaForm({...coaForm, type: e.target.value})}
-                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50/50"
                   >
                     <option value="ASSET">ASSET</option>
                     <option value="LIABILITY">LIABILITY</option>
@@ -408,7 +436,7 @@ export default function BukuBesar() {
                   <select 
                     value={coaForm.level}
                     onChange={e => setCoaForm({...coaForm, level: Number(e.target.value)})}
-                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 bg-slate-50/50"
+                    className="w-full p-4 rounded-2xl border border-slate-200 focus:border-emerald-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/50/50"
                   >
                     <option value={1}>Level 1</option>
                     <option value={2}>Level 2</option>
@@ -430,26 +458,26 @@ export default function BukuBesar() {
       {/* Modal Filter */}
       {showFilter && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">Filter Periode</h3>
-              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Filter Periode</h3>
+              <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 p-2 rounded-xl transition-colors">
                 <X size={24} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Mulai</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal Mulai</label>
                 <input type="date" value={filterDates.start} onChange={e => setFilterDates({...filterDates, start: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Selesai</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tanggal Selesai</label>
                 <input type="date" value={filterDates.end} onChange={e => setFilterDates({...filterDates, end: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none" />
               </div>
               <div className="flex gap-3 pt-4">
                 <button 
                   onClick={() => { setFilterDates({ start: '', end: '' }); setShowFilter(false); }}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600 dark:bg-slate-700 transition-colors"
                 >
                   Reset
                 </button>

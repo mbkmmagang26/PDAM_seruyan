@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'staff' | 'customer' | 'direktur' | 'manajer' | 'accounting';
+export type UserRole = 'admin' | 'staff' | 'customer' | 'direktur' | 'manajer' | 'accounting' | 'pelanggan';
 
 export interface User {
   id: string;
@@ -72,6 +72,9 @@ export interface Bill {
   paidDate?: string;
   status: 'paid' | 'unpaid';
   createdAt: string;
+  periodeBulan?: string;
+  periodeTahun?: string;
+  totalTagihan?: number;
 }
 
 export interface ConnectionRequest {
@@ -81,4 +84,5 @@ export interface ConnectionRequest {
   address: string;
   status: 'pending' | 'approved' | 'rejected';
   date: string;
+  userId?: string;
 }
