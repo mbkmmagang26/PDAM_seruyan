@@ -42,17 +42,9 @@ export default function AccountingDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
-  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
-
-  const handleSearchChange = (val: string) => {
-    setGlobalSearchTerm(val);
-    window.dispatchEvent(new CustomEvent('app-search', { detail: { query: val } }));
-  };
 
   useEffect(() => {
-    setGlobalSearchTerm('');
     setIsNotifOpen(false);
-    window.dispatchEvent(new CustomEvent('app-search', { detail: { query: '' } }));
   }, [activeModule]);
 
   // Guard: Redirect jika bukan direktur
@@ -178,8 +170,8 @@ export default function AccountingDashboard() {
         {/* Logo Area */}
         <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/20">
-              S
+            <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-lg shadow-blue-600/20 p-1">
+              <img src="/logo-pdam.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-white font-bold tracking-wide">SIA SERUYAN</h1>
@@ -236,8 +228,8 @@ export default function AccountingDashboard() {
         {/* Mobile Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:hidden shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg font-bold">
-              S
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img src="/logo-pdam.png" alt="Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <h1 className="font-bold text-slate-800">SIA SERUYAN</h1>
           </div>
@@ -261,17 +253,6 @@ export default function AccountingDashboard() {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Cari data..." 
-                value={globalSearchTerm}
-                onChange={e => handleSearchChange(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 w-64 transition-all" 
-              />
-            </div>
-
             <div className="relative">
               <button 
                 onClick={() => setIsNotifOpen(!isNotifOpen)}

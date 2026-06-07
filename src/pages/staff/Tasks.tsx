@@ -11,6 +11,8 @@ import {
   ArrowRight, 
   ClipboardList, 
   LogOut,
+  Search,
+  X,
   Scissors,
   CheckCircle2,
   AlertTriangle,
@@ -35,8 +37,36 @@ export default function StaffDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('repair');
 
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+
   // Filter tugas khusus untuk staff yang sedang login
   const myTasks = tasks.filter(t => t.assignedTo === user?.id);
+  
+  const unreadTasks = myTasks.filter(t => t.status === 'assigned' || t.status === 'pending');
+
+  const searchResults = () => {
+    if (!globalSearchQuery) return [];
+    const lowerQuery = globalSearchQuery.toLowerCase();
+    const res: any[] = [];
+    myTasks.forEach(t => {
+      if (t.customerName?.toLowerCase().includes(lowerQuery) || t.id?.toLowerCase().includes(lowerQuery) || t.reason?.toLowerCase().includes(lowerQuery)) {
+        res.push({
+          id: t.id,
+          title: t.customerName || t.id,
+          sub: t.type,
+          onClick: () => {
+            setActiveTab(t.type as Tab);
+            setIsGlobalSearchOpen(false);
+            setGlobalSearchQuery('');
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+          }
+        });
+      }
+    });
+    return res;
+  };
   
   const activeTasks = myTasks.filter(t => {
       if (activeTab === 'repair') return t.type === 'repair';
@@ -139,23 +169,108 @@ export default function StaffDashboard() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-surface pb-12">
-      <header className="flex justify-between items-center px-6 h-16 sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/staff')}
-            className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 cursor-pointer hover:ring-2 hover:ring-#00478d/20 transition-all shadow-sm"
-          >
-            <img src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"} alt="Staff" className="w-full h-full object-cover" />
-          </button>
-          <span className="text-lg font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</span>
+      <header className="flex flex-col px-6 py-3 gap-3 sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/staff')}
+              className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 cursor-pointer hover:ring-2 hover:ring-#00478d/20 transition-all shadow-sm shrink-0"
+            >
+              <img src={user?.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop"} alt="Staff" className="w-full h-full object-cover" />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src="/logo-pdam.png" alt="Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
+              <span className="text-lg font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <LanguageToggle />
+            
+            <div className="relative z-50">
+              <button onClick={() => setIsNotifOpen(!isNotifOpen)} className={`p-2 rounded-full relative transition-all ${isNotifOpen ? 'bg-[#00478d] text-white' : 'text-[#00478d] hover:bg-[#00478d]/5'}`}>
+                <Bell size={20} />
+                {unreadTasks.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+              </button>
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 max-h-96 overflow-y-auto"
+                  >
+                    <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Tugas Baru</h3>
+                      <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">{unreadTasks.length} Baru</span>
+                    </div>
+                    {unreadTasks.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">Tidak ada tugas baru</div>
+                    ) : (
+                      unreadTasks.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => { setActiveTab(t.type as Tab); setIsNotifOpen(false); }}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 transition-colors"
+                        >
+                          <p className="text-xs font-bold text-slate-800">Perintah Kerja</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{t.customerName || t.id} - {t.type}</p>
+                        </button>
+                      ))
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <button onClick={logout} className="p-2 text-error hover:bg-error/5 rounded-full"><LogOut size={20} /></button>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <LanguageToggle />
-          <button className="p-2 text-[#00478d] hover:bg-[#00478d]/5 rounded-full relative">
-            <Bell size={20} />
-            {myTasks.length > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />}
-          </button>
-          <button onClick={logout} className="p-2 text-error hover:bg-error/5 rounded-full"><LogOut size={20} /></button>
+
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={globalSearchQuery}
+            onChange={e => {
+              setGlobalSearchQuery(e.target.value);
+              setIsGlobalSearchOpen(true);
+            }}
+            onFocus={() => setIsGlobalSearchOpen(true)}
+            placeholder="Cari tugas..."
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+          />
+          <AnimatePresence>
+            {isGlobalSearchOpen && globalSearchQuery && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute top-full left-0 mt-2 w-full bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 max-h-64 overflow-y-auto"
+              >
+                <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Hasil Pencarian</h3>
+                  <button onClick={() => setIsGlobalSearchOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
+                </div>
+                {searchResults().length === 0 ? (
+                  <div className="p-4 text-center text-xs text-slate-400">Tidak ada hasil ditemukan</div>
+                ) : (
+                  searchResults().map(res => (
+                    <button
+                      key={res.id}
+                      onClick={res.onClick}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-sm font-bold text-slate-800">{res.title}</p>
+                        <span className="text-[9px] font-bold text-[#00478d] bg-[#00478d]/10 px-2 py-0.5 rounded-full">TUGAS</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500">{res.sub}</p>
+                    </button>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 

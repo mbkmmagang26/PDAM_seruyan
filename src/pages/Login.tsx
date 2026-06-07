@@ -26,7 +26,7 @@ type Step = 'role' | 'login' | 'forgot-password' | 'verify-code' | 'reset-passwo
 type Role = 'admin' | 'staff' | 'direktur';
 
 export default function Login() {
-  const { user, login, verifyCode, sendPasswordReset, confirmNewPassword } = useAuth();
+  const { user, login, verifyCode, sendPasswordReset, confirmNewPassword, logout } = useAuth();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [selectedRole, setSelectedRole] = useState<Role>('admin');
@@ -40,6 +40,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Clear any stale session when landing on login page
+  React.useEffect(() => {
+    logout();
+  }, []);
+
   React.useEffect(() => {
     const mode = searchParams.get('mode');
     const oobCode = searchParams.get('oobCode');
@@ -52,8 +57,9 @@ export default function Login() {
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
-  if (user && step !== 'role') {
+  if (loginSuccess && user && step !== 'role') {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'staff') return <Navigate to="/staff" replace />;
     if (user.role === 'direktur') return <Navigate to="/accounting" replace />;
@@ -67,8 +73,10 @@ export default function Login() {
 
     try {
       if (step === 'login') {
-        const result = await login(emailOrPhone, password);
-        if (!result.success) {
+        const result = await login(emailOrPhone, password, selectedRole);
+        if (result.success) {
+          setLoginSuccess(true);
+        } else {
           if (result.message === 'PENDING_VERIFICATION') {
             setStep('pending-info');
           } else if (result.message === 'Account blocked') {
@@ -131,8 +139,8 @@ export default function Login() {
               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/50"
             >
               <div className="flex flex-col items-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-tr from-[#00478d] to-[#005eb8] rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg shadow-[#00478d]/20">
-                  <Waves size={32} />
+                <div className="w-20 h-20 flex items-center justify-center mb-4">
+                  <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
                 <h1 className="text-2xl font-headline font-bold text-slate-800">{t('login.gate.title')}</h1>
                 <p className="text-slate-500 text-sm mt-1">{t('login.gate.subtitle')}</p>
