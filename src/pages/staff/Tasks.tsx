@@ -334,7 +334,7 @@ export default function StaffDashboard() {
             <h3 className="text-xl font-headline font-bold">
               Antrean {activeTab === 'repair' ? 'Perbaikan' : activeTab === 'reading' ? 'Pencatatan' : activeTab === 'new_connection' ? 'Sambungan Baru' : 'Pemutusan'}
             </h3>
-            <span className="text-xs font-bold text-slate-400">{activeTasks.length} {t('staff.tasks.work_orders')}</span>
+            <span className="text-xs font-bold text-slate-400">{activeTasks.filter(t => t.status !== 'completed').length} {t('staff.tasks.work_orders')}</span>
           </div>
 
           <AnimatePresence mode="wait">

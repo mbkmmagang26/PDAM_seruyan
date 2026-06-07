@@ -1142,7 +1142,7 @@ export default function AdminDashboard() {
             </div>
             <h1 className="text-2xl font-headline font-bold text-[#00478d] tracking-tight">{t('app.name')}</h1>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-extrabold">{t('common.search')} MANAGEMENT</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-extrabold">{t('app.management')}</p>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto hide-scrollbar pb-4">

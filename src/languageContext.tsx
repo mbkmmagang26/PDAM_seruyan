@@ -14,6 +14,7 @@ const translations: Record<Language, Record<string, string>> = {
   id: {
     // Common
     'app.name': 'PDAM Seruyan',
+    'app.management': 'Badan Usaha Milik Daerah',
     'common.logout': 'Keluar',
     'common.search': 'Cari...',
     'common.cancel': 'Batal',
@@ -300,6 +301,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Common
     'app.name': 'Seruyan Utility',
+    'app.management': 'Regional-Owned Enterprise',
     'common.logout': 'Logout',
     'common.search': 'Search...',
     'common.cancel': 'Cancel',

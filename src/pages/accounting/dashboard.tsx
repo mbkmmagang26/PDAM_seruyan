@@ -41,11 +41,31 @@ export default function AccountingDashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editName, setEditName] = useState('');
   const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
     setIsNotifOpen(false);
   }, [activeModule]);
+
+  useEffect(() => {
+    if (user) setEditName(user.name);
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim() || !user) return;
+    try {
+      const ref = doc(db, 'user_admin', user.id);
+      await updateDoc(ref, { name: editName });
+      setIsEditProfileOpen(false);
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { title: 'Sukses', message: 'Nama profil berhasil diperbarui. Halaman akan dimuat ulang...', type: 'success' } }));
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      console.error(err);
+      window.dispatchEvent(new CustomEvent('app-toast', { detail: { title: 'Gagal', message: 'Gagal memperbarui profil', type: 'error' } }));
+    }
+  };
 
   // Guard: Redirect jika bukan direktur
   useEffect(() => {
@@ -303,15 +323,79 @@ export default function AccountingDashboard() {
             
             <div className="w-px h-8 bg-slate-100 mx-2"></div>
             
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-xs font-bold text-slate-900 leading-none">{user.name}</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{user.role}</p>
-              </div>
-              <img src={user.avatar} alt="Profile" className="w-10 h-10 rounded-xl border border-slate-200" />
+            <div className="relative">
+              <button 
+                onClick={() => setIsEditProfileOpen(true)}
+                className="flex items-center gap-3 p-1.5 rounded-2xl hover:bg-slate-50 transition-colors"
+              >
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-900 leading-none">{user.name}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{user.role}</p>
+                </div>
+                <img src={user.avatar} alt="Profile" className="w-10 h-10 rounded-xl border border-slate-200" />
+              </button>
             </div>
           </div>
         </header>
+
+        {/* Modal Edit Profil */}
+        <AnimatePresence>
+          {isEditProfileOpen && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
+              >
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-slate-800">Edit Profil</h3>
+                  <button onClick={() => setIsEditProfileOpen(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex flex-col items-center mb-6">
+                    <img src={user.avatar} alt="Profile" className="w-24 h-24 rounded-full border-4 border-slate-50 shadow-md mb-3" />
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{user.role}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                    <input 
+                      type="text" 
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                    <input 
+                      type="text" 
+                      value={user.email}
+                      disabled
+                      className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-400 cursor-not-allowed font-medium"
+                    />
+                  </div>
+                </div>
+                <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                  <button 
+                    onClick={() => setIsEditProfileOpen(false)}
+                    className="px-6 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-200 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={handleSaveProfile}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-colors"
+                  >
+                    Simpan Perubahan
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">

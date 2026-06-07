@@ -25,15 +25,18 @@ export default function DashboardUtama() {
     tasksPending: 0,
     pengaduanPending: 0,
     cashTransit: 0,
-    piutang: 0
+    piutang: 0,
+    assetCategoriesCount: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   useEffect(() => {
-    // Listen to Transactions of current budget year (2026)
-    const currentYearStart = '2026-01-01';
-    const currentYearEnd = '2026-12-31';
+    // Listen to Transactions of current budget year
+    const currentYearStart = `${selectedYear}-01-01`;
+    const currentYearEnd = `${selectedYear}-12-31`;
     const unsubTx = onSnapshot(query(
       collection(db, 'transactions'),
       where('date', '>=', currentYearStart),
@@ -43,6 +46,8 @@ export default function DashboardUtama() {
       let totalExp = 0;
       let transit = 0;
       const monthly = new Map<string, { income: number; expense: number }>();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+      monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
 
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -83,10 +88,13 @@ export default function DashboardUtama() {
     // Listen to Assets
     const unsubAssets = onSnapshot(collection(db, 'assets'), (snapshot) => {
       let totalAssetValue = 0;
+      const categories = new Set<string>();
       snapshot.forEach(doc => {
-        totalAssetValue += doc.data().nilaiBuku || doc.data().hargaPerolehan || 0;
+        const data = doc.data();
+        totalAssetValue += data.nilaiBuku || data.hargaPerolehan || 0;
+        if (data.kategori) categories.add(data.kategori);
       });
-      setStats(s => ({ ...s, assets: totalAssetValue }));
+      setStats(s => ({ ...s, assets: totalAssetValue, assetCategoriesCount: categories.size }));
     });
 
     // Listen to Tasks
@@ -127,7 +135,7 @@ export default function DashboardUtama() {
       unsubPengaduan();
       unsubPiutang();
     };
-  }, []);
+  }, [selectedYear]);
 
   const handleExportChart = () => {
     exportToCSV(chartData, 'Analisis_Keuangan_Bulanan');
@@ -157,15 +165,33 @@ export default function DashboardUtama() {
             </div>
           </div>
         </div>
-        <div className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Anggaran</p>
-            <p className="text-sm font-black text-slate-700 uppercase">Jan - Des 2026</p>
+        <div className="relative">
+          <div 
+            onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+            className="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
+          >
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Periode Anggaran</p>
+              <p className="text-sm font-black text-slate-700 uppercase">Jan - Des {selectedYear}</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200"></div>
+            <div className="text-blue-600 p-2 rounded-xl transition-all">
+               <Activity size={20} />
+            </div>
           </div>
-          <div className="w-px h-8 bg-slate-200"></div>
-          <button className="text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all">
-             <Activity size={20} />
-          </button>
+          {isYearDropdownOpen && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 shadow-xl rounded-2xl overflow-hidden z-50">
+              {['2024', '2025', '2026', '2027'].map(year => (
+                <button
+                  key={year}
+                  onClick={() => { setSelectedYear(year); setIsYearDropdownOpen(false); }}
+                  className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors ${selectedYear === year ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Jan - Des {year}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -223,23 +249,26 @@ export default function DashboardUtama() {
             </div>
 
             {/* Piutang Card */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 text-white relative overflow-hidden">
+            <div 
+              onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'piutang_ar' } }))}
+              className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 text-white relative overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-blue-600/40 transition-all duration-300 group"
+            >
               <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                   <p className="text-xs font-black text-blue-200 tracking-widest uppercase mb-1">Outstanding Piutang (AR)</p>
-                  <h3 className="text-4xl font-black text-white mt-4 leading-none">{formatCurrency(stats.piutang)}</h3>
+                  <h3 className="text-4xl font-black text-white mt-4 leading-none group-hover:scale-105 origin-left transition-transform duration-300">{formatCurrency(stats.piutang)}</h3>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-blue-100/80 leading-relaxed max-w-[150px]">Estimasi penagihan aktif bulan ini.</p>
                   <div className="mt-6 flex justify-between items-end">
                     <div className="flex -space-x-2">
-                       {[1,2,3].map(i => <div key={i} className="w-8 h-8 rounded-full border-2 border-blue-600 bg-blue-400 flex items-center justify-center text-[10px] font-bold">U{i}</div>)}
+                       {[1,2,3].map(i => <div key={i} className="w-8 h-8 rounded-full border-2 border-blue-600 bg-blue-400 flex items-center justify-center text-[10px] font-bold transition-transform group-hover:-translate-y-1">U{i}</div>)}
                     </div>
-                    <ArrowUpRight size={24} className="text-blue-200" />
+                    <ArrowUpRight size={24} className="text-blue-200 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </div>
                 </div>
               </div>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors duration-500"></div>
             </div>
           </div>
 
@@ -365,7 +394,7 @@ export default function DashboardUtama() {
                   <div className="pt-6 border-t border-slate-100">
                     <div className="flex justify-between items-center text-xs font-bold">
                        <span className="text-slate-500">Asset Count</span>
-                       <span className="bg-slate-100 px-3 py-1 rounded-lg text-slate-700 font-black">4 Categories</span>
+                       <span className="bg-slate-100 px-3 py-1 rounded-lg text-slate-700 font-black">{stats.assetCategoriesCount} Categories</span>
                     </div>
                   </div>
                 </div>
@@ -396,7 +425,12 @@ export default function DashboardUtama() {
                           <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                           <span className="text-xs font-bold text-slate-500">Operational Ready</span>
                        </div>
-                       <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">Detail Stok</button>
+                       <button 
+                         onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'persediaan' } }))}
+                         className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                       >
+                         Detail Stok
+                       </button>
                     </div>
                   </div>
                 </div>

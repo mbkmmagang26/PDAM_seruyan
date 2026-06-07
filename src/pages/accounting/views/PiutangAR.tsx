@@ -22,6 +22,8 @@ export default function PiutangAR() {
   const [activeTab, setActiveTab] = useState('Piutang Pelanggan');
   const [showFilter, setShowFilter] = useState(false);
   const [filterType, setFilterType] = useState('Semua');
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const tabs = ["Piutang Pelanggan", "Riwayat Tagihan", "Analisis Umur Piutang"];
 
   useEffect(() => {
@@ -241,7 +243,10 @@ export default function PiutangAR() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <button className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-800 font-bold text-xs mr-3">
+                        <button 
+                          onClick={() => { setSelectedCustomer(p); setShowDetails(true); }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-800 font-bold text-xs mr-3"
+                        >
                           Rincian
                         </button>
                         <button 
@@ -337,6 +342,96 @@ export default function PiutangAR() {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rincian */}
+      {showDetails && selectedCustomer && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Rincian Piutang Pelanggan</h3>
+                <p className="text-sm text-slate-500">{selectedCustomer.nama}</p>
+              </div>
+              <button onClick={() => { setShowDetails(false); setSelectedCustomer(null); }} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nomor Sambungan</p>
+                  <p className="font-mono font-black text-slate-700">{selectedCustomer.nomorSambungan || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Golongan</p>
+                  <p className="font-black text-slate-700">{selectedCustomer.golongan || '-'}</p>
+                </div>
+                <div className="col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Wilayah / Alamat</p>
+                  <p className="font-medium text-slate-700">{selectedCustomer.alamat || '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                <div>
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Total Saldo Piutang</p>
+                  <p className="text-2xl font-black text-blue-700">{formatCurrency(selectedCustomer.tagihanTunggakan || selectedCustomer.balance || 0)}</p>
+                </div>
+                <div className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border ${
+                    (selectedCustomer.tagihanTunggakan || selectedCustomer.balance || 0) > 0 ? 'bg-white text-amber-600 border-amber-200' : 'bg-white text-emerald-600 border-emerald-200'
+                  }`}>
+                  {(selectedCustomer.tagihanTunggakan || selectedCustomer.balance || 0) > 0 ? 'Menunggak' : 'Lunas'}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <FileText size={18} className="text-slate-400"/>
+                  Riwayat Tagihan Pelanggan
+                </h4>
+                <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                      <tr>
+                        <th className="p-3 text-xs uppercase tracking-wider font-bold">Periode</th>
+                        <th className="p-3 text-xs uppercase tracking-wider font-bold text-right">Nominal</th>
+                        <th className="p-3 text-xs uppercase tracking-wider font-bold text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {bills.filter(b => b.customerName === selectedCustomer.nama || b.customerId === selectedCustomer.id).length === 0 ? (
+                        <tr><td colSpan={3} className="p-6 text-center text-slate-400 font-medium">Tidak ada riwayat tagihan.</td></tr>
+                      ) : (
+                        bills.filter(b => b.customerName === selectedCustomer.nama || b.customerId === selectedCustomer.id)
+                          .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                          .map(b => (
+                            <tr key={b.id} className="hover:bg-slate-50">
+                              <td className="p-3 font-medium text-slate-700">
+                                {b.periodeBulan || getMonthName(b.month)} {b.periodeTahun || b.year || ''}
+                              </td>
+                              <td className="p-3 text-right font-black text-slate-700">
+                                {formatCurrency(b.totalTagihan || b.amount || 0)}
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1 ${
+                                  b.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                }`}>
+                                  {b.status === 'paid' ? <><CheckCircle size={10} /> LUNAS</> : 'BELUM BAYAR'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

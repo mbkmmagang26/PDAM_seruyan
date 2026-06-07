@@ -431,10 +431,10 @@ export default function JurnalUmum() {
                         <option 
                           key={c.id} 
                           value={c.code} 
-                          disabled={c.level < 3}
-                          className={c.level < 3 ? 'font-bold text-slate-900 bg-slate-50' : ''}
+                          disabled={['1', '2', '3', '4', '5'].includes(c.code)}
+                          className={c.level < 3 || c.isHeader ? 'font-bold text-slate-900 bg-slate-50' : ''}
                         >
-                          {c.level === 2 ? '　' : c.level === 3 ? '　　' : ''}
+                          {c.level === 2 ? '　' : c.level >= 3 ? '　　' : ''}
                           {c.code} - {c.name}
                         </option>
                       ))}
