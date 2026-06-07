@@ -219,6 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: firebaseUser.uid,
           nama: name,
           email,
+          username: email,
           noHp: phone,
           alamat: address,
           password,
