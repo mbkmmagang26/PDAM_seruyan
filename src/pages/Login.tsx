@@ -144,14 +144,14 @@ export default function Login() {
                 <div className="w-20 h-20 flex items-center justify-center mb-4">
                   <img src="/logo-pdam.png" alt="Logo PDAM" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
-                <h1 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">{t('login.gate.title')}</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('login.gate.subtitle')}</p>
+                <h1 className="text-2xl font-headline font-bold text-slate-800 dark:text-white text-center">{t('login.gate.title')}</h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center">{t('login.gate.subtitle')}</p>
               </div>
 
               <div className="space-y-4 mb-8">
                 <div className="grid grid-cols-1 gap-3">
                   <button onClick={() => { setSelectedRole('admin'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
-                    <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <ShieldCheck size={24} />
                     </div>
                     <div className="text-left">
@@ -160,7 +160,7 @@ export default function Login() {
                     </div>
                   </button>
                   <button onClick={() => { setSelectedRole('staff'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <Briefcase size={24} />
                     </div>
                     <div className="text-left">
@@ -169,12 +169,12 @@ export default function Login() {
                     </div>
                   </button>
                   <button onClick={() => { setSelectedRole('direktur'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
-                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                       <UserIcon size={24} />
                     </div>
                     <div className="text-left">
-                      <span className="block font-bold text-slate-800 dark:text-white">Direktur</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Akses Akuntansi</span>
+                      <span className="block font-bold text-slate-800 dark:text-white">{t('login.role.direktur.title')}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.direktur.desc')}</span>
                     </div>
                   </button>
                 </div>
