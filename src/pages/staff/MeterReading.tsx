@@ -23,7 +23,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import { User, MeterReading as MeterReadingType } from '../../types';
 import { processMeterReadingAndBilling } from '../../lib/billingUtils';
-import { collection, query, where, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, onSnapshot, setDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -119,10 +119,28 @@ export default function MeterReading() {
       if (assignedTask) {
         await updateTaskStatus(assignedTask.id, 'completed', {
           notes: `${t('staff.tabs.reading')} ${readingValue} m3. Total Tagihan Dibuat.`,
+          standAwal: standAwal,
+          standAkhir: standAkhirVal,
+          pemakaian: standAkhirVal - standAwal,
           image: 'https://images.unsplash.com/photo-1590231804368-6c8a3074780d?w=400&h=300&fit=crop'
         });
         logActivity(staff, 'Selesai Pencatatan', `Menyelesaikan tugas pencatatan meter ID: ${assignedTask.id}`);
       } else {
+        await setDoc(doc(db, 'aksi_pengaduan', `TSK-MANUAL-${Date.now()}`), {
+          title: `Pencatatan Manual: ${activeCustomer.nama}`,
+          type: 'reading',
+          status: 'completed',
+          assignedTo: staff?.id || '',
+          customerName: activeCustomer.nama,
+          customerId: activeCustomer.id,
+          district: 'Pencatatan Mandiri',
+          notes: `${t('staff.tabs.reading')} ${readingValue} m3. Total Tagihan Dibuat.`,
+          standAwal: standAwal,
+          standAkhir: standAkhirVal,
+          pemakaian: standAkhirVal - standAwal,
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString()
+        });
         logActivity(staff, 'Pencatatan Manual', `Melakukan pencatatan meter manual untuk pelanggan ID: ${activeCustomer.id}`);
       }
       setIsSubmitting(false);

@@ -419,10 +419,62 @@ export default function StaffDashboard() {
                            {task.location || 'Alamat tidak spesifik'}
                         </p>
                       </div>
-                      {task.reason && (
+                      {task.reason && task.reason.toLowerCase() !== 'tes' && (
                          <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-900/30 w-fit px-2 py-1.5 rounded-xl border border-amber-100/50">
                             <AlertTriangle size={12} /> {task.reason}
                          </div>
+                      )}
+                      
+                      {/* Riwayat Input Nomor Meter (Pemasangan Baru) */}
+                      {task.meterNumber && (
+                        <div className="mt-4 flex flex-col gap-1 text-xs bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+                          <span className="font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider text-[9px]">Riwayat Input Nomor Meter</span>
+                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                            <Gauge size={14} />
+                            <span className="font-mono text-sm">{task.meterNumber}</span>
+                            <span className="text-slate-400 mx-1">•</span>
+                            <span className="text-emerald-700 dark:text-emerald-300">{task.customerName}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Riwayat Input Stand Meter (Pencatatan) */}
+                      {task.type === 'reading' && task.status === 'completed' && (
+                        <div className="mt-4 flex flex-col gap-2 text-xs bg-[#00478d]/5 dark:bg-blue-900/20 p-3.5 rounded-2xl border border-[#00478d]/10 dark:border-blue-800/50">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[#00478d] dark:text-blue-300 uppercase tracking-wider text-[9px]">Riwayat Pencatatan Meter</span>
+                            <span className="text-[#00478d] dark:text-blue-300 font-bold truncate max-w-[150px]">{task.customerName}</span>
+                          </div>
+                          
+                          {(() => {
+                            let sAwal = task.standAwal;
+                            let sAkhir = task.standAkhir;
+                            let pem = task.pemakaian;
+                            
+                            // Ekstrak angka dari notes untuk tugas lama
+                            if (sAkhir === undefined && task.notes) {
+                               const match = task.notes.match(/(\d+(?:\.\d+)?)\s*m3/i);
+                               if (match) sAkhir = Number(match[1]);
+                            }
+
+                            return (
+                              <div className="grid grid-cols-3 gap-2 mt-1">
+                                <div className="bg-white dark:bg-slate-800 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center">
+                                  <span className="block text-[9px] text-slate-400 font-bold uppercase mb-0.5">Bulan Lalu</span>
+                                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{sAwal !== undefined ? `${sAwal} m³` : '-'}</span>
+                                </div>
+                                <div className="bg-white dark:bg-slate-800 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center">
+                                  <span className="block text-[9px] text-[#00478d]/70 dark:text-blue-400 font-bold uppercase mb-0.5">Input Baru</span>
+                                  <span className="font-mono font-bold text-[#00478d] dark:text-blue-300">{sAkhir !== undefined ? `${sAkhir} m³` : '-'}</span>
+                                </div>
+                                <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-xl text-center border border-emerald-100 dark:border-emerald-800/50 shadow-sm flex flex-col justify-center">
+                                  <span className="block text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-0.5">Pemakaian</span>
+                                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{pem !== undefined ? `${pem} m³` : '-'}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       )}
                     </div>
 
