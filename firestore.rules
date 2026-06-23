@@ -161,5 +161,23 @@ service cloud.firestore {
       );
       allow write: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
     }
+
+    // Rules: Koleksi coa (Chart of Accounts)
+    match /coa/{docId} {
+      // COA harus bisa dibaca oleh loket kasir untuk mencari kode akun
+      allow read: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
+      // Hanya admin/accounting yang bisa menambah/mengubah master COA
+      allow write: if isAdmin() || isAccounting();
+    }
+
+    // Rules: Koleksi transactions (Jurnal Keuangan)
+    match /transactions/{docId} {
+      // Hanya admin/accounting/staff kasir yang bisa membaca dan membuat transaksi
+      allow read: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
+      // Pembuatan jurnal otomatis oleh loket kasir saat pembayaran menggunakan runTransaction
+      allow create: if request.auth != null && (isStaff() || isAdmin() || isAccounting());
+      // Jurnal hanya bisa diubah/dihapus oleh admin/accounting
+      allow update, delete: if isAdmin() || isAccounting();
+    }
   }
 }
