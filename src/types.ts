@@ -56,6 +56,11 @@ export interface Task {
   };
   pengaduanId?: string; // <--- INI YANG DITAMBAHKAN
   permohonanId?: string;
+  meterNumber?: string;
+  standAwal?: number;
+  standAkhir?: number;
+  pemakaian?: number;
+  notes?: string;
 }
 
 export interface Bill {
