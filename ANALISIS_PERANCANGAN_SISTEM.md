@@ -197,3 +197,167 @@ flowchart LR
     style H fill:#fff,stroke:#333,stroke-width:2px
     style I fill:#e6ffe6,stroke:#28a745,stroke-width:2px
 ```
+
+---
+
+## 3. Flowchart Sistem
+
+### A1. Flowchart Proses Login Aplikasi Pelanggan
+```mermaid
+flowchart TD
+    S_START([START]) --> P1(Buka Aplikasi Pelanggan)
+    P1 --> A[/Input Email dan Password/]
+    A --> DB[(Database Users)]
+    DB --> B(Sistem Memvalidasi Data)
+    B --> C{Data Cocok?}
+    C -- Tidak --> D(Tampilkan Pesan Error)
+    D --> A
+    C -- Ya --> F(Masuk Dashboard Pelanggan)
+    F --> S_END([END])
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style C fill:#fff,stroke:#333,stroke-width:2px
+```
+
+### A2. Flowchart Proses Login Aplikasi Internal (Portal Pegawai)
+```mermaid
+flowchart TD
+    S_START([START]) --> P1(Buka Aplikasi Internal PDAM)
+    P1 --> P2{Pilih Portal Login?}
+    P2 -- Admin --> L1[/Input Email & Password/]
+    P2 -- Staff Lapangan --> L1
+    P2 -- Keuangan / Direktur --> L1
+    
+    L1 --> DB[(Database Users)]
+    DB --> B(Validasi Kredensial & Kesesuaian Role)
+    B --> C{Login Valid?}
+    C -- Tidak --> D(Pesan Error / Akses Ditolak)
+    D --> P2
+    C -- Ya --> E{Arahkan Sesuai Portal}
+    E -- Admin --> G(Masuk Dashboard Admin)
+    E -- Staff --> H(Masuk Dashboard Staff)
+    E -- Keuangan --> I(Masuk Dashboard Keuangan)
+    
+    G --> S_END([END])
+    H --> S_END
+    I --> S_END
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style P2 fill:#fff,stroke:#333,stroke-width:2px
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style E fill:#fff,stroke:#333,stroke-width:2px
+```
+
+### B. Flowchart Perhitungan Tagihan (Billing)
+```mermaid
+flowchart TD
+    S_START([START]) --> A[/Sistem Menerima Input Stand Meter Baru/]
+    
+    A --> DB1[(Database: Meter_Readings)]
+    DB1 --> B(Baca Data Stand Meter Bulan Lalu)
+    B --> C(Hitung: Pemakaian = Stand Baru - Stand Lama)
+    
+    C --> DB2[(Database: Users & Golongan)]
+    DB2 --> D(Cek ID Golongan Pelanggan)
+    D --> E(Ambil Data Tarif Dasar & Biaya Admin)
+    
+    E --> F(Kalkulasi: Tagihan = Pemakaian * Tarif Dasar + Biaya Admin)
+    
+    F --> DB3[(Database: Bills)]
+    DB3 --> G(Simpan Record Tagihan Baru)
+    
+    G --> H[/"Dokumen: Invoice / Struk Tagihan Air"\]
+    H --> S_END([END])
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB3 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style H fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
+
+### C. Flowchart Proses Pembayaran & Pencatatan Kas
+```mermaid
+flowchart TD
+    S_START([START]) --> A[/Terima Input Pembayaran Pelanggan/]
+    A --> DB1[(Database: Bills)]
+    DB1 --> B(Cek Validasi Jumlah Tagihan)
+    B --> C{Pembayaran Valid?}
+    C -- Tidak --> D(Tolak Pembayaran)
+    D --> A
+    C -- Ya --> E(Ubah Status Tagihan menjadi LUNAS)
+    E --> DB1
+    E --> F(Kirim Data Pendapatan ke Akunting)
+    F --> DB2[(Database: Buku_Besar)]
+    DB2 --> G(Simpan Record Pemasukan)
+    G --> H[/"Dokumen: Kuitansi Pembayaran Lunas"\]
+    H --> S_END([END])
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style H fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
+
+### D. Flowchart Pengajuan Sambungan Baru
+```mermaid
+flowchart TD
+    S_START([START]) --> A[/Terima Form Pendaftaran Sambungan Baru/]
+    A --> DB1[(Database: Permohonan)]
+    DB1 --> B(Sistem Menyimpan Data Permohonan)
+    B --> C(Admin Cek Validasi Kelengkapan Dokumen)
+    C --> D{Dokumen Lengkap?}
+    D -- Tidak --> E(Kirim Notifikasi Dokumen Kurang)
+    E --> S_END([END])
+    D -- Ya --> F(Buat Perintah Kerja Pemasangan)
+    F --> DB2[(Database: Tasks)]
+    DB2 --> G(Tunggu Konfirmasi Staff Selesai Pasang)
+    G --> H{Pemasangan Selesai?}
+    H -- Tidak --> G
+    H -- Ya --> I(Generate ID Pelanggan Baru)
+    I --> DB3[(Database: Users)]
+    DB3 --> J(Aktifkan Status Pelanggan)
+    J --> S_END
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style D fill:#fff,stroke:#333,stroke-width:2px
+    style H fill:#fff,stroke:#333,stroke-width:2px
+    style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB3 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+```
+
+### E. Flowchart Pengaduan / Pelaporan Gangguan
+```mermaid
+flowchart TD
+    S_START([START]) --> A[/Terima Input Form Pengaduan/]
+    A --> DB1[(Database: Pengaduan)]
+    DB1 --> B(Sistem Menyimpan Pengaduan Status PENDING)
+    B --> C(Admin Review Laporan)
+    C --> D{Laporan Masuk Akal?}
+    D -- Tidak --> E(Ubah Status DITOLAK)
+    E --> DB1
+    E --> S_END([END])
+    D -- Ya --> F(Ubah Status DIPROSES)
+    F --> DB1
+    F --> G(Buat Perintah Kerja Perbaikan)
+    G --> DB2[(Database: Tasks)]
+    DB2 --> H(Staff Konfirmasi Selesai & Upload Foto)
+    H --> I(Ubah Status SELESAI)
+    I --> DB1
+    I --> J[/"Dokumen: Bukti Penyelesaian Gangguan"\]
+    J --> S_END
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style D fill:#fff,stroke:#333,stroke-width:2px
+    style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style J fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
