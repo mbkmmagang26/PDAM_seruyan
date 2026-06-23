@@ -23,6 +23,8 @@ import {
 } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from './firebase';
 import { User, UserRole } from './types';
+import { generateSearchTokens } from './lib/searchUtils';
+
 
 interface AuthContextType {
   user: User | null;
@@ -218,6 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUserPelanggan: any = {
           userId: firebaseUser.uid,
           nama: name,
+          nama_search: name.toLowerCase(),
+          search_tokens: generateSearchTokens(name),
           email,
           username: email,
           noHp: phone,

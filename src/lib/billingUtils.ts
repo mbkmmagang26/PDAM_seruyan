@@ -1,5 +1,5 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import { Bill, Golongan, MeterReading, User } from '../types';
 
 /**
@@ -142,6 +142,21 @@ export const processMeterReadingAndBilling = async (
         tagihanTunggakan: currentTunggakan + totalAmount,
         lastUpdated: new Date().toISOString()
       });
+
+      // Kirim Notifikasi ke Pelanggan
+      const userUid = currentData.userId || '';
+      if (userUid) {
+        await addDoc(collection(db, 'notifications'), {
+          title: 'Tagihan Air Baru Diterbitkan',
+          message: `Tagihan air periode ${currentMonth} sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalAmount)} telah diterbitkan. Silakan bayar sebelum tanggal jatuh tempo.`,
+          userId: userUid,
+          read: false,
+          createdAt: serverTimestamp(),
+          authorId: 'system',
+          type: 'info',
+          targetView: 'billing'
+        });
+      }
     } else {
       // Jika belum ada, buat baru
       await setDoc(tbPelangganRef, {
@@ -156,6 +171,15 @@ export const processMeterReadingAndBilling = async (
         lastUpdated: new Date().toISOString()
       });
     }
+
+    // 7. Kirim log aktivitas
+    await addDoc(collection(db, 'log_aktivitas_internal'), {
+      userId: auth.currentUser?.uid || 'system',
+      userName: auth.currentUser?.displayName || 'Petugas Akuntansi',
+      activityType: 'Cetak Tagihan',
+      description: `Menerbitkan tagihan air periode ${currentMonth} untuk pelanggan ${userData.nama || 'Pelanggan'} sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalAmount)}`,
+      createdAt: serverTimestamp()
+    });
 
     return { 
       success: true, 
@@ -177,6 +201,8 @@ export const processPayment = async (billId: string, customerId: string, amount:
     const billRef = doc(db, 'tb_billing', billId);
     const tbPelangganRef = doc(db, 'tb_pelanggan', customerId);
 
+    // Menggunakan runTransaction untuk memastikan pembaruan data tagihan bulanan
+    // dan pemotongan saldo tunggakan berjalan secara atomik (mencegah balapan data/race condition).
     // 1. Jalankan Transaksi Firestore untuk mengupdate status tagihan dan tunggakan secara atomik
     await runTransaction(db, async (transaction) => {
       const billSnap = await transaction.get(billRef);
@@ -202,9 +228,37 @@ export const processPayment = async (billId: string, customerId: string, amount:
           tagihanTunggakan: newTunggakan,
           lastUpdated: new Date().toISOString()
         });
+
+        // Kirim Notifikasi ke Pelanggan
+        const userUid = currentData.userId || '';
+        if (userUid) {
+          const notifRef = doc(collection(db, 'notifications'));
+          transaction.set(notifRef, {
+            title: 'Pembayaran Dikonfirmasi',
+            message: `Pembayaran tagihan sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)} telah berhasil dikonfirmasi oleh petugas. Terima kasih atas pembayaran Anda.`,
+            userId: userUid,
+            read: false,
+            createdAt: serverTimestamp(),
+            authorId: 'system',
+            type: 'success',
+            targetView: 'billing'
+          });
+        }
       }
+
+      // Kirim log aktivitas ke manager
+      const activityRef = doc(collection(db, 'log_aktivitas_internal'));
+      transaction.set(activityRef, {
+        userId: auth.currentUser?.uid || 'system',
+        userName: auth.currentUser?.displayName || 'Petugas Pembayaran',
+        activityType: 'Penerimaan Pembayaran',
+        description: `Memverifikasi pembayaran tagihan sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)} untuk customer ID: ${customerId}`,
+        createdAt: serverTimestamp()
+      });
     });
 
+    // Integrasi modul billing ke akuntansi: mendeteksi COA kas & piutang air secara dinamis,
+    // lalu membuat entri double-entry (debit/kredit) otomatis pada koleksi transactions.
     // 2. Catat Ayat Jurnal otomatis untuk penerimaan kas air (Cash Receipt Journal) secara asinkron
     try {
       const coaSnap = await getDocs(collection(db, 'coa'));

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, TrendingUp, Download, Filter, CheckCircle2, Clock, Plus, Search, X, Users } from 'lucide-react';
 import { useLanguage } from '../../languageContext';
 import { db } from '../../firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, where, limit, startAt, endAt } from 'firebase/firestore';
 import { processPayment } from '../../lib/billingUtils';
 import { useAuth } from '../../authContext';
 import { logActivity } from '../../lib/logger';
@@ -68,12 +68,42 @@ export default function Billing() {
     return () => unsub();
   }, [filterMonth, filterYear]);
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snap) => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    let q: any;
+    const cleanQuery = debouncedSearchQuery.trim().toLowerCase();
+    if (cleanQuery === '') {
+      q = query(collection(db, 'tb_pelanggan'), limit(20));
+    } else {
+      q = query(
+        collection(db, 'tb_pelanggan'),
+        orderBy('nama_search'),
+        startAt(cleanQuery),
+        endAt(cleanQuery + '\uf8ff'),
+        limit(20)
+      );
+    }
+
+    const unsub = onSnapshot(q, (snap) => {
       setCustomers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.warn("Search index warning, falling back to local limit query in Billing", error);
+      const fallbackQuery = query(collection(db, 'tb_pelanggan'), limit(50));
+      onSnapshot(fallbackQuery, (snapshot) => {
+        setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
     });
+
     return () => unsub();
-  }, []);
+  }, [debouncedSearchQuery]);
 
   const handleProcessPayment = async (billId: string, customerId: string, amount: number) => {
     if (window.confirm('Proses pembayaran untuk tagihan ini? (Status akan menjadi Lunas)')) {

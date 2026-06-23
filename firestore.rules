@@ -2,6 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Aturan keamanan berbasis peran (Role-Based Access Control) dikonfigurasi di server Firestore.
+    // Helper isAdmin(), isAccounting(), dan isStaff() digunakan untuk menyaring akses data.
+    // Ini mencegah pengguna biasa (pelanggan) mengakses atau memodifikasi data operasional/keuangan.
+
     // Helper: Cek apakah user adalah admin
     function isAdmin() {
       return request.auth != null && 

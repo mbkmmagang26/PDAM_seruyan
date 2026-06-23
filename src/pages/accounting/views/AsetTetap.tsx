@@ -118,33 +118,42 @@ export default function AsetTetap() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-            <HardDrive size={28} />
+        <div className="bg-white dark:bg-slate-800 p-5 lg:p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4 overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+              <HardDrive className="w-5 h-5 lg:w-6 lg:h-6" />
+            </div>
+            <span className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-lg">BUKU BESAR</span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Nilai Buku</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white">{formatCurrency(totalAssetValue)}</p>
+            <p className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Nilai Buku</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-800 dark:text-white truncate" title={formatCurrency(totalAssetValue)}>{formatCurrency(totalAssetValue)}</p>
           </div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-            <Briefcase size={28} />
+        <div className="bg-white dark:bg-slate-800 p-5 lg:p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4 overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+              <Briefcase className="w-5 h-5 lg:w-6 lg:h-6" />
+            </div>
+            <span className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-lg">KLASIFIKASI</span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori Aset</p>
-            <p className="text-2xl font-black text-slate-800 dark:text-white">{categoriesCount} <span className="text-sm text-slate-400 font-bold uppercase">Grup</span></p>
+            <p className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori Aset</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-800 dark:text-white">{categoriesCount} <span className="text-xs lg:text-sm text-slate-400 font-bold uppercase">Grup</span></p>
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
-            <Activity size={28} />
+        <div className="bg-slate-900 p-5 lg:p-6 rounded-3xl shadow-sm flex flex-col gap-4 text-white overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+              <Activity className="w-5 h-5 lg:w-6 lg:h-6" />
+            </div>
+            <span className="text-[9px] lg:text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-lg">KESEHATAN ASET</span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kondisi Aset Baik</p>
-            <p className="text-2xl font-black">100%</p>
+            <p className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kondisi Aset Baik</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">100%</p>
           </div>
         </div>
       </div>

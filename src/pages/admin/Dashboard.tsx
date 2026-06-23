@@ -41,9 +41,11 @@ import Billing from './Billing';
 import TarifGolongan from './TarifGolongan';
 import { User, Task, UserRole } from '../../types';
 import { auth, db } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, getDoc, query, orderBy, limit, getDocs, startAt, endAt } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { logActivity } from '../../lib/logger';
+import { generateSearchTokens } from '../../lib/searchUtils';
+
 
 type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
@@ -204,12 +206,42 @@ export default function AdminDashboard() {
     return res;
   };
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    let q: any;
+    const cleanQuery = debouncedSearchQuery.trim().toLowerCase();
+    if (cleanQuery === '') {
+      q = query(collection(db, 'tb_pelanggan'), limit(20));
+    } else {
+      q = query(
+        collection(db, 'tb_pelanggan'),
+        orderBy('nama_search'),
+        startAt(cleanQuery),
+        endAt(cleanQuery + '\uf8ff'),
+        limit(20)
+      );
+    }
+
+    const unsub = onSnapshot(q, (snapshot) => {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.warn("Search index warning, falling back to local limit query", error);
+      const fallbackQuery = query(collection(db, 'tb_pelanggan'), limit(50));
+      onSnapshot(fallbackQuery, (snapshot) => {
+        setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
     });
+
     return () => unsub();
-  }, []);
+  }, [debouncedSearchQuery]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
@@ -328,6 +360,8 @@ export default function AdminDashboard() {
         const { addDoc, collection } = await import('firebase/firestore');
         const newPelangganRef = await addDoc(collection(db, 'tb_pelanggan'), {
           nama: newTaskForm.customerName,
+          nama_search: newTaskForm.customerName.toLowerCase(),
+          search_tokens: generateSearchTokens(newTaskForm.customerName),
           alamat: newTaskForm.location,
           noHp: newTaskForm.customerPhone,
           status: 'Nonaktif',
@@ -388,6 +422,8 @@ export default function AdminDashboard() {
       const docRef = doc(db, 'tb_pelanggan', editCustomerData.id);
       await updateDoc(docRef, {
         nama: editCustomerData.nama || '',
+        nama_search: (editCustomerData.nama || '').toLowerCase(),
+        search_tokens: generateSearchTokens(editCustomerData.nama || ''),
         noHp: editCustomerData.noHp || '',
         alamat: editCustomerData.alamat || '',
         no_meter: editCustomerData.no_meter || '',

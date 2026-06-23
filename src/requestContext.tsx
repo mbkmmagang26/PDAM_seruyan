@@ -4,6 +4,8 @@ import { useTasks } from './taskContext';
 import { db } from './firebase';
 import { collection, onSnapshot, doc, updateDoc, query, orderBy, addDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from './authContext';
+import { generateSearchTokens } from './lib/searchUtils';
+
 
 interface RequestContextType {
   requests: ConnectionRequest[];
@@ -102,6 +104,8 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
       // Ini juga menghindari error "Missing Index" di Firestore
       await setDoc(doc(db, 'tb_pelanggan', id), {
         nama: req.name,
+        nama_search: req.name.toLowerCase(),
+        search_tokens: generateSearchTokens(req.name),
         alamat: req.address,
         noHp: req.phone,
         status: 'Nonaktif',

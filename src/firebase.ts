@@ -18,6 +18,8 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const auth = getAuth(app);
+// Mengaktifkan persistent local cache agar data tersimpan offline secara lokal di browser.
+// Data akan disinkronkan secara otomatis ketika koneksi internet terhubung kembali.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
