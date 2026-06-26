@@ -218,7 +218,7 @@ flowchart LR
     style H fill:#e6ffe6,stroke:#28a745,stroke-width:2px
 ```
 
-### D. User Flow Direktur / Akunting (Cek Laporan Keuangan)
+### D. User Flow Akuntan (Mengelola Laporan Keuangan)
 ```mermaid
 flowchart LR
     S_START([START]) --> A(Halaman Login)
@@ -238,13 +238,58 @@ flowchart LR
     style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
     style A fill:#fdf4ff,stroke:#6f42c1
     style B fill:#fdf4ff,stroke:#6f42c1
-    style C fill:#fff,stroke:#333,stroke-width:2px
+    style C fill:#fdf4ff,stroke:#6f42c1
     style D fill:#fdf4ff,stroke:#6f42c1
-    style E fill:#fdf4ff,stroke:#6f42c1
+    style E fill:#fff,stroke:#333,stroke-width:2px
     style F fill:#fdf4ff,stroke:#6f42c1
     style G fill:#fdf4ff,stroke:#6f42c1
     style H fill:#fff,stroke:#333,stroke-width:2px
     style I fill:#e6ffe6,stroke:#28a745,stroke-width:2px
+```
+
+### E. User Flow Direktur (Pemantauan Keuangan)
+```mermaid
+flowchart LR
+    S_START([START]) --> A(Halaman Login)
+    A --> B(Dashboard Pemantauan Utama)
+    B --> C(Menu Laporan Keuangan)
+    C --> D(Tinjau Neraca Saldo / Jurnal)
+    D --> E{Cetak Laporan ACC?}
+    E -- Ya --> F(Export PDF / Excel)
+    E -- Tidak --> S_END([END])
+    F --> S_END
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style A fill:#fff3e6,stroke:#d97706
+    style B fill:#fff3e6,stroke:#d97706
+    style C fill:#fff3e6,stroke:#d97706
+    style D fill:#fff3e6,stroke:#d97706
+    style E fill:#fff,stroke:#333,stroke-width:2px
+    style F fill:#e6ffe6,stroke:#28a745,stroke-width:2px
+```
+
+### F. User Flow Kasir Loket (Pelayanan Pembayaran Fisik)
+```mermaid
+flowchart LR
+    S_START([START]) --> A(Halaman Login)
+    A --> B(Dashboard Kasir / Admin)
+    B --> C(Cari ID Pelanggan)
+    C --> D(Halaman Detail Tagihan)
+    D --> E(Terima Pembayaran Tunai)
+    E --> F(Proses Pelunasan Tagihan)
+    F --> G(Cetak Kuitansi Kertas)
+    G --> S_END([END])
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style A fill:#f0f8ff,stroke:#0366d6
+    style B fill:#f0f8ff,stroke:#0366d6
+    style C fill:#f0f8ff,stroke:#0366d6
+    style D fill:#f0f8ff,stroke:#0366d6
+    style E fill:#f0f8ff,stroke:#0366d6
+    style F fill:#f0f8ff,stroke:#0366d6
+    style G fill:#e6ffe6,stroke:#28a745,stroke-width:2px
 ```
 
 ---
@@ -449,4 +494,68 @@ flowchart TD
     style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style DB1_UPDATE fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style K fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
+
+---
+
+## 4. Entity Relationship Diagram (ERD) Basis Data
+
+Berikut adalah arsitektur basis data relasional yang mengelola seluruh data operasional dan transaksi akuntansi (Buku Besar/Jurnal) di sistem PDAM.
+
+```mermaid
+erDiagram
+    user_admin ||--o{ tb_pelanggan : "mengelola"
+    user_admin {
+        string uid PK "Firebase Auth UID"
+        string nama
+        string email
+        string role "Admin, Staff, Keuangan, Kasir, Direktur"
+    }
+
+    tb_pelanggan ||--o{ pengaduan_pelanggan : "mengajukan"
+    tb_pelanggan ||--o{ tb_billing : "memiliki tagihan"
+    tb_pelanggan {
+        string id PK "Document ID"
+        string no_meter
+        string nama_pelanggan
+        string golongan
+        timestamp created_at
+    }
+
+    pengaduan_pelanggan {
+        string id PK "Document ID"
+        string pelanggan_id FK "Reference"
+        string deskripsi_keluhan
+        string status "Menunggu, Diproses, Selesai"
+        timestamp tanggal_lapor
+    }
+
+    tb_billing ||--o| transactions : "memicu jurnal (runTransaction)"
+    tb_billing {
+        string id PK "Document ID"
+        string pelanggan_id FK "Reference"
+        number stand_awal
+        number stand_akhir
+        number pemakaian
+        number total_tagihan
+        string status "Belum Lunas, Lunas"
+    }
+
+    coa ||--o{ transactions : "diklasifikasikan_sebagai"
+    coa {
+        string id PK "Document ID"
+        string kode_akun
+        string nama_akun
+        string tipe_akun
+    }
+
+    transactions {
+        string id PK "Document ID"
+        string billing_id FK "Reference"
+        string coa_id FK "Reference"
+        string deskripsi
+        number debit
+        number kredit
+        timestamp tanggal_transaksi
+    }
 ```
