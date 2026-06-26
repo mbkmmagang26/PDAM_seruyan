@@ -254,7 +254,7 @@ flowchart LR
     A --> B(Dashboard Pemantauan Utama)
     B --> C(Menu Laporan Keuangan)
     C --> D(Tinjau Neraca Saldo / Jurnal)
-    D --> E{Cetak Laporan ACC?}
+    D --> E{Unduh Laporan?}
     E -- Ya --> F(Export PDF / Excel)
     E -- Tidak --> S_END([END])
     F --> S_END
@@ -665,105 +665,100 @@ flowchart TD
 
 ## 6. Kamus Data (Data Dictionary)
 
+Kamus Data berfungsi sebagai "buku spesifikasi teknis" pelengkap dari ERD. Jika ERD hanya menunjukkan gambaran relasi antartabel secara visual, maka Kamus Data merincikan tipe data (*Number*, *String*, *Timestamp*) dan batasan (*Primary Key*, *Foreign Key*) dari tiap *field* secara tekstual. Dokumentasi ini menjadi bukti komprehensif bagi penguji teknis bahwa arsitektur *database* dirancang secara terstruktur dan siap dieksekusi menjadi *source code*.
+
 Berikut adalah detail skema data (Kamus Data) untuk koleksi NoSQL Firestore yang mendasari relasi pada ERD.
 
-### 1. user_admin
-Menyimpan data otentikasi dan hak akses pengurus internal PDAM.
+### 1. user_admin (Tabel: User)
+Menyimpan data otentikasi dan hak akses seluruh entitas (internal & eksternal).
 | Field | Tipe Data | Keterangan |
 | :--- | :--- | :--- |
-| `uid` | String (PK) | Firebase Auth UID |
-| `nama` | String | Nama lengkap pegawai |
+| `id` | String (PK) | Firebase Auth UID / Document ID |
+| `name` | String | Nama lengkap |
 | `email` | String | Email untuk login |
-| `role` | String | Jabatan (Admin, Staff, Keuangan, Kasir, Direktur) |
+| `phone` | String | Nomor HP/WA |
+| `role` | String | Jabatan (`admin`, `staff`, `customer`, `direktur`, `accounting`) |
+| `status` | String | Status akun (`active`, `pending`, `blocked`) |
 
-### 2. tb_pelanggan
-Menyimpan profil master data pelanggan PDAM.
+### 2. tb_pelanggan (Tabel: Profil Pelanggan & Golongan)
+Menyimpan profil master data khusus pelanggan PDAM.
+| Field | Tipe Data | Keterangan |
+| :--- | :--- | :--- |
+| `id` | String (PK) | Document ID Pelanggan |
+| `golonganId`| String (FK)| Referensi ID kategori tarif (misal: R1, Niaga) |
+| `address` | String | Alamat domisili lengkap |
+| `avatar` | String | URL foto profil pengguna |
+
+### 3. pengaduan_pelanggan (Tabel: Task)
+Menyimpan manajemen perintah kerja lapangan terpadu.
+| Field | Tipe Data | Keterangan |
+| :--- | :--- | :--- |
+| `id` | String (PK) | Document ID Task |
+| `title` | String | Judul tugas/keluhan |
+| `type` | String | Tipe tugas (`repair`, `reading`, `disconnection`, `new_connection`) |
+| `status` | String | Status penyelesaian (`pending`, `assigned`, `in-progress`, `completed`) |
+| `assignedTo`| String (FK)| ID Staff Lapangan yang bertugas |
+| `customerId`| String (FK)| ID Pelanggan pelapor |
+| `report` | Object | Menyimpan *notes* dan foto bukti eksekusi |
+
+### 4. tb_billing (Tabel: Bill & MeterReading)
+Menyimpan rekapitulasi penagihan dan hasil pembacaan meter.
 | Field | Tipe Data | Keterangan |
 | :--- | :--- | :--- |
 | `id` | String (PK) | Document ID |
-| `no_meter` | String | Nomor unik meter air pelanggan |
-| `nama_pelanggan` | String | Nama lengkap pelanggan |
-| `golongan` | String | Kategori tarif (misal: R1, R2, Niaga) |
-| `created_at` | Timestamp | Tanggal pelanggan terdaftar |
+| `customerId`| String (FK)| Referensi ID pelanggan |
+| `month/year`| String | Periode tagihan |
+| `standAwal/Akhir`| Number| Pencatatan angka kubikasi air |
+| `amount` | Number | Nominal Rupiah tagihan penuh (Pemakaian + Admin) |
+| `status` | String | Status pembayaran (`paid`, `unpaid`) |
 
-### 3. pengaduan_pelanggan
-Menyimpan riwayat laporan/keluhan pipa bocor atau masalah layanan.
+### 5. Jurnal & Keuangan (Tabel: COA & transactions)
+Koleksi komprehensif untuk transaksi jurnal akuntansi.
 | Field | Tipe Data | Keterangan |
 | :--- | :--- | :--- |
-| `id` | String (PK) | Document ID |
-| `pelanggan_id` | String (FK)| Referensi ke `tb_pelanggan` |
-| `deskripsi_keluhan`| String | Detail aduan |
-| `status` | String | Enum: Menunggu, Diproses, Selesai |
-| `tanggal_lapor` | Timestamp | Waktu laporan dibuat |
-
-### 4. tb_billing
-Menyimpan rekapitulasi penagihan bulanan dari hasil pembacaan meter.
-| Field | Tipe Data | Keterangan |
-| :--- | :--- | :--- |
-| `id` | String (PK) | Document ID |
-| `pelanggan_id` | String (FK)| Referensi ke `tb_pelanggan` |
-| `stand_awal` | Number | Angka meter bulan sebelumnya |
-| `stand_akhir` | Number | Angka meter bulan saat ini |
-| `pemakaian` | Number | Total kubikasi air yang digunakan |
-| `total_tagihan` | Number | Nominal Rupiah yang harus dibayar |
-| `status` | String | Enum: Belum Lunas, Lunas |
-
-### 5. coa (Chart of Accounts)
-Menyimpan daftar Bagan Akun Standar (Master Keuangan).
-| Field | Tipe Data | Keterangan |
-| :--- | :--- | :--- |
-| `id` | String (PK) | Document ID |
-| `kode_akun` | String | Nomor akun (misal: 111-Kas, 411-Pendapatan) |
-| `nama_akun` | String | Deskripsi nama akun akuntansi |
-| `tipe_akun` | String | Enum: Asset, Liability, Equity, Revenue, Expense |
-
-### 6. transactions
-Menyimpan riwayat jurnal umum/buku besar (Debit/Kredit).
-| Field | Tipe Data | Keterangan |
-| :--- | :--- | :--- |
-| `id` | String (PK) | Document ID |
-| `billing_id` | String (FK)| Referensi ke tagihan (jika sumbernya pembayaran) |
-| `coa_id` | String (FK)| Referensi ke `coa` |
-| `deskripsi` | String | Keterangan transaksi |
-| `debit` | Number | Nominal penambahan kas/aset |
-| `kredit` | Number | Nominal pengurangan/sumber dana |
-| `tanggal_transaksi`| Timestamp | Tanggal uang diterima/dikeluarkan |
+| `id` | String (PK) | Document ID Transaksi/Buku Besar |
+| `billingId` | String (FK)| Referensi ke ID penagihan lunas |
+| `coaId` | String (FK)| Referensi ke *Chart of Accounts* |
+| `debit` | Number | Pemasukan kas/aset |
+| `kredit` | Number | Pengeluaran/kewajiban |
 
 ---
 
 ## 7. Peta Navigasi (Sitemap) Lintas Aplikasi
 
-Struktur menu dari dua aplikasi utama (PDAM Pelanggan dan PDAM Seruyan).
+Sitemap (Peta Navigasi) adalah pemetaan struktur pohon yang menjabarkan hierarki seluruh halaman dan menu di dalam aplikasi. Fungsi utama sitemap ini adalah untuk memudahkan pembaca laporan (terutama pihak Manajemen PDAM atau dosen Non-IT) dalam membayangkan ruang lingkup fitur sistem secara utuh tanpa harus menjalankan aplikasi. Pemetaan ini sekaligus menjadi kerangka dasar penyusunan Modul Panduan Pengguna (*User Manual*).
+
+Struktur menu di bawah ini memetakan komponen antarmuka yang aktual dikembangkan berdasarkan arsitektur modul sistem React.
 
 ```text
 A. Aplikasi PDAM Pelanggan (Front-Office)
-├── Login / Register
-├── Dashboard Pelanggan
-│   ├── Cek & Bayar Tagihan
-│   ├── Buat Pengaduan (Lapor Kebocoran)
-│   └── Riwayat Pembayaran
-└── Profil Akun
+├── Auth (Login / Register)
+├── Dashboard (Beranda Utama)
+├── Billing (Cek & Pembayaran Tagihan)
+├── Usage (Pantau Riwayat Pemakaian Air)
+├── Support (Kirim Pengaduan & Layanan Bantuan)
+├── NewConnection (Formulir Pendaftaran Sambungan Baru)
+└── Profile (Manajemen Akun Pelanggan)
 
 B. Aplikasi PDAM Seruyan (Back-Office SIA)
-├── Portal Login Pegawai (SSO)
-├── Modul Admin & Pelayanan
-│   ├── Dashboard Admin
-│   ├── Data Pelanggan
-│   ├── Monitoring Billing
-│   └── Verifikasi Pengaduan
+├── Modul Administrator
+│   ├── Dashboard Analitik Admin
+│   ├── Billing Management
+│   ├── Tarif Golongan Setup
+│   ├── Repairs (Manajemen Keluhan)
+│   └── WaterFlow (Pantau Distribusi)
 ├── Modul Staff Lapangan
-│   ├── Daftar Penugasan (Tasks)
-│   ├── Input Meter Air Bulanan
-│   └── Laporan Pemutusan Saluran
-├── Modul Akuntansi & Keuangan
-│   ├── Dashboard Keuangan & Kas
-│   ├── Jurnal Umum (Input & Koreksi)
-│   ├── Buku Besar
-│   ├── Hutang & Piutang (AP/AR)
-│   ├── Log Aktivitas Keuangan
-│   └── Neraca Saldo (Cetak Laporan)
-└── Modul Direktur (Pemantauan)
-    └── Tinjauan & Approval Laporan Keuangan
+│   ├── Tasks (Daftar Perintah Kerja)
+│   ├── Meter Reading (Input Stand Meter Air)
+│   └── Disconnection Flow (Eksekusi Pemutusan)
+└── Modul Akuntansi & Direktur
+    ├── Dashboard Utama Keuangan & Log Aktivitas
+    ├── Jurnal Umum & Buku Besar
+    ├── Neraca Lajur & Laporan Keuangan
+    ├── Hutang (AP) & Piutang (AR)
+    ├── DRD (Daftar Rekening Ditagih) & LPP
+    ├── Pengelolaan Aset Tetap & Persediaan
+    └── Rekonsiliasi, Verifikasi Data & Anggaran
 ```
 
 ---
