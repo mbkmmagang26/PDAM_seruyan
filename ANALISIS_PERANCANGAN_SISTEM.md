@@ -223,21 +223,22 @@ flowchart TD
 ### A2. Flowchart Proses Login Aplikasi Internal (Portal Pegawai)
 ```mermaid
 flowchart TD
-    S_START([START]) --> P1(Buka Aplikasi Internal PDAM)
-    P1 --> P2{Pilih Portal Login?}
-    P2 -- Admin --> L1[/Input Email & Password/]
-    P2 -- Staff Lapangan --> L1
-    P2 -- Keuangan / Direktur --> L1
+    S_START([START]) --> P1(Buka Halaman Utama Internal PDAM)
+    P1 --> P2[/User Memilih Portal: Admin / Staff / Keuangan/]
+    P2 --> L1[/Input Email & Password/]
     
     L1 --> DB[(Database Users)]
-    DB --> B(Validasi Kredensial & Kesesuaian Role)
+    DB --> B(Sistem Validasi Kredensial & Kesesuaian Role)
     B --> C{Login Valid?}
-    C -- Tidak --> D(Pesan Error / Akses Ditolak)
+    
+    C -- Tidak --> D(Tampilkan Pesan Error)
     D --> P2
-    C -- Ya --> E{Arahkan Sesuai Portal}
-    E -- Admin --> G(Masuk Dashboard Admin)
-    E -- Staff --> H(Masuk Dashboard Staff)
-    E -- Keuangan --> I(Masuk Dashboard Keuangan)
+    
+    C -- Ya --> E{Role = Admin?}
+    E -- Ya --> G(Masuk Dashboard Admin)
+    E -- Tidak --> E2{Role = Staff Lapangan?}
+    E2 -- Ya --> H(Masuk Dashboard Staff)
+    E2 -- Tidak --> I(Masuk Dashboard Keuangan)
     
     G --> S_END([END])
     H --> S_END
@@ -245,9 +246,9 @@ flowchart TD
 
     style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
     style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
-    style P2 fill:#fff,stroke:#333,stroke-width:2px
     style C fill:#fff,stroke:#333,stroke-width:2px
     style E fill:#fff,stroke:#333,stroke-width:2px
+    style E2 fill:#fff,stroke:#333,stroke-width:2px
 ```
 
 ### B. Flowchart Perhitungan Tagihan (Billing)
@@ -263,20 +264,24 @@ flowchart TD
     DB2 --> D(Cek ID Golongan Pelanggan)
     D --> E(Ambil Data Tarif Dasar & Biaya Admin)
     
-    E --> F(Kalkulasi: Tagihan = Pemakaian * Tarif Dasar + Biaya Admin)
+    E --> F{Ada Tunggakan Sebelumnya?}
+    F -- Ya --> G(Hitung: Tagihan = [Pemakaian * Tarif] + Admin + Denda)
+    F -- Tidak --> H(Hitung: Tagihan = [Pemakaian * Tarif] + Admin)
     
-    F --> DB3[(Database: Bills)]
-    DB3 --> G(Simpan Record Tagihan Baru)
+    G --> I(Simpan Record Tagihan Baru)
+    H --> I
+    I --> DB3[(Database: Bills)]
     
-    G --> H[/"Dokumen: Invoice / Struk Tagihan Air"\]
-    H --> S_END([END])
+    DB3 --> J[\"Dokumen: Invoice / Struk Tagihan Air"\]
+    J --> S_END([END])
 
     style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
     style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style F fill:#fff,stroke:#333,stroke-width:2px
     style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style DB3 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
-    style H fill:#fffbdd,stroke:#b08800,stroke-width:2px
+    style J fill:#fffbdd,stroke:#b08800,stroke-width:2px
 ```
 
 ### C. Flowchart Proses Pembayaran & Pencatatan Kas
@@ -289,17 +294,18 @@ flowchart TD
     C -- Tidak --> D(Tolak Pembayaran)
     D --> A
     C -- Ya --> E(Ubah Status Tagihan menjadi LUNAS)
-    E --> DB1
-    E --> F(Kirim Data Pendapatan ke Akunting)
+    E --> DB1_UPDATE[(Database: Bills)]
+    DB1_UPDATE --> F(Kirim Data Pendapatan ke Akunting)
     F --> DB2[(Database: Buku_Besar)]
     DB2 --> G(Simpan Record Pemasukan)
-    G --> H[/"Dokumen: Kuitansi Pembayaran Lunas"\]
+    G --> H[\"Dokumen: Kuitansi Pembayaran Lunas"\]
     H --> S_END([END])
 
     style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
     style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
     style C fill:#fff,stroke:#333,stroke-width:2px
     style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB1_UPDATE fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style H fill:#fffbdd,stroke:#b08800,stroke-width:2px
 ```
@@ -351,7 +357,7 @@ flowchart TD
     DB2 --> H(Staff Konfirmasi Selesai & Upload Foto)
     H --> I(Ubah Status SELESAI)
     I --> DB1
-    I --> J[/"Dokumen: Bukti Penyelesaian Gangguan"\]
+    I --> J[\"Dokumen: Bukti Penyelesaian Gangguan"\]
     J --> S_END
 
     style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
@@ -360,4 +366,38 @@ flowchart TD
     style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style DB2 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
     style J fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
+
+### F. Flowchart Laporan Keuangan (Jurnal & Buku Besar Akunting)
+```mermaid
+flowchart TD
+    S_START([START]) --> A[/Input Tanggal Filter Laporan/]
+    A --> DB1[(Database: Buku_Besar)]
+    DB1 --> B(Sistem Mengambil Data Transaksi Keuangan)
+    B --> C{Data Ditemukan?}
+    
+    C -- Tidak --> D(Tampilkan Pesan: Data Kosong)
+    D --> S_END([END])
+    
+    C -- Ya --> E(Sistem Mengelompokkan Data berdasarkan Kode COA)
+    E --> F(Kalkulasi Total Debit dan Kredit)
+    F --> G{Debit & Kredit Balance?}
+    
+    G -- Tidak --> H(Tampilkan Pesan: Out of Balance)
+    H --> I[/Input: Perbaiki Data Jurnal/]
+    I --> DB1_UPDATE[(Database: Buku_Besar)]
+    DB1_UPDATE --> E
+    
+    G -- Ya --> J(Generate Format Laporan Buku Besar Akhir)
+    J --> K[\"Dokumen: Laporan Keuangan"\]
+    
+    K --> S_END([END])
+
+    style S_START fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,color:#fff,font-weight:bold
+    style C fill:#fff,stroke:#333,stroke-width:2px
+    style G fill:#fff,stroke:#333,stroke-width:2px
+    style DB1 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style DB1_UPDATE fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
+    style K fill:#fffbdd,stroke:#b08800,stroke-width:2px
 ```
