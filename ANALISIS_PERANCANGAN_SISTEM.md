@@ -730,35 +730,56 @@ Sitemap (Peta Navigasi) adalah pemetaan struktur pohon yang menjabarkan hierarki
 
 Struktur menu di bawah ini memetakan komponen antarmuka yang aktual dikembangkan berdasarkan arsitektur modul sistem React.
 
-```text
-A. Aplikasi PDAM Pelanggan (Front-Office)
-├── Auth (Login / Register)
-├── Dashboard (Beranda Utama)
-├── Billing (Cek & Pembayaran Tagihan)
-├── Usage (Pantau Riwayat Pemakaian Air)
-├── Support (Kirim Pengaduan & Layanan Bantuan)
-├── NewConnection (Formulir Pendaftaran Sambungan Baru)
-└── Profile (Manajemen Akun Pelanggan)
+### A. Peta Navigasi PDAM Pelanggan (Front-Office)
+```mermaid
+flowchart TD
+    ROOT[Aplikasi PDAM Pelanggan] --> M1(Auth / Login)
+    ROOT --> M2(Dashboard Beranda)
+    ROOT --> M3(Billing & Pembayaran)
+    ROOT --> M4(Usage / Riwayat Pemakaian)
+    ROOT --> M5(Support & Pengaduan)
+    ROOT --> M6(Pendaftaran Sambungan Baru)
+    ROOT --> M7(Profil Akun)
 
-B. Aplikasi PDAM Seruyan (Back-Office SIA)
-├── Modul Administrator
-│   ├── Dashboard Analitik Admin
-│   ├── Billing Management
-│   ├── Tarif Golongan Setup
-│   ├── Repairs (Manajemen Keluhan)
-│   └── WaterFlow (Pantau Distribusi)
-├── Modul Staff Lapangan
-│   ├── Tasks (Daftar Perintah Kerja)
-│   ├── Meter Reading (Input Stand Meter Air)
-│   └── Disconnection Flow (Eksekusi Pemutusan)
-└── Modul Akuntansi & Direktur
-    ├── Dashboard Utama Keuangan & Log Aktivitas
-    ├── Jurnal Umum & Buku Besar
-    ├── Neraca Lajur & Laporan Keuangan
-    ├── Hutang (AP) & Piutang (AR)
-    ├── DRD (Daftar Rekening Ditagih) & LPP
-    ├── Pengelolaan Aset Tetap & Persediaan
-    └── Rekonsiliasi, Verifikasi Data & Anggaran
+    style ROOT fill:#0366d6,stroke:#000,color:#fff,font-weight:bold
+    style M1 fill:#f6f8fa,stroke:#d1d5da
+    style M2 fill:#f6f8fa,stroke:#d1d5da
+    style M3 fill:#f6f8fa,stroke:#d1d5da
+    style M4 fill:#f6f8fa,stroke:#d1d5da
+    style M5 fill:#f6f8fa,stroke:#d1d5da
+    style M6 fill:#f6f8fa,stroke:#d1d5da
+    style M7 fill:#f6f8fa,stroke:#d1d5da
+```
+
+### B. Peta Navigasi PDAM Seruyan (Back-Office SIA)
+```mermaid
+flowchart TD
+    ROOT[Aplikasi PDAM Seruyan SIA] --> MOD1{Modul Administrator}
+    ROOT --> MOD2{Modul Staff Lapangan}
+    ROOT --> MOD3{Modul Akuntansi & Direktur}
+
+    MOD1 --> A1(Dashboard Analitik)
+    MOD1 --> A2(Billing Management)
+    MOD1 --> A3(Tarif Golongan Setup)
+    MOD1 --> A4(Manajemen Keluhan / Repairs)
+    MOD1 --> A5(Pantau Distribusi / WaterFlow)
+
+    MOD2 --> S1(Daftar Perintah Kerja / Tasks)
+    MOD2 --> S2(Input Stand Meter Air)
+    MOD2 --> S3(Eksekusi Pemutusan Saluran)
+
+    MOD3 --> K1(Dashboard Keuangan & Log Aktivitas)
+    MOD3 --> K2(Jurnal Umum & Buku Besar)
+    MOD3 --> K3(Neraca Lajur & Laporan Akhir)
+    MOD3 --> K4(Hutang AP & Piutang AR)
+    MOD3 --> K5(Daftar Rekening Ditagih & LPP)
+    MOD3 --> K6(Aset Tetap & Persediaan)
+    MOD3 --> K7(Rekonsiliasi & Anggaran)
+
+    style ROOT fill:#28a745,stroke:#000,color:#fff,font-weight:bold
+    style MOD1 fill:#fff3e6,stroke:#d97706,stroke-width:2px
+    style MOD2 fill:#e6f3ff,stroke:#0366d6,stroke-width:2px
+    style MOD3 fill:#f9f0ff,stroke:#6f42c1,stroke-width:2px
 ```
 
 ---
