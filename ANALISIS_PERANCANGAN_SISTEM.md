@@ -6,7 +6,56 @@ Dokumen ini berisi rancangan alur logika sistem (Flowmap) dan interaksi antarmuk
 
 ## 1. Flowmap (Cross-Functional Flowchart)
 
-### A. Flowmap Pengaduan & Perbaikan
+### A. Flowmap Prosedur Pembukuan Manual (Sistem Lama / Sebelum Aplikasi)
+```mermaid
+flowchart TD
+    subgraph L1 [Lajur: Kasir / Staf]
+        direction TB
+        S_START([START]) --> M1[/Menerima Pembayaran Manual/]
+        M1 --> M2(Tulis Kuitansi Kertas Rangkap 2)
+        M2 --> M3[\"Dokumen: Kuitansi (Bawa Pulang Pelanggan)"\]
+        M2 --> M4[\"Dokumen: Kuitansi (Arsip PDAM)"\]
+        M4 --> M5(Buat Rekap Penerimaan Harian)
+        M5 --> M6[\"Dokumen: Rekap Kas Harian"\]
+    end
+
+    subgraph L2 [Lajur: Bagian Keuangan]
+        direction TB
+        K1(Terima Rekap & Uang Fisik) --> K2{Jumlah Cocok?}
+        K2 -- Tidak --> K3(Kembalikan untuk Dicek Ulang)
+        K3 -.-> M5
+        K2 -- Ya --> K4(Catat Manual ke Buku Tulis / Excel Kas Umum)
+        K4 --> K5(Rekap Akhir Bulan ke Buku Besar Manual)
+        K5 --> K6(Ketik Laporan Keuangan Akhir di Word/Excel)
+        K6 --> K7[\"Dokumen: Laporan Keuangan Kertas"\]
+    end
+
+    subgraph L3 [Lajur: Direktur]
+        direction TB
+        D1(Terima Laporan Fisik) --> D2(Cek & Tanda Tangan)
+        D2 --> D3[\"Dokumen: Laporan Keuangan ACC"\]
+        D3 --> S_END([END])
+    end
+
+    %% Hubungan Antar Lajur
+    M6 ==> K1
+    K7 ==> D1
+
+    %% Warna Lajur & Terminal
+    style L1 fill:#f9f9f9,stroke:#333,stroke-width:1px
+    style L2 fill:#e6f3ff,stroke:#333,stroke-width:1px
+    style L3 fill:#fff3e6,stroke:#333,stroke-width:1px
+    style S_START fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
+    style S_END fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
+    style K2 fill:#fff,stroke:#333,stroke-width:2px
+    style M3 fill:#fffbdd,stroke:#b08800,stroke-width:2px
+    style M4 fill:#fffbdd,stroke:#b08800,stroke-width:2px
+    style M6 fill:#fffbdd,stroke:#b08800,stroke-width:2px
+    style K7 fill:#fffbdd,stroke:#b08800,stroke-width:2px
+    style D3 fill:#fffbdd,stroke:#b08800,stroke-width:2px
+```
+
+### B. Flowmap Pengaduan & Perbaikan (Sistem Usulan)
 ```mermaid
 flowchart TD
     subgraph L1 [Lajur: Pelanggan]
@@ -46,7 +95,7 @@ flowchart TD
     style S_END fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
 ```
 
-### B. Flowmap Pencatatan Meter, Tagihan & Akunting (Siklus Bulanan)
+### C. Flowmap Pencatatan Meter, Tagihan & Akunting (Siklus Bulanan Sistem Usulan)
 ```mermaid
 flowchart TD
     subgraph L1 [Lajur: Staff Lapangan]
