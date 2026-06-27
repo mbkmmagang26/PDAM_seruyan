@@ -139,7 +139,8 @@ export default function AccountingDashboard() {
 
   const isAccounting = user?.role === 'accounting';
 
-  const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
+  type MenuItem = { id: ModuleView; label: string; icon: React.ElementType };
+  const menuItems: MenuItem[] = [
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
     ...(isAccounting ? [
       { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
@@ -156,7 +157,7 @@ export default function AccountingDashboard() {
       { id: 'operasional', label: 'Operasional', icon: Grid },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
-    ] : [])
+    ] as MenuItem[] : [])
   ];
 
   const renderContent = () => {

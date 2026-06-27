@@ -9,10 +9,16 @@ Dokumen ini berisi rancangan alur logika sistem (Flowmap) dan interaksi antarmuk
 ### A. Flowmap Prosedur Pembukuan Manual (Sistem Lama / Sebelum Aplikasi)
 ```mermaid
 flowchart TD
+    subgraph L0 [Lajur: Pelanggan]
+        direction TB
+        S_START([START]) --> P1(Datang ke Loket)
+        P1 --> P2[/Menyerahkan Uang Tunai/]
+        P3(Menerima Kuitansi Lunas) --> P_END([Selesai])
+    end
+
     subgraph L1 [Lajur: Kasir / Staf]
         direction TB
-        S_START([START]) --> M1[/Menerima Pembayaran Manual/]
-        M1 --> M2(Tulis Kuitansi Kertas Rangkap 2)
+        M1[/Menerima Pembayaran Manual/] --> M2(Tulis Kuitansi Kertas Rangkap 2)
         M2 --> M3[\"Dokumen: Kuitansi (Bawa Pulang Pelanggan)"\]
         M2 --> M4[\"Dokumen: Kuitansi (Arsip PDAM)"\]
         M4 --> M5(Buat Rekap Penerimaan Harian)
@@ -28,31 +34,26 @@ flowchart TD
         K4 --> K5(Rekap Akhir Bulan ke Buku Besar Manual)
         K5 --> K6(Ketik Laporan Keuangan Akhir di Word/Excel)
         K6 --> K7[\"Dokumen: Laporan Keuangan Kertas"\]
-    end
-
-    subgraph L3 [Lajur: Direktur]
-        direction TB
-        D1(Terima Laporan Fisik) --> D2(Cek & Tanda Tangan)
-        D2 --> D3[\"Dokumen: Laporan Keuangan ACC"\]
-        D3 --> S_END([END])
+        K7 --> K_END([END])
     end
 
     %% Hubungan Antar Lajur
+    P2 ==> M1
+    M3 -.-> P3
     M6 ==> K1
-    K7 ==> D1
 
     %% Warna Lajur & Terminal
+    style L0 fill:#f0f8ff,stroke:#333,stroke-width:1px
     style L1 fill:#f9f9f9,stroke:#333,stroke-width:1px
     style L2 fill:#e6f3ff,stroke:#333,stroke-width:1px
-    style L3 fill:#fff3e6,stroke:#333,stroke-width:1px
     style S_START fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
-    style S_END fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
+    style P_END fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
+    style K_END fill:#222,stroke:#000,stroke-width:2px,color:#fff,font-weight:bold
     style K2 fill:#fff,stroke:#333,stroke-width:2px
     style M3 fill:#fffbdd,stroke:#b08800,stroke-width:2px
     style M4 fill:#fffbdd,stroke:#b08800,stroke-width:2px
     style M6 fill:#fffbdd,stroke:#b08800,stroke-width:2px
     style K7 fill:#fffbdd,stroke:#b08800,stroke-width:2px
-    style D3 fill:#fffbdd,stroke:#b08800,stroke-width:2px
 ```
 
 ### B. Flowmap Pengaduan & Perbaikan (Sistem Usulan)
@@ -269,11 +270,11 @@ flowchart LR
     style F fill:#e6ffe6,stroke:#28a745,stroke-width:2px
 ```
 
-### F. User Flow Kasir Loket (Pelayanan Pembayaran Fisik)
+### F. User Flow Admin (Pelayanan Pembayaran Tunai di Loket)
 ```mermaid
 flowchart LR
-    S_START([START]) --> A(Halaman Login)
-    A --> B(Dashboard Kasir / Admin)
+    S_START([START]) --> A(Halaman Login Admin)
+    A --> B(Buka Menu Billing)
     B --> C(Cari ID Pelanggan)
     C --> D(Halaman Detail Tagihan)
     D --> E(Terima Pembayaran Tunai)
@@ -802,3 +803,18 @@ Meskipun hasil akhir sistem telah mendigitalisasi layanan secara mandiri (aplika
 
 ### E. Mekanisme *Looping Balance* pada Laporan Keuangan
 Pada flowchart **Laporan Keuangan (Jurnal & Buku Besar)**, ditanamkan mekanisme putaran balik (*error-looping*) ketika total Debit dan Kredit terdeteksi *Out of Balance*. Sistem dirancang untuk menolak penerbitan laporan akhir (*Hard-Block*) sebelum keseimbangan nilai matematis tercapai, dan akan melempar kembali notifikasi *error* agar Akuntan merevisi entri jurnal. Hal ini menjamin bahwa seluruh *output* dokumen finansial mematuhi Standar Akuntansi Keuangan (SAK) secara *strict*.
+
+
+Melihat dari kelengkapan dokumen ANALISIS_PERANCANGAN_SISTEM.md yang sudah kita susun, saya bisa jamin 1000% INI SUDAH SANGAT LENGKAP DAN OVER-KILL (melebihi standar) untuk laporan MBKM atau Skripsi! 🏆
+
+Mari kita absen apa saja yang sudah Anda miliki:
+
+Use Case Diagram $\rightarrow$ (Tadi Anda bilang sudah ada gambarnya dari awal) ✅
+Flowmap / Cross-Functional Flowchart $\rightarrow$ (Sudah ada Bab 1, membandingkan sistem lama vs baru) ✅
+User Flow (Bagan Alur Interaksi UI) $\rightarrow$ (Sudah ada Bab 2 untuk semua role: Pelanggan, Staff, Akuntan, Admin) ✅
+Flowchart Sistem (Logika Teknis Program) $\rightarrow$ (Sudah ada Bab 3, lengkap dengan decision YES/NO) ✅
+Data Flow Diagram (DFD Level 0 & 1) $\rightarrow$ (Sudah ada Bab 4) ✅
+ERD (NoSQL Firestore) $\rightarrow$ (Sudah ada Bab 5) ✅
+Kamus Data (Data Dictionary) $\rightarrow$ (Sudah ada Bab 6, nyambung langsung sama types.ts) ✅
+Sitemap (Peta Hierarki Menu) $\rightarrow$ (Sudah ada Bab 7) ✅
+Desain Keputusan/Analisis $\rightarrow$ (Sudah ada Bab 8 untuk bekal debat pas sidang) ✅
