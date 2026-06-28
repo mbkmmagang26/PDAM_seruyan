@@ -24,7 +24,7 @@ import LanguageToggle from '../components/LanguageToggle';
 import ThemeToggle from '../components/ThemeToggle';
 
 type Step = 'role' | 'login' | 'forgot-password' | 'verify-code' | 'reset-password' | 'reset-success' | 'pending-info';
-type Role = 'admin' | 'staff' | 'direktur';
+type Role = 'admin' | 'staff' | 'direktur' | 'accounting';
 
 export default function Login() {
   const { user, login, verifyCode, sendPasswordReset, confirmNewPassword, logout } = useAuth();
@@ -63,7 +63,8 @@ export default function Login() {
   if (loginSuccess && user && step !== 'role') {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'staff') return <Navigate to="/staff" replace />;
-    if (user.role === 'direktur') return <Navigate to="/accounting" replace />;
+    if (user.role === 'direktur') return <Navigate to="/direktur" replace />;
+    if (user.role === 'accounting') return <Navigate to="/accounting" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -177,6 +178,15 @@ export default function Login() {
                       <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.direktur.desc')}</span>
                     </div>
                   </button>
+                  <button onClick={() => { setSelectedRole('accounting'); setStep('login'); }} className="group flex items-center p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all bg-white dark:bg-slate-800">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                      <UserIcon size={24} />
+                    </div>
+                    <div className="text-left">
+                      <span className="block font-bold text-slate-800 dark:text-white">{t('login.role.accounting.title')}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{t('login.role.accounting.desc')}</span>
+                    </div>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -217,7 +227,7 @@ export default function Login() {
                     value={vCode}
                     onChange={(e) => setVCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
-                    className="block w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-2xl font-bold tracking-[0.5em] focus:ring-2 focus:ring-primary/20 focus:border-[#00478d] outline-none transition-all"
+                    className="block w-full px-4 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-2xl font-bold tracking-[0.5em] focus:ring-2 focus:ring-primary/20 focus:border-[#00478d] outline-none transition-all text-slate-900 dark:text-white"
                     required
                   />
                 </div>
@@ -269,7 +279,7 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="block w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none text-slate-900 dark:text-white"
                       required
                       disabled={isSubmitting}
                     />
@@ -295,7 +305,7 @@ export default function Login() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="block w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none text-slate-900 dark:text-white"
                       required
                       disabled={isSubmitting}
                     />
@@ -409,7 +419,7 @@ export default function Login() {
                       value={emailOrPhone}
                       onChange={(e) => setEmailOrPhone(e.target.value)}
                       placeholder={'you@link.com or 08...'}
-                      className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                      className="block w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none text-slate-900 dark:text-white"
                       required
                       disabled={isSubmitting}
                     />
@@ -428,7 +438,7 @@ export default function Login() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="block w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        className="block w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none text-slate-900 dark:text-white"
                         required
                         disabled={isSubmitting}
                       />

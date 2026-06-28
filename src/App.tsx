@@ -38,6 +38,15 @@ export default function App() {
           <Route 
             path="/accounting/*" 
             element={
+              <ProtectedRoute allowedRoles={['accounting']}>
+                <AccountingDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/direktur/*" 
+            element={
               <ProtectedRoute allowedRoles={['direktur']}>
                 <AccountingDashboard />
               </ProtectedRoute>
@@ -81,3 +90,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

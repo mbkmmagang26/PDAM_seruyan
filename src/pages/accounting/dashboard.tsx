@@ -68,9 +68,9 @@ export default function AccountingDashboard() {
     }
   };
 
-  // Guard: Redirect jika bukan direktur
+  // Guard: Redirect jika bukan direktur atau accounting
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'direktur')) {
+    if (!authLoading && (!user || (user.role !== 'direktur' && user.role !== 'accounting'))) {
       navigate('/login');
     }
   }, [user, authLoading, navigate]);
@@ -137,22 +137,27 @@ export default function AccountingDashboard() {
     );
   }
 
-  const menuItems: { id: ModuleView; label: string; icon: React.ElementType }[] = [
+  const isAccounting = user?.role === 'accounting';
+
+  type MenuItem = { id: ModuleView; label: string; icon: React.ElementType };
+  const menuItems: MenuItem[] = [
     { id: 'dashboard_utama', label: 'Dashboard Utama', icon: LayoutDashboard },
-    { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
-    { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
-    { id: 'neraca_lajur', label: 'Neraca Lajur (Worksheet)', icon: Table },
-    { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
-    { id: 'piutang_ar', label: 'Piutang (AR)', icon: Users },
-    { id: 'aset_tetap', label: 'Aset Tetap', icon: HardDrive },
-    { id: 'persediaan', label: 'Persediaan', icon: Package },
-    { id: 'anggaran', label: 'Anggaran', icon: PieChart },
-    { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
-    { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
-    { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
-    { id: 'operasional', label: 'Operasional', icon: Grid },
-    { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
-    { id: 'import_data', label: 'Import', icon: UploadCloud },
+    ...(isAccounting ? [
+      { id: 'jurnal_umum', label: 'Jurnal Umum', icon: FileText },
+      { id: 'buku_besar', label: 'Buku Besar (GL)', icon: Book },
+      { id: 'neraca_lajur', label: 'Neraca Lajur (Worksheet)', icon: Table },
+      { id: 'hutang_ap', label: 'Hutang (AP)', icon: Wallet },
+      { id: 'piutang_ar', label: 'Piutang (AR)', icon: Users },
+      { id: 'aset_tetap', label: 'Aset Tetap', icon: HardDrive },
+      { id: 'persediaan', label: 'Persediaan', icon: Package },
+      { id: 'anggaran', label: 'Anggaran', icon: PieChart },
+      { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
+      { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
+      { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
+      { id: 'operasional', label: 'Operasional', icon: Grid },
+      { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
+      { id: 'import_data', label: 'Import', icon: UploadCloud },
+    ] as MenuItem[] : [])
   ];
 
   const renderContent = () => {
@@ -196,7 +201,7 @@ export default function AccountingDashboard() {
             </div>
             <div>
               <h1 className="text-white font-bold tracking-wide">SIA SERUYAN</h1>
-              <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">PDAM Accounting</p>
+              <p className="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">{isAccounting ? 'PDAM Accounting' : 'PDAM Direktur'}</p>
             </div>
           </div>
           <button 
