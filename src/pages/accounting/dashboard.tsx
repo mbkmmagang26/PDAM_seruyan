@@ -156,6 +156,7 @@ export default function AccountingDashboard() {
       { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
       { id: 'operasional', label: 'Operasional', icon: Grid },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
+      { id: 'import_data', label: 'Import', icon: UploadCloud },
     ] as MenuItem[] : [])
   ];
 
