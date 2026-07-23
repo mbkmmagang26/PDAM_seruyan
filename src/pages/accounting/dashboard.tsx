@@ -156,12 +156,7 @@ export default function AccountingDashboard() {
       { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
       { id: 'operasional', label: 'Operasional', icon: Grid },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
-      { id: 'import_data', label: 'Import', icon: UploadCloud },
-<<<<<<< HEAD
-    ] as { id: ModuleView; label: string; icon: React.ElementType }[] : [])
-=======
     ] as MenuItem[] : [])
->>>>>>> 8f0b8572da18d02da6190c8715427aa8b3c73fa0
   ];
 
   const renderContent = () => {
