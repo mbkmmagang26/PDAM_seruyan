@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "skills": {
+    "academic-peer-reviewer": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/academic_peer_reviewer/SKILL.md",
+      "computedHash": "9966ba320df791f34890c76c1b14b6054940602238ccf897696f25d4e726b1b4"
+    },
+    "academic_paraphraser": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/academic_paraphraser/SKILL.md",
+      "computedHash": "9d2465169278dc35b99cb2b2ffdedb5c455d88b203cf018eba33a85b255df679"
+    },
+    "advanced-similarity-reducer": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/advanced_similarity_reducer/SKILL.md",
+      "computedHash": "62adbbaf399302da868fc506cf6d0badf4ea5fa8e4d88f8efd717f529183df74"
+    },
+    "agent-update-checker": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/agent_update_checker/SKILL.md",
+      "computedHash": "bd2ca6a26f3fb3a29d893a8a853ad5237b9a243aced350424e23df2aadc0fd65"
+    },
+    "citation-and-reference-validator": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/citation_and_reference_validator/SKILL.md",
+      "computedHash": "dfab20765bca2dd6cbc23e1e3f610452731ff23919eba9a15c10195dfe5ae22c"
+    },
+    "data-acquisition-specialist": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/data_acquisition_specialist/SKILL.md",
+      "computedHash": "2b2dda5158e6459a2ab836182cffd20bbbcd1d08ae8f6c529cbb4d3fd453c556"
+    },
+    "data-scientist-analyst": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/data_scientist_analyst/SKILL.md",
+      "computedHash": "7545ed79f8f98e9bf3aded88959476f5d7f5ed891c1a3e5f814b1b4d1752276f"
+    },
+    "discover-phenomenon-and-gap": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/discover_phenomenon_and_gap/SKILL.md",
+      "computedHash": "d7e54aed79eaaea62e09dc6525ee90ff2163bbbb95fb287a1aad334ba80a52ed"
+    },
+    "extract-methodology": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/extract_methodology/SKILL.md",
+      "computedHash": "da029a22a90162c007be42fd542f75ace3ff319b2ffc99cd7f9c599a758f8d01"
+    },
+    "hypothesis-or-proposition-builder": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/hypothesis_or_proposition_builder/SKILL.md",
+      "computedHash": "712c41348b419e0b80c5741c49d9fd9d83f21e9933d5d2027435cd604b3e7b2c"
+    },
+    "journal-recommendation-finder": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/journal_recommendation_finder/SKILL.md",
+      "computedHash": "fd63c698c83d4a2a55e0e84da32fe7ce7c56067bb1417ff931468f673f7c3340"
+    },
+    "journal-template-formatter": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/journal_template_formatter/SKILL.md",
+      "computedHash": "9383839925d3f384f34e71d384162b0157ef7701b9d3942fdc25f894a1b40db6"
+    },
+    "literature-review-generator": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/literature_review_generator/SKILL.md",
+      "computedHash": "7fc5dd3b7f9947c76f3fe72fd69981c63405b6cc60fd9f342d8b89c09b2d7b06"
+    },
+    "model-evaluator-validator": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/model_evaluator_validator/SKILL.md",
+      "computedHash": "da3b52f8b5428a6a62c6798a3b0cf8f61912afdaf050ec6c665221f9ac950ad9"
+    },
+    "obsidian-vault-exporter": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/obsidian_vault_exporter/SKILL.md",
+      "computedHash": "72160caeb5178264d37dd4106ec19d76756dc03f2852cfc28fa889d7ad0a210e"
+    },
+    "paper-matrix-builder": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/paper_matrix_builder/SKILL.md",
+      "computedHash": "b08ff75f66e9167c695496c739840b9e01aa168728ab0cd339f1621d6c8918f3"
+    },
+    "patent-and-literature-matcher": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/patent_and_literature_matcher/SKILL.md",
+      "computedHash": "c90f143b53b75fe6ce083b0e02237ad7ccd751cf2babee60911ecbc1baa53601"
+    },
+    "project-setup-git": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/project-setup-git/SKILL.md",
+      "computedHash": "d0c18f608366172b71006df95800c7666cd987f89ea0edf77870965b121bc457"
+    },
+    "research-design-planner": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/research_design_planner/SKILL.md",
+      "computedHash": "df44f5a66c814d0baf824f639f4793ec6452e33584e6ddfc2a87fa15d92d1d0e"
+    },
+    "research-orchestrator": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/research_orchestrator/SKILL.md",
+      "computedHash": "22800733ce5986c761314358646b3652e194b6b8ca0a26070cc71cd7ae0893f4"
+    },
+    "research-question-builder": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/research_question_builder/SKILL.md",
+      "computedHash": "815ea5890defa44eca4b20b55ba5004c920c74b5e00438baab2200db1d30e7f2"
+    },
+    "reviewer-response-and-revision": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/reviewer_response_and_revision/SKILL.md",
+      "computedHash": "ee6cd685b844920db8be8f39256602832f566fa6bfc6cff1beaa3bfc86aef8ec"
+    },
+    "source-quality-appraiser": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/source_quality_appraiser/SKILL.md",
+      "computedHash": "84119913dfbab59309dd1156329362c39c76edd60c1b81357e6a2865c4a21c34"
+    },
+    "synthesize-research": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/synthesize_research/SKILL.md",
+      "computedHash": "6a9e8830e3377a31d2aed3db6c809c19152c177eb62b5e983a14bf2d8ab8bff3"
+    },
+    "synthetic-data-generator": {
+      "source": "lensetek/Research-Agent-Skills-Collection",
+      "sourceType": "github",
+      "skillPath": "skills/synthetic_data_generator/SKILL.md",
+      "computedHash": "906002f42fa4da00b06954d6163c6f1ac98d214244fce5ce439c57ecb5a047be"
+    }
+  }
+}
