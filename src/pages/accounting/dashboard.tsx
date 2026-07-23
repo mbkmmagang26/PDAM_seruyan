@@ -156,7 +156,7 @@ export default function AccountingDashboard() {
       { id: 'operasional', label: 'Operasional', icon: Grid },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
-    ] : [])
+    ] as { id: ModuleView; label: string; icon: React.ElementType }[] : [])
   ];
 
   const renderContent = () => {
