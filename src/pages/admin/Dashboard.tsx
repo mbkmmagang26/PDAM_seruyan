@@ -244,7 +244,7 @@ export default function AdminDashboard() {
   }, [debouncedSearchQuery]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -500,7 +500,7 @@ export default function AdminDashboard() {
         pengaduanId: processComplaintData.id
       });
 
-      await updateDoc(doc(db, 'pengaduan_pelanggan', processComplaintData.id), { status: 'Diproses' });
+      await updateDoc(doc(db, 'pengaduan', processComplaintData.id), { status: 'Diproses' });
       showNotification('Pengaduan berhasil ditugaskan ke staff', 'success');
       setProcessComplaintData(null);
       setSelectedStaffForComplaint('');
@@ -1100,9 +1100,11 @@ export default function AdminDashboard() {
                             )}
                             <button
                               onClick={async () => {
-                                if (window.confirm('Hapus pengaduan ini?')) {
-                                  await deleteDoc(doc(db, 'pengaduan_pelanggan', complaint.id));
-                                  showNotification('Pengaduan dihapus', 'success');
+                                if (window.confirm('Yakin ingin menghapus pengaduan ini?')) {
+                                  try {
+                                    await deleteDoc(doc(db, 'pengaduan', complaint.id));
+                                    showNotification('Pengaduan dihapus', 'success');
+                                  } catch (e) {}
                                 }
                               }}
                               className="p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"

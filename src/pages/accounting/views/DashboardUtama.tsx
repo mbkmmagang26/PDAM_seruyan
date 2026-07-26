@@ -106,8 +106,8 @@ export default function DashboardUtama() {
       setStats(s => ({ ...s, tasksPending: pending }));
     });
 
-    // Listen to Pengaduan
-    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan_pelanggan'), (snapshot) => {
+    // 4. Statistik Pengaduan (Menggunakan koleksi pengaduan)
+    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
       let pending = 0;
       snapshot.forEach(doc => {
         const status = doc.data().status;

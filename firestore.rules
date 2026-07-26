@@ -71,8 +71,8 @@ service cloud.firestore {
       allow write: if isAdmin() || isOwner(userId);
     }
 
-    // Rules: Koleksi pengaduan_pelanggan
-    match /pengaduan_pelanggan/{docId} {
+    // Rules: Koleksi pengaduan
+    match /pengaduan/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) || 
         isStaff() || 

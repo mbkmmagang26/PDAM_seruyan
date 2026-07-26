@@ -12,7 +12,7 @@ export default function Pengaduan() {
   useEffect(() => {
     setLoading(true);
     const q = query(
-      collection(db, 'pengaduan_pelanggan'),
+      collection(db, 'pengaduan'),
       orderBy('createdAt', 'desc')
     );
 
@@ -29,7 +29,7 @@ export default function Pengaduan() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini?')) return;
     try {
-      await deleteDoc(doc(db, 'pengaduan_pelanggan', id));
+      await deleteDoc(doc(db, 'pengaduan', id));
     } catch (err: any) {
       alert('Gagal menghapus pengaduan: ' + err.message);
     }
