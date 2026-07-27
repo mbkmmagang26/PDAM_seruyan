@@ -172,8 +172,16 @@ export default function StaffDashboard() {
           });
 
           // Update tb_pelanggan (sinkronisasi data pelanggan baru)
-          if (task.permohonanId) {
-            await updateDoc(doc(db, 'tb_pelanggan', task.permohonanId), {
+          if (task.userId) {
+            await updateDoc(doc(db, 'tb_pelanggan', task.userId), {
+              no_meter: updates.meterNumber || '',
+              id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              status: 'Aktif',
+              status_akun: 'active'
+            });
+          } else if (task.permohonanId) {
+             // Fallback for older tasks
+             await updateDoc(doc(db, 'tb_pelanggan', task.permohonanId), {
               no_meter: updates.meterNumber || '',
               id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
             });

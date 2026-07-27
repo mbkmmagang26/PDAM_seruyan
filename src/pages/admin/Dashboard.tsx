@@ -482,10 +482,13 @@ export default function AdminDashboard() {
     }
   };
 
+  const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
+
   const submitProcessComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!processComplaintData || !selectedStaffForComplaint) return;
+    if (!processComplaintData || !selectedStaffForComplaint || isSubmittingComplaint) return;
 
+    setIsSubmittingComplaint(true);
     try {
       // @ts-ignore
       await createTask({
@@ -506,6 +509,8 @@ export default function AdminDashboard() {
       setSelectedStaffForComplaint('');
     } catch (error) {
       showNotification('Gagal memproses pengaduan', 'error');
+    } finally {
+      setIsSubmittingComplaint(false);
     }
   };
 
@@ -1702,7 +1707,9 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div className="pt-2">
-                    <button type="submit" className="w-full py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs">Tugaskan Sekarang</button>
+                    <button type="submit" disabled={isSubmittingComplaint} className={`w-full py-4 ${isSubmittingComplaint ? 'bg-slate-400' : 'bg-[#00478d] hover:scale-[1.02]'} text-white rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all uppercase tracking-wider text-xs`}>
+                      {isSubmittingComplaint ? 'Memproses...' : 'Tugaskan Sekarang'}
+                    </button>
                   </div>
                 </form>
               </motion.div>

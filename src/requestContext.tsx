@@ -100,26 +100,8 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         status: 'approved'
       });
 
-      // 2. Tambahkan ke tb_pelanggan (Gunakan ID Permohonan sebagai Document ID agar tidak duplikat)
-      // Ini juga menghindari error "Missing Index" di Firestore
-      await setDoc(doc(db, 'tb_pelanggan', id), {
-        nama: req.name,
-        nama_search: req.name.toLowerCase(),
-        search_tokens: generateSearchTokens(req.name),
-        alamat: req.address,
-        noHp: req.phone,
-        status: 'Nonaktif',
-        role: 'pelanggan',
-        no_meter: '',
-        id_pelanggan: 'MENUNGGU PASANG',
-        gol: 'Rumah Tangga 2 (R2)',
-        golongan: 'Rumah Tangga 2 (R2)',
-        createdAt: new Date().toISOString(),
-        permohonanId: id,
-        userId: req.userId || ''
-      }, { merge: true });
-
-      // 3. Create a new task automatically untuk Staff
+      // 2. Data Pelanggan sudah ada sejak Registrasi, tidak perlu buat dokumen yatim (orphan) baru.
+      // Akan diupdate oleh Staff saat pekerjaan selesai.      // 3. Create a new task automatically untuk Staff
       await createTask({
         title: `Penyambungan Baru: ${req.name}`, 
         location: req.address,
@@ -130,7 +112,8 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         reason: 'Pemasangan Baru Sesuai Permohonan',
         assignedTo: staffId,
         deadline: 'CYCLE',
-        permohonanId: id
+        permohonanId: id,
+        userId: req.userId || ''
       });
 
     } catch (error: any) {
