@@ -31,50 +31,6 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(collection(db, 'tb_permohonan'), orderBy('date', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        // Seed data jika kosong (Data Contoh)
-        const seedData = [
-          {
-            name: 'Rahmat Hidayat',
-            phone: '081255566677',
-            address: 'Jl. Tjilik Riwut No. 45, Kuala Pembuang',
-            status: 'pending',
-            date: new Date(Date.now() - 3600000 * 2).toISOString()
-          },
-          {
-            name: 'Sari Puspita',
-            phone: '085244433322',
-            address: 'Perumahan Seruyan Asri Blok C-12',
-            status: 'pending',
-            date: new Date(Date.now() - 3600000 * 24).toISOString()
-          },
-          {
-            name: 'Budi Santoso',
-            phone: '081399988877',
-            address: 'Jl. Ahmad Yani Gg. Merdeka No. 5',
-            status: 'pending',
-            date: new Date(Date.now() - 3600000 * 48).toISOString()
-          },
-          {
-            name: 'Dewi Lestari',
-            phone: '087711122233',
-            address: 'Jl. Jendral Sudirman KM 3.5',
-            status: 'pending',
-            date: new Date(Date.now() - 3600000 * 72).toISOString()
-          }
-        ];
-        
-        // Jalankan seeding secara async dengan logging error
-        seedData.forEach(async (data) => {
-          try {
-            await addDoc(collection(db, 'tb_permohonan'), data);
-            console.log("✅ Berhasil membuat data contoh permohonan");
-          } catch (e) {
-            console.error("❌ Gagal membuat data contoh permohonan. Periksa Security Rules!", e);
-          }
-        });
-      }
-
       const permohonanData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
