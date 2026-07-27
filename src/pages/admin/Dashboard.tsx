@@ -343,9 +343,14 @@ export default function AdminDashboard() {
     }
   };
 
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+
   // FITUR MEMBUAT PERINTAH KERJA MANUAL
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingTask) return;
+    setIsSubmittingTask(true);
     try {
       let taskTitle = 'Perintah Kerja';
       if (newTaskForm.type === 'repair') taskTitle = 'Perbaikan';
@@ -404,8 +409,11 @@ export default function AdminDashboard() {
         customerId: '',
         permohonanId: ''
       });
-    } catch (error) {
+    } catch (error: any) {
+      logActivity(user, 'Buat Perintah Kerja', `Gagal menambahkan perintah kerja: ${error.message}`);
       showNotification('Gagal menambahkan perintah kerja', 'error');
+    } finally {
+      setIsSubmittingTask(false);
     }
   };
 
@@ -586,28 +594,38 @@ export default function AdminDashboard() {
                       {req.status === 'pending' && (
                         <div className="flex justify-end gap-2 transition-all">
                           <button
+                            disabled={processingRequestId === req.id}
                             onClick={async () => {
+                              if (processingRequestId) return;
+                              setProcessingRequestId(req.id);
                               try {
                                 await approveRequest(req.id);
                                 showNotification('Permohonan disetujui & tugas dibuat', 'success');
                               } catch (e) {
                                 showNotification('Gagal memproses permohonan', 'error');
+                              } finally {
+                                setProcessingRequestId(null);
                               }
                             }}
-                            className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all font-bold text-xs"
+                            className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all font-bold text-xs disabled:opacity-50"
                           >
-                            {t('admin.requests.approve')}
+                            {processingRequestId === req.id ? 'Memproses...' : t('admin.requests.approve')}
                           </button>
                           <button
+                            disabled={processingRequestId === req.id}
                             onClick={async () => {
+                              if (processingRequestId) return;
+                              setProcessingRequestId(req.id);
                               try {
                                 await rejectRequest(req.id);
                                 showNotification('Permohonan ditolak', 'error');
                               } catch (e) {
                                 showNotification('Gagal memproses permohonan', 'error');
+                              } finally {
+                                setProcessingRequestId(null);
                               }
                             }}
-                            className="px-3 py-2 rounded-xl border border-red-100 text-red-500 hover:bg-red-50 transition-all font-bold text-xs"
+                            className="px-3 py-2 rounded-xl border border-red-100 text-red-500 hover:bg-red-50 transition-all font-bold text-xs disabled:opacity-50"
                           >
                             {t('admin.requests.reject')}
                           </button>
@@ -2246,9 +2264,10 @@ export default function AdminDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb]"
+                      disabled={isSubmittingTask}
+                      className="flex-[2] py-4 bg-[#00478d] text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase tracking-wider text-xs bg-gradient-to-r from-primary to-[#005cbb] disabled:opacity-50"
                     >
-                      {t('admin.tasks.button.create')}
+                      {isSubmittingTask ? 'Memproses...' : t('admin.tasks.button.create')}
                     </button>
                   </div>
                 </form>
