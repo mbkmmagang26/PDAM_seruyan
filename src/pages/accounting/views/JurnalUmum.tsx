@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -437,7 +437,7 @@ export default function JurnalUmum() {
                           disabled={['1', '2', '3', '4', '5'].includes(c.code)}
                           className={c.level < 3 || c.isHeader ? 'font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/50' : ''}
                         >
-                          {c.level === 2 ? 'ã€€' : c.level >= 3 ? 'ã€€ã€€' : ''}
+                          {c.level === 2 ? '　' : c.level >= 3 ? '　　' : ''}
                           {c.code} - {c.name}
                         </option>
                       ))}
@@ -503,9 +503,9 @@ export default function JurnalUmum() {
                     <span className="text-slate-500 dark:text-slate-400">Total Kredit: <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(totalKredit)}</span></span>
                   </div>
                   {isBalanced ? (
-                    <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">âœ“ Jurnal seimbang.</span>
+                    <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">✓ Jurnal seimbang.</span>
                   ) : (
-                    <span className="text-rose-500 text-xs font-bold flex items-center gap-1">âš  Jurnal belum seimbang atau kosong.</span>
+                    <span className="text-rose-500 text-xs font-bold flex items-center gap-1">⚠ Jurnal belum seimbang atau kosong.</span>
                   )}
                 </div>
 

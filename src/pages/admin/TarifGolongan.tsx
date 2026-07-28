@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Golongan } from '../../types';
@@ -111,7 +111,7 @@ export default function TarifGolongan() {
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">Master Tarif Golongan</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola harga air per kubik (mÂ³) berdasarkan golongan pelanggan.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola harga air per kubik (m³) berdasarkan golongan pelanggan.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -161,15 +161,15 @@ export default function TarifGolongan() {
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.biayaAdmin)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 1 - 10 mÂ³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 1 - 10 m³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif1_10)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 11 - 20 mÂ³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 11 - 20 m³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif11_20)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif {'>'} 20 mÂ³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif {'>'} 20 m³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif21_up)}</span>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 1-10 mÂ³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 1-10 m³ (Rp)</label>
                     <input 
                       required
                       type="number" 
@@ -231,7 +231,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 11-20 mÂ³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 11-20 m³ (Rp)</label>
                     <input 
                       required
                       type="number" 
@@ -241,7 +241,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif {'>'} 20 mÂ³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif {'>'} 20 m³ (Rp)</label>
                     <input 
                       required
                       type="number" 

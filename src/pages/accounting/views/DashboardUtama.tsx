@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
@@ -117,7 +117,7 @@ export default function DashboardUtama() {
       setStats(s => ({ ...s, pengaduanPending: pending }));
     });
 
-    // Listen to Piutang (tb_pelanggan)
+    // Listen to Piutang (data_pelanggan_meteran)
     const unsubPiutang = onSnapshot(collection(db, 'data_pelanggan_meteran'), (snapshot) => {
       let totalPiutang = 0;
       snapshot.forEach(doc => {

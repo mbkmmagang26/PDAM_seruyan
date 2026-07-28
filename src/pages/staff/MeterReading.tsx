@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Waves,
   Bell,
@@ -271,7 +271,7 @@ export default function MeterReading() {
                     <label className="block text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">{t('staff.reading.prev')}</label>
                     <div className="w-full px-4 py-3 bg-slate-50 rounded-xl text-slate-500 font-mono text-lg flex items-center justify-between">
                       <span>{loadingAwal ? 'Loading...' : standAwal.toFixed(2)}</span>
-                      <span className="text-xs uppercase ml-2 opacity-50 font-sans">mÂ³</span>
+                      <span className="text-xs uppercase ml-2 opacity-50 font-sans">m³</span>
                     </div>
                   </div>
                   <div>

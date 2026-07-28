@@ -38,7 +38,7 @@ export const processMeterReadingAndBilling = async (
   fotoUrl?: string
 ): Promise<{ success: boolean; message: string; billId?: string }> => {
   try {
-    // 1. Dapatkan data pelanggan dari tb_pelanggan
+    // 1. Dapatkan data pelanggan dari data_pelanggan_meteran
     const userDocRef = doc(db, 'data_pelanggan_meteran', customerId);
     const userSnap = await getDoc(userDocRef);
     
@@ -90,7 +90,7 @@ export const processMeterReadingAndBilling = async (
     const currentMonth = `${dateNow.getFullYear()}-${String(dateNow.getMonth() + 1).padStart(2, '0')}`;
     const yearStr = String(dateNow.getFullYear());
 
-    // 4. Simpan ke tb_meterpelanggan
+    // 4. Simpan ke data_pelanggan_meteran
     const newMeterData: Omit<MeterReading, 'id'> = {
       customerId,
       month: currentMonth,
@@ -104,7 +104,7 @@ export const processMeterReadingAndBilling = async (
     
     const meterDocRef = await addDoc(collection(db, 'pembacaan_meter_staf'), newMeterData);
 
-    // 5. Kalkulasi Tagihan (tb_billing)
+    // 5. Kalkulasi Tagihan (tagihan_air_pelanggan)
     const biayaPemakaian = calculateBiayaPemakaian(pemakaian, golonganData);
     const biayaAdmin = golonganData.biayaAdmin || 0;
     const totalAmount = biayaPemakaian + biayaAdmin;
@@ -133,9 +133,9 @@ export const processMeterReadingAndBilling = async (
 
     const billDocRef = await addDoc(collection(db, 'tagihan_air_pelanggan'), newBillData);
 
-    // 6. Update sinkronisasi ke panel Accounting (tb_pelanggan)
-    // Di aplikasi ini, Panel Accounting membaca dari tb_pelanggan
-    // Kita cek apakah customer sudah ada di tb_pelanggan
+    // 6. Update sinkronisasi ke panel Accounting (data_pelanggan_meteran)
+    // Di aplikasi ini, Panel Accounting membaca dari data_pelanggan_meteran
+    // Kita cek apakah customer sudah ada di data_pelanggan_meteran
     const tbPelangganRef = doc(db, 'data_pelanggan_meteran', customerId);
     const tbPelangganSnap = await getDoc(tbPelangganRef);
     
@@ -215,13 +215,13 @@ export const processPayment = async (billId: string, customerId: string, amount:
         throw new Error('Data tagihan tidak ditemukan.');
       }
 
-      // Update status tb_billing jadi paid
+      // Update status tagihan_air_pelanggan jadi paid
       transaction.update(billRef, {
         status: 'paid',
         paidDate: new Date().toISOString()
       });
 
-      // Kurangi tagihanTunggakan di tb_pelanggan
+      // Kurangi tagihanTunggakan di data_pelanggan_meteran
       if (tbPelangganSnap.exists()) {
         const currentData = tbPelangganSnap.data();
         const currentTunggakan = currentData.tagihanTunggakan || 0;

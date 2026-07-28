@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from './firebase'; 
 import { collection, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { Task } from './types';
