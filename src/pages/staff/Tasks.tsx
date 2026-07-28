@@ -468,7 +468,7 @@ export default function StaffDashboard() {
                         {task.type === 'reading' && t('admin.tasks.type.reading')}
                         {task.type === 'new_connection' && `Sambungan Baru: ${task.customerName}`}
                         {task.type === 'disconnection' && `${t('admin.tasks.type.disconnection_prefix')} ${task.customerName}`}
-                        {task.type === 'repair' && `Perbaikan: ${task.customerName || task.reason?.split('-')[0] || 'Laporan Masuk'}`}
+                        {task.type === 'repair' && `Perbaikan: ${task.customerName ? `${task.customerName} (${task.reason?.split('-')[0]?.trim() || 'Laporan'})` : (task.reason?.split('-')[0] || 'Laporan Masuk')}`}
                       </h4>
                       <div className="mt-2 space-y-1">
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-wider">
