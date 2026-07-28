@@ -212,6 +212,7 @@ export default function StaffDashboard() {
                   'rumah_tangga': 'Rumah Tangga 2 (R2)',
                   'niaga': 'Niaga Kecil (NK)',
                   'industri': 'Industri & Niaga Besar',
+                  'sosial': 'Sosial Umum - Tempat Ibadah',
                   'pemerintah': 'Instansi Pemerintah (PRT 2)',
                   'sosial_umum': 'Sosial Umum - Tempat Ibadah',
                   'sosial_khusus': 'Sosial Khusus - Sekolah (S)'
