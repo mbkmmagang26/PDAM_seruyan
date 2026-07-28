@@ -258,7 +258,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, 'master_tarif_air'), 
+      collection(db, 'tb_golongan'), 
       (snapshot) => {
         setGolonganList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
