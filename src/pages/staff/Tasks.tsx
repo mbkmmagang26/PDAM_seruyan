@@ -25,7 +25,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import ThemeToggle from '../../components/ThemeToggle';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -173,11 +173,19 @@ export default function StaffDashboard() {
 
           // Update data_pelanggan_meteran (sinkronisasi data pelanggan baru)
           if (task.userId) {
+            const newMeterData = {
+              idPelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              lokasi: task.location || 'Alamat Baru',
+              status: 'Aktif',
+              addedAt: new Date().toISOString()
+            };
+            
             await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), {
               no_meter: updates.meterNumber || '',
-              id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              id_pelanggan: newMeterData.idPelanggan,
               status: 'Aktif',
-              status_akun: 'active'
+              status_akun: 'active',
+              meters: arrayUnion(newMeterData)
             });
           } else if (task.permohonanId) {
              // Fallback for older tasks
