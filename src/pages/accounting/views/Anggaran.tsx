@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Target, Loader2, Plus, Search, Filter, Download, ArrowUpRight, BarChart3, X, Calculator, Calendar, Trash2 } from 'lucide-react';

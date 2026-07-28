@@ -1,4 +1,4 @@
-﻿import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from '../types';
 

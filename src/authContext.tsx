@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const isAuthenticatingRef = React.useRef(false);
 
-  // Helper to fetch user details from either user_admin or tb_pelanggan
+  // Helper to fetch user details from either user_admin or data_pelanggan_meteran
   const fetchUserById = async (uid: string): Promise<User | null> => {
     try {
       // 1. Cek di user_admin
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ...data, id: uid } as User;
       }
 
-      // 2. Cek di tb_pelanggan
+      // 2. Cek di data_pelanggan_meteran
       const pelangganRef = doc(db, 'data_pelanggan_meteran', uid);
       const pelangganDoc = await getDoc(pelangganRef);
       if (pelangganDoc.exists()) {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } as User;
       }
 
-      // 3. Fallback query by userId field in tb_pelanggan
+      // 3. Fallback query by userId field in data_pelanggan_meteran
       const { query, collection, where, getDocs } = await import('firebase/firestore');
       const q = query(collection(db, 'data_pelanggan_meteran'), where('userId', '==', uid));
       const querySnap = await getDocs(q);

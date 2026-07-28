@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, TrendingUp, Download, Filter, CheckCircle2, Clock, Plus, Search, X, Users } from 'lucide-react';
 import { useLanguage } from '../../languageContext';
@@ -242,7 +242,7 @@ export default function Billing() {
                   <div>
                     <p className="text-sm font-bold">{bill.customerName || 'Unknown'}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {bill.periodeBulan || getMonthName(bill.month)} {bill.periodeTahun || bill.year || ''} â€¢ {new Date(bill.createdAt).toLocaleDateString()}
+                      {bill.periodeBulan || getMonthName(bill.month)} {bill.periodeTahun || bill.year || ''} • {new Date(bill.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

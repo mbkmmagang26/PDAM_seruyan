@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Waves,
   Search,
@@ -815,7 +815,7 @@ export default function AdminDashboard() {
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2 group/pass">
                           <p className="text-xs font-mono font-bold text-slate-600 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
-                            {visiblePasswords.includes(u.id) ? (u.password || 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢') : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'}
+                            {visiblePasswords.includes(u.id) ? (u.password || '••••••••') : '••••••••'}
                           </p>
                           <button
                             onClick={() => setVisiblePasswords(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
@@ -1664,7 +1664,7 @@ export default function AdminDashboard() {
                                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{new Date(log.timestamp).toLocaleString('id-ID')}</span>
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">{log.details}</p>
-                                <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">{log.userName || log.userId} â€¢ {log.userRole || 'Sistem'}</span>
+                                <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">{log.userName || log.userId} • {log.userRole || 'Sistem'}</span>
                               </div>
                             </div>
                           ))
@@ -2169,7 +2169,7 @@ export default function AdminDashboard() {
                                               className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 last:border-0 transition-colors"
                                             >
                                               <p className="text-sm font-bold text-slate-700">{c.nama}</p>
-                                              <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} â€¢ {c.alamat || 'Tanpa Alamat'}</p>
+                                              <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} • {c.alamat || 'Tanpa Alamat'}</p>
                                             </button>
                                           ))
                                       )
