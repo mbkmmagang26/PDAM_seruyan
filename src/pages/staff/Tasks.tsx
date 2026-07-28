@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Gauge,
-  Phone
+  Phone,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,7 @@ export default function StaffDashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('repair');
+  const [activeContactMenu, setActiveContactMenu] = useState<string | null>(null);
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
@@ -582,24 +584,64 @@ export default function StaffDashboard() {
                            </button>
                         )}
                         
-                        {/* Tombol Hubungi Pelanggan muncul jika belum dikerjakan */}
+                        {/* Menu Kontak Pelanggan */}
                         {task.status !== 'in-progress' && (
-                          <button 
-                            onClick={() => {
-                               const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
-                               if (phone) {
-                                  let formatted = phone.replace(/\D/g, '');
-                                  if (formatted.startsWith('0')) formatted = '62' + formatted.substring(1);
-                                  window.open(`https://wa.me/${formatted}`, '_blank');
-                               } else {
-                                  alert('Nomor HP pelanggan tidak tersedia untuk tugas ini.');
-                               }
-                            }}
-                            className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400"
-                            title="Hubungi Pelanggan (WhatsApp)"
-                          >
-                            <Phone size={24} />
-                          </button>
+                          <div className="relative">
+                            <button 
+                              onClick={() => setActiveContactMenu(activeContactMenu === task.id ? null : task.id)}
+                              className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              title="Opsi Kontak Pelanggan"
+                            >
+                              <MoreHorizontal size={24} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {activeContactMenu === task.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  className="absolute bottom-16 right-0 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50"
+                                >
+                                  <div className="p-2 flex flex-col gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        if (phone) {
+                                          navigator.clipboard.writeText(phone);
+                                          alert('Nomor HP berhasil disalin!');
+                                        } else {
+                                          alert('Nomor HP pelanggan tidak tersedia.');
+                                        }
+                                        setActiveContactMenu(null);
+                                      }}
+                                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors text-left"
+                                    >
+                                      <Copy size={16} className="text-slate-400" />
+                                      Salin Nomor
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        if (phone) {
+                                          let formatted = phone.replace(/\D/g, '');
+                                          if (formatted.startsWith('0')) formatted = '62' + formatted.substring(1);
+                                          window.open(`https://wa.me/${formatted}`, '_blank');
+                                        } else {
+                                          alert('Nomor HP pelanggan tidak tersedia.');
+                                        }
+                                        setActiveContactMenu(null);
+                                      }}
+                                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors text-left"
+                                    >
+                                      <Phone size={16} className="text-emerald-500" />
+                                      Hubungi via WA
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         )}
                       </div>
                     )}
