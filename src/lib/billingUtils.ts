@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Bill, Golongan, MeterReading, User } from '../types';
 
@@ -113,8 +113,9 @@ export const processMeterReadingAndBilling = async (
     const periodeBulan = monthNames[dateNow.getMonth()];
     const periodeTahun = yearStr;
 
-    const newBillData: Omit<Bill, 'id'> = {
+    const newBillData: any = {
       customerId,
+      userId: userData.userId || userData.uid || customerId,
       customerName: userData.nama || 'Pelanggan',
       meterReadingId: meterDocRef.id,
       month: currentMonth,
@@ -139,10 +140,8 @@ export const processMeterReadingAndBilling = async (
     const tbPelangganSnap = await getDoc(tbPelangganRef);
     
     if (tbPelangganSnap.exists()) {
-      const currentData = tbPelangganSnap.data();
-      const currentTunggakan = currentData.tagihanTunggakan || 0;
       await updateDoc(tbPelangganRef, {
-        tagihanTunggakan: currentTunggakan + totalAmount,
+        tagihanTunggakan: increment(totalAmount),
         lastUpdated: new Date().toISOString()
       });
 
