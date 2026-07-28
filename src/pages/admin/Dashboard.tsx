@@ -1033,26 +1033,32 @@ export default function AdminDashboard() {
                                     >
                                       <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
                                       <div className="max-h-48 overflow-y-auto">
-                                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
-                                          <button
-                                            key={staff.id}
-                                            onClick={() => {
-                                              assignTask(task.id, staff.id);
-                                              setSelectedTaskForAssignment(null);
-                                              showNotification(`${t('admin.user.msg.assigned')} ${staff.name}`, 'success');
-                                            }}
-                                            className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
-                                          >
-                                            <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
-                                              {staff.name.substring(0, 2).toUpperCase()}
-                                            </div>
-                                            <div className="flex-1">
-                                              <p className="text-xs font-bold text-slate-700">{staff.name}</p>
-                                              <p className="text-[10px] text-slate-400">{staff.phone}</p>
-                                            </div>
-                                            {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
-                                          </button>
-                                        ))}
+                                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').length === 0 ? (
+                                          <div className="px-4 py-3 text-xs text-slate-500 text-center">
+                                            Tidak ada staf aktif
+                                          </div>
+                                        ) : (
+                                          allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
+                                            <button
+                                              key={staff.id}
+                                              onClick={() => {
+                                                assignTask(task.id, staff.id);
+                                                setSelectedTaskForAssignment(null);
+                                                showNotification(`${t('admin.user.msg.assigned') || 'Berhasil menugaskan ke'} ${staff.name}`, 'success');
+                                              }}
+                                              className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
+                                            >
+                                              <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
+                                                {staff.name.substring(0, 2).toUpperCase()}
+                                              </div>
+                                              <div className="flex-1">
+                                                <p className="text-xs font-bold text-slate-700">{staff.name}</p>
+                                                <p className="text-[10px] text-slate-400">{staff.phone}</p>
+                                              </div>
+                                              {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
+                                            </button>
+                                          ))
+                                        )}
                                       </div>
                                     </motion.div>
                                   )}

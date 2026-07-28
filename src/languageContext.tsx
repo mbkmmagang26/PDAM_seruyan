@@ -140,6 +140,9 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.unknown_staff': 'Petugas Belum Ada',
     'admin.tasks.unknown_customer': 'Pelanggan Tidak Terdaftar',
     'admin.tasks.unassigned_tag': 'Belum Ditugaskan',
+    'admin.tasks.assign_staff': 'Pilih Petugas',
+    'admin.tasks.change_staff': 'Ubah Petugas',
+    'admin.tasks.available_staff': 'DAFTAR PETUGAS AKTIF',
     'admin.tasks.deadline.urgent': 'Deadline 24 Jam',
     'admin.tasks.deadline.cycle': 'Jadwal Siklus',
 
@@ -431,6 +434,9 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.tasks.unknown_staff': 'No Assignee Yet',
     'admin.tasks.unknown_customer': 'Walk-in / Unregistered',
     'admin.tasks.unassigned_tag': 'Unassigned',
+    'admin.tasks.assign_staff': 'Assign Staff',
+    'admin.tasks.change_staff': 'Change Staff',
+    'admin.tasks.available_staff': 'AVAILABLE STAFF',
     'admin.tasks.deadline.urgent': '24h Deadline',
     'admin.tasks.deadline.cycle': 'Cycle Schedule',
 
