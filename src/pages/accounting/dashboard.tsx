@@ -155,6 +155,7 @@ export default function AccountingDashboard() {
       { id: 'import_data', label: 'Import', icon: UploadCloud },
     ] as MenuItem[] : []),
     ...(isDirektur ? [
+      { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
     ] as MenuItem[] : [])
   ];
