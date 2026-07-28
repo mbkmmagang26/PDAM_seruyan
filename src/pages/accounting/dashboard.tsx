@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../authContext';
 import {
@@ -23,8 +23,6 @@ import Persediaan from './views/Persediaan';
 import Anggaran from './views/Anggaran';
 import LaporanKeuangan from './views/LaporanKeuangan';
 import VerifikasiData from './views/VerifikasiData';
-import Pengaduan from './views/Pengaduan';
-import Operasional from './views/Operasional';
 import NeracaLajurView from './views/NeracaLajur';
 import LogAktivitas from './views/LogAktivitas';
 import ImportDataView from './views/ImportData';
@@ -138,6 +136,7 @@ export default function AccountingDashboard() {
   }
 
   const isAccounting = user?.role === 'accounting';
+  const isDirektur = user?.role === 'direktur';
 
   type MenuItem = { id: ModuleView; label: string; icon: React.ElementType };
   const menuItems: MenuItem[] = [
@@ -153,10 +152,10 @@ export default function AccountingDashboard() {
       { id: 'anggaran', label: 'Anggaran', icon: PieChart },
       { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
       { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
-      { id: 'pengaduan_layanan_pelanggan', label: 'Pengaduan', icon: MessageCircle },
-      { id: 'operasional', label: 'Operasional', icon: Grid },
-      { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
+    ] as MenuItem[] : []),
+    ...(isDirektur ? [
+      { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
     ] as MenuItem[] : [])
   ];
 
@@ -174,8 +173,6 @@ export default function AccountingDashboard() {
       case 'anggaran': return <Anggaran />;
       case 'laporan_keuangan': return <LaporanKeuangan />;
       case 'verifikasi_data': return <VerifikasiData />;
-      case 'pengaduan_layanan_pelanggan': return <Pengaduan />;
-      case 'operasional': return <Operasional />;
       case 'log_aktivitas': return <LogAktivitas />;
       default: return <DashboardUtama />;
     }
