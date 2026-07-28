@@ -139,16 +139,9 @@ export default function StaffDashboard() {
           completedAt: new Date().toISOString()
         };
 
-        // Jika pemasangan baru, minta nomor meter
+        // Gunakan nomor meter yang sudah di-generate oleh admin
         if (task.type === 'new_connection') {
-          const noMeter = window.prompt("Masukkan Nomor Meter yang terpasang:");
-          if (noMeter === null) return; // Batal
-          
-          if (!noMeter.trim()) {
-            alert("Nomor Meter wajib diisi untuk menyelesaikan pemasangan baru!");
-            return;
-          }
-          updates.meterNumber = noMeter.trim();
+          updates.meterNumber = task.meterNumber || `MTR-${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
         // Update status perintah kerja jadi selesai
