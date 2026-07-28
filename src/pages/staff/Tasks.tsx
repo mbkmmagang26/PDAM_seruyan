@@ -205,10 +205,21 @@ export default function StaffDashboard() {
               if (newPhone) {
                 payloadToUpdate.noHp = newPhone;
               }
-              const newGolongan = permData.jenisBangunan || permData.golongan;
-              if (newGolongan) {
-                payloadToUpdate.golongan = newGolongan;
-                payloadToUpdate.gol = newGolongan;
+              const rawGolongan = permData.jenisBangunan || permData.golongan;
+              if (rawGolongan) {
+                // Mapping dari value form pelanggan ke Master Tarif Admin
+                const golonganMap: Record<string, string> = {
+                  'rumah_tangga': 'Rumah Tangga 2 (R2)',
+                  'niaga': 'Niaga Kecil (NK)',
+                  'industri': 'Industri & Niaga Besar',
+                  'pemerintah': 'Instansi Pemerintah (PRT 2)',
+                  'sosial_umum': 'Sosial Umum - Tempat Ibadah',
+                  'sosial_khusus': 'Sosial Khusus - Sekolah (S)'
+                };
+                
+                const finalGolongan = golonganMap[rawGolongan] || rawGolongan;
+                payloadToUpdate.golongan = finalGolongan;
+                payloadToUpdate.gol = finalGolongan;
               }
             }
 
