@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, deleteDoc, doc, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -27,12 +27,12 @@ export default function PiutangAR() {
   const tabs = ["Piutang Pelanggan", "Riwayat Tagihan", "Analisis Umur Piutang"];
 
   useEffect(() => {
-    const unsubPelanggan = onSnapshot(query(collection(db, 'tb_pelanggan')), (snapshot) => {
+    const unsubPelanggan = onSnapshot(query(collection(db, 'data_pelanggan_meteran')), (snapshot) => {
       setPelanggan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
     
-    const unsubBills = onSnapshot(query(collection(db, 'tb_billing')), (snapshot) => {
+    const unsubBills = onSnapshot(query(collection(db, 'tagihan_air_pelanggan')), (snapshot) => {
       setBills(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
@@ -45,13 +45,13 @@ export default function PiutangAR() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data pelanggan ini?')) return;
     try {
-      const targetRef = doc(db, 'tb_pelanggan', id);
+      const targetRef = doc(db, 'data_pelanggan_meteran', id);
       const targetSnap = await getDoc(targetRef);
       if (targetSnap.exists()) {
         const targetData = targetSnap.data();
         const customerUserId = targetData.userId;
         if (customerUserId && customerUserId !== id) {
-          const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+          const parentRef = doc(db, 'data_pelanggan_meteran', customerUserId);
           const parentSnap = await getDoc(parentRef);
           if (parentSnap.exists()) {
             const parentData = parentSnap.data();
@@ -439,4 +439,5 @@ export default function PiutangAR() {
     </div>
   );
 }
+
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
@@ -31,7 +31,7 @@ export default function DRDView() {
     });
 
     // Listen to recent uploads (we can query transaction collection with reference start 'DRD-')
-    const qDRD = query(collection(db, 'transactions'));
+    const qDRD = query(collection(db, 'jurnal_transaksi_keuangan'));
     const unsubDRD = onSnapshot(qDRD, (snapshot) => {
       const allTx = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
       const drdTx = allTx.filter(t => t.reference && t.reference.startsWith('DRD-'));
@@ -183,7 +183,7 @@ export default function DRDView() {
       const totalPiutang = parsedSummary.totalAir + parsedSummary.totalNonAir + parsedSummary.totalDenda;
 
       // 1. Debit Piutang Air
-      await addDoc(collection(db, 'transactions'), {
+      await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
         date: dateVal,
         reference: refNo,
         description: desc,
@@ -198,7 +198,7 @@ export default function DRDView() {
 
       // 2. Kredit Pendapatan Air
       if (parsedSummary.totalAir > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
           date: dateVal,
           reference: refNo,
           description: desc,
@@ -215,7 +215,7 @@ export default function DRDView() {
       // 3. Kredit Pendapatan Non-Air (Administrasi + Denda)
       const totalKreditNonAir = parsedSummary.totalNonAir + parsedSummary.totalDenda;
       if (totalKreditNonAir > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
           date: dateVal,
           reference: refNo,
           description: desc,
@@ -444,3 +444,4 @@ export default function DRDView() {
     </div>
   );
 }
+

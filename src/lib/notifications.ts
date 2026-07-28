@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+﻿import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 export interface NotificationPayload {
@@ -10,7 +10,7 @@ export interface NotificationPayload {
 
 export async function sendNotification(payload: NotificationPayload) {
   try {
-    await addDoc(collection(db, 'notifications'), {
+    await addDoc(collection(db, 'notifikasi_pengguna'), {
       ...payload,
       userId: payload.userId || 'all',
       read: false,
@@ -21,3 +21,4 @@ export async function sendNotification(payload: NotificationPayload) {
     console.error('Error sending notification:', error);
   }
 }
+

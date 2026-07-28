@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { ShieldCheck, Loader2, Search, Filter, CheckCircle, XCircle, Clock, Info, AlertTriangle } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function VerifikasiData() {
 
   useEffect(() => {
     // Listen for pending transactions
-    const q = query(collection(db, 'transactions'), where('status', '==', 'pending'));
+    const q = query(collection(db, 'jurnal_transaksi_keuangan'), where('status', '==', 'pending'));
     const unsub = onSnapshot(q, (snapshot) => {
       setPendingData(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setCounts(prev => ({ ...prev, pending: snapshot.size }));
@@ -40,7 +40,7 @@ export default function VerifikasiData() {
   const handleVerify = async (id: string) => {
     if (!confirm('Verifikasi transaksi ini?')) return;
     try {
-      await updateDoc(doc(db, 'transactions', id), {
+      await updateDoc(doc(db, 'jurnal_transaksi_keuangan', id), {
         status: 'verified',
         verifiedBy: currentUser?.id,
         verifiedByName: currentUser?.name,
@@ -58,7 +58,7 @@ export default function VerifikasiData() {
     const reason = prompt('Alasan penolakan:');
     if (reason === null) return;
     try {
-      await updateDoc(doc(db, 'transactions', id), {
+      await updateDoc(doc(db, 'jurnal_transaksi_keuangan', id), {
         status: 'rejected',
         rejectionReason: reason,
         rejectedBy: currentUser?.id,
@@ -203,5 +203,6 @@ export default function VerifikasiData() {
     </div>
   );
 }
+
 
 

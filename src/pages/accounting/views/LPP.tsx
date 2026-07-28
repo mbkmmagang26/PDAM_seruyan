@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
@@ -24,7 +24,7 @@ export default function LPPView() {
 
   useEffect(() => {
     // Listen to recent LPP uploads
-    const q = query(collection(db, 'lpp_uploads'));
+    const q = query(collection(db, 'laporan_penagihan_kasir'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setRecentLpps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).slice(0, 8));
       setLoading(false);
@@ -119,7 +119,7 @@ export default function LPPView() {
   const handleRegisterLpp = async () => {
     setUploadStatus('saving');
     try {
-      await addDoc(collection(db, 'lpp_uploads'), {
+      await addDoc(collection(db, 'laporan_penagihan_kasir'), {
         date: reportDate,
         loketType,
         cashierName,
@@ -310,3 +310,4 @@ export default function LPPView() {
     </div>
   );
 }
+

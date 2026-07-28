@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -28,7 +28,7 @@ export default function AsetTetap() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'assets')), (snapshot) => {
+    const unsub = onSnapshot(query(collection(db, 'inventaris_aset_tetap')), (snapshot) => {
       setAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
@@ -38,7 +38,7 @@ export default function AsetTetap() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'assets'), {
+      await addDoc(collection(db, 'inventaris_aset_tetap'), {
         ...formData,
         acquisitionCost: Number(formData.acquisitionCost),
         usefulLife: Number(formData.usefulLife),
@@ -67,7 +67,7 @@ export default function AsetTetap() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus aset ini?')) return;
     try {
-      await deleteDoc(doc(db, 'assets', id));
+      await deleteDoc(doc(db, 'inventaris_aset_tetap', id));
     } catch (err: any) {
       alert('Gagal menghapus aset: ' + err.message);
     }
@@ -438,5 +438,6 @@ export default function AsetTetap() {
     </div>
   );
 }
+
 
 

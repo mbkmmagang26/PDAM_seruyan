@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, TrendingUp, Download, Filter, CheckCircle2, Clock, Plus, Search, X, Users } from 'lucide-react';
 import { useLanguage } from '../../languageContext';
@@ -37,24 +37,24 @@ export default function Billing() {
   });
 
   useEffect(() => {
-    let q = query(collection(db, 'tb_billing'), orderBy('createdAt', 'desc'));
+    let q = query(collection(db, 'tagihan_air_pelanggan'), orderBy('createdAt', 'desc'));
     
     if (filterMonth !== 'all' && filterYear !== 'all') {
       q = query(
-        collection(db, 'tb_billing'),
+        collection(db, 'tagihan_air_pelanggan'),
         where('periodeBulan', '==', filterMonth),
         where('periodeTahun', '==', filterYear),
         orderBy('createdAt', 'desc')
       );
     } else if (filterMonth !== 'all') {
       q = query(
-        collection(db, 'tb_billing'),
+        collection(db, 'tagihan_air_pelanggan'),
         where('periodeBulan', '==', filterMonth),
         orderBy('createdAt', 'desc')
       );
     } else if (filterYear !== 'all') {
       q = query(
-        collection(db, 'tb_billing'),
+        collection(db, 'tagihan_air_pelanggan'),
         where('periodeTahun', '==', filterYear),
         orderBy('createdAt', 'desc')
       );
@@ -81,10 +81,10 @@ export default function Billing() {
     let q: any;
     const cleanQuery = debouncedSearchQuery.trim().toLowerCase();
     if (cleanQuery === '') {
-      q = query(collection(db, 'tb_pelanggan'), limit(20));
+      q = query(collection(db, 'data_pelanggan_meteran'), limit(20));
     } else {
       q = query(
-        collection(db, 'tb_pelanggan'),
+        collection(db, 'data_pelanggan_meteran'),
         orderBy('nama_search'),
         startAt(cleanQuery),
         endAt(cleanQuery + '\uf8ff'),
@@ -96,7 +96,7 @@ export default function Billing() {
       setCustomers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
       console.warn("Search index warning, falling back to local limit query in Billing", error);
-      const fallbackQuery = query(collection(db, 'tb_pelanggan'), limit(50));
+      const fallbackQuery = query(collection(db, 'data_pelanggan_meteran'), limit(50));
       onSnapshot(fallbackQuery, (snapshot) => {
         setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
@@ -132,7 +132,7 @@ export default function Billing() {
     }
     
     try {
-      await addDoc(collection(db, 'tb_billing'), {
+      await addDoc(collection(db, 'tagihan_air_pelanggan'), {
         customerId: newBillForm.customerId,
         customerName: newBillForm.customerName,
         periodeBulan: newBillForm.periodeBulan,
@@ -242,7 +242,7 @@ export default function Billing() {
                   <div>
                     <p className="text-sm font-bold">{bill.customerName || 'Unknown'}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {bill.periodeBulan || getMonthName(bill.month)} {bill.periodeTahun || bill.year || ''} • {new Date(bill.createdAt).toLocaleDateString()}
+                      {bill.periodeBulan || getMonthName(bill.month)} {bill.periodeTahun || bill.year || ''} â€¢ {new Date(bill.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -418,4 +418,5 @@ export default function Billing() {
     </div>
   );
 }
+
 

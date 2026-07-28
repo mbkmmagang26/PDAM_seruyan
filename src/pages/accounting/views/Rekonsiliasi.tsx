@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
@@ -28,7 +28,7 @@ export default function RekonsiliasiView() {
     });
 
     // Listen to pending LPP uploads
-    const qLpp = query(collection(db, 'lpp_uploads'), where('status', '==', 'pending'));
+    const qLpp = query(collection(db, 'laporan_penagihan_kasir'), where('status', '==', 'pending'));
     const unsubLpp = onSnapshot(qLpp, (snapshot) => {
       setLppList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -87,7 +87,7 @@ export default function RekonsiliasiView() {
       const desc = `Penerimaan Kasir ${lpp.cashierName} (${lpp.loketType.toUpperCase()}) tgl ${lpp.date}`;
 
       // 1. Update LPP status to locked
-      await updateDoc(doc(db, 'lpp_uploads', lpp.id), {
+      await updateDoc(doc(db, 'laporan_penagihan_kasir', lpp.id), {
         status: 'locked',
         physicalCash: cashVal,
         difference: diff,
@@ -97,7 +97,7 @@ export default function RekonsiliasiView() {
 
       // 2. Post Jurnal (Double-Entry)
       // Debit Kas Loket
-      await addDoc(collection(db, 'transactions'), {
+      await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
         date: lpp.date,
         reference: refNo,
         description: desc,
@@ -113,7 +113,7 @@ export default function RekonsiliasiView() {
 
       // Kredit Piutang Air
       if (lpp.totalAir > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
           date: lpp.date,
           reference: refNo,
           description: desc,
@@ -131,7 +131,7 @@ export default function RekonsiliasiView() {
       // Kredit Pendapatan Denda / Non-Air
       const totalKreditNonAir = (lpp.totalDenda || 0) + (lpp.totalNonAir || 0);
       if (totalKreditNonAir > 0) {
-        await addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
           date: lpp.date,
           reference: refNo,
           description: desc,
@@ -306,3 +306,4 @@ export default function RekonsiliasiView() {
     </div>
   );
 }
+

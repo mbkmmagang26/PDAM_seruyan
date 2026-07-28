@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -22,7 +22,7 @@ export default function NeracaLajurView() {
     });
 
     // Listen to Transactions
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'asc'));
+    const qTx = query(collection(db, 'jurnal_transaksi_keuangan'), orderBy('date', 'asc'));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -365,3 +365,4 @@ export default function NeracaLajurView() {
     </div>
   );
 }
+

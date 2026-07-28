@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Grid, Loader2, Search, Filter, CheckCircle2, Clock, AlertCircle, Calendar, Download } from 'lucide-react';
@@ -14,13 +14,13 @@ export default function Operasional() {
     let q;
     if (activeStatus !== 'all') {
       q = query(
-        collection(db, 'aksi_pengaduan'),
+        collection(db, 'tugas_perbaikan_staf'),
         where('status', '==', activeStatus),
         orderBy('createdAt', 'desc')
       );
     } else {
       q = query(
-        collection(db, 'aksi_pengaduan'),
+        collection(db, 'tugas_perbaikan_staf'),
         orderBy('createdAt', 'desc')
       );
     }
@@ -177,4 +177,5 @@ export default function Operasional() {
     </div>
   );
 }
+
 

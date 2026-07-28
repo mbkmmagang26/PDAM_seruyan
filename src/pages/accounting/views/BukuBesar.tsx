@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -48,7 +48,7 @@ export default function BukuBesar() {
   const tabs = ["Daftar Akun (COA)", "Buku Besar Per Akun"];
 
   useEffect(() => {
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'asc'));
+    const qTx = query(collection(db, 'jurnal_transaksi_keuangan'), orderBy('date', 'asc'));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -495,4 +495,5 @@ export default function BukuBesar() {
     </div>
   );
 }
+
 

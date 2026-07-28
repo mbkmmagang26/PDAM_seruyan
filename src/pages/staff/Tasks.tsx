@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Waves, 
   Bell, 
@@ -152,12 +152,12 @@ export default function StaffDashboard() {
         }
 
         // Update status perintah kerja jadi selesai
-        const taskRef = doc(db, 'aksi_pengaduan', task.id);
+        const taskRef = doc(db, 'tugas_perbaikan_staf', task.id);
         await updateDoc(taskRef, updates);
         
         // Update status pengaduan jadi selesai (jika tugas ini berasal dari pengaduan)
         if (task.pengaduanId) {
-          const pengaduanRef = doc(db, 'pengaduan', task.pengaduanId);
+          const pengaduanRef = doc(db, 'pengaduan_layanan_pelanggan', task.pengaduanId);
           await updateDoc(pengaduanRef, {
             status: 'Selesai'
           });
@@ -165,7 +165,7 @@ export default function StaffDashboard() {
 
         // Update status permohonan jadi selesai (jika tugas ini berasal dari permohonan baru)
         if (task.permohonanId) {
-          const permohonanRef = doc(db, 'tb_permohonan', task.permohonanId);
+          const permohonanRef = doc(db, 'permohonan_pasang_baru', task.permohonanId);
           await updateDoc(permohonanRef, {
             status: 'Selesai',
             no_meter: updates.meterNumber || ''
@@ -173,7 +173,7 @@ export default function StaffDashboard() {
 
           // Update tb_pelanggan (sinkronisasi data pelanggan baru)
           if (task.userId) {
-            await updateDoc(doc(db, 'tb_pelanggan', task.userId), {
+            await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), {
               no_meter: updates.meterNumber || '',
               id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
               status: 'Aktif',
@@ -181,7 +181,7 @@ export default function StaffDashboard() {
             });
           } else if (task.permohonanId) {
              // Fallback for older tasks
-             await updateDoc(doc(db, 'tb_pelanggan', task.permohonanId), {
+             await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
               no_meter: updates.meterNumber || '',
               id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
             });
@@ -318,7 +318,7 @@ export default function StaffDashboard() {
           </div>
           <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-2">{t('staff.stats.daily_target')}</p>
           <h2 className="text-3xl font-headline font-bold dark:text-white mb-1">{myTasks.filter(t => t.status !== 'completed').length} {t('admin.stats.task_orders')}</h2>
-          <p className="text-sm opacity-90">{user?.name} • {t('staff.profile.sector')}</p>
+          <p className="text-sm opacity-90">{user?.name} â€¢ {t('staff.profile.sector')}</p>
           
           <div className="mt-8 flex items-end gap-2">
             <span className="text-5xl font-headline font-extrabold">{myTasks.length > 0 ? Math.round((myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100) : 0}%</span>
@@ -440,7 +440,7 @@ export default function StaffDashboard() {
                           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
                             <Gauge size={14} />
                             <span className="font-mono text-sm">{task.meterNumber}</span>
-                            <span className="text-slate-400 mx-1">•</span>
+                            <span className="text-slate-400 mx-1">â€¢</span>
                             <span className="text-emerald-700 dark:text-emerald-300">{task.customerName}</span>
                           </div>
                         </div>
@@ -469,15 +469,15 @@ export default function StaffDashboard() {
                               <div className="grid grid-cols-3 gap-2 mt-1">
                                 <div className="bg-white dark:bg-slate-800 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center">
                                   <span className="block text-[9px] text-slate-400 font-bold uppercase mb-0.5">Bulan Lalu</span>
-                                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{sAwal !== undefined ? `${sAwal} m³` : '-'}</span>
+                                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{sAwal !== undefined ? `${sAwal} mÂ³` : '-'}</span>
                                 </div>
                                 <div className="bg-white dark:bg-slate-800 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center">
                                   <span className="block text-[9px] text-[#00478d]/70 dark:text-blue-400 font-bold uppercase mb-0.5">Input Baru</span>
-                                  <span className="font-mono font-bold text-[#00478d] dark:text-blue-300">{sAkhir !== undefined ? `${sAkhir} m³` : '-'}</span>
+                                  <span className="font-mono font-bold text-[#00478d] dark:text-blue-300">{sAkhir !== undefined ? `${sAkhir} mÂ³` : '-'}</span>
                                 </div>
                                 <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-xl text-center border border-emerald-100 dark:border-emerald-800/50 shadow-sm flex flex-col justify-center">
                                   <span className="block text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-0.5">Pemakaian</span>
-                                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{pem !== undefined ? `${pem} m³` : '-'}</span>
+                                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{pem !== undefined ? `${pem} mÂ³` : '-'}</span>
                                 </div>
                               </div>
                             );
@@ -618,3 +618,4 @@ export default function StaffDashboard() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Cek di tb_pelanggan
-      const pelangganRef = doc(db, 'tb_pelanggan', uid);
+      const pelangganRef = doc(db, 'data_pelanggan_meteran', uid);
       const pelangganDoc = await getDoc(pelangganRef);
       if (pelangganDoc.exists()) {
         const data = pelangganDoc.data();
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 3. Fallback query by userId field in tb_pelanggan
       const { query, collection, where, getDocs } = await import('firebase/firestore');
-      const q = query(collection(db, 'tb_pelanggan'), where('userId', '==', uid));
+      const q = query(collection(db, 'data_pelanggan_meteran'), where('userId', '==', uid));
       const querySnap = await getDocs(q);
       if (!querySnap.empty) {
         const docSnap = querySnap.docs[0];
@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Backfill password to Firestore if missing
       if (!userData.password) {
         if (userData.role === 'pelanggan' || userData.role === 'customer') {
-          await updateDoc(doc(db, 'tb_pelanggan', userData.id), { password });
+          await updateDoc(doc(db, 'data_pelanggan_meteran', userData.id), { password });
         } else {
           await updateDoc(doc(db, 'user_admin', firebaseUser.uid), { password });
         }
@@ -236,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString(),
           avatar
         };
-        await setDoc(doc(db, 'tb_pelanggan', firebaseUser.uid), newUserPelanggan);
+        await setDoc(doc(db, 'data_pelanggan_meteran', firebaseUser.uid), newUserPelanggan);
       } else {
         // Simpan ke user_admin
         const newUserAdmin: any = {
@@ -298,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (adminDoc.exists()) {
         await updateDoc(doc(db, 'user_admin', userId), { status });
       } else {
-        await updateDoc(doc(db, 'tb_pelanggan', userId), { status_akun: status });
+        await updateDoc(doc(db, 'data_pelanggan_meteran', userId), { status_akun: status });
       }
     } catch (error) {
       console.error('Update user status error:', error);
@@ -357,3 +357,4 @@ export function useAuth() {
   }
   return context;
 }
+

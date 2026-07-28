@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
@@ -38,7 +38,7 @@ export default function DashboardUtama() {
     const currentYearStart = `${selectedYear}-01-01`;
     const currentYearEnd = `${selectedYear}-12-31`;
     const unsubTx = onSnapshot(query(
-      collection(db, 'transactions'),
+      collection(db, 'jurnal_transaksi_keuangan'),
       where('date', '>=', currentYearStart),
       where('date', '<=', currentYearEnd)
     ), (snapshot) => {
@@ -74,7 +74,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Inventory
-    const unsubInv = onSnapshot(collection(db, 'inventory'), (snapshot) => {
+    const unsubInv = onSnapshot(collection(db, 'stok_material_pipa'), (snapshot) => {
       let totalVal = 0;
       let low = 0;
       snapshot.forEach(doc => {
@@ -86,7 +86,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Assets
-    const unsubAssets = onSnapshot(collection(db, 'assets'), (snapshot) => {
+    const unsubAssets = onSnapshot(collection(db, 'inventaris_aset_tetap'), (snapshot) => {
       let totalAssetValue = 0;
       const categories = new Set<string>();
       snapshot.forEach(doc => {
@@ -98,7 +98,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Tasks
-    const unsubTasks = onSnapshot(collection(db, 'aksi_pengaduan'), (snapshot) => {
+    const unsubTasks = onSnapshot(collection(db, 'tugas_perbaikan_staf'), (snapshot) => {
       let pending = 0;
       snapshot.forEach(doc => {
         if (doc.data().status !== 'completed') pending++;
@@ -107,7 +107,7 @@ export default function DashboardUtama() {
     });
 
     // 4. Statistik Pengaduan (Menggunakan koleksi pengaduan)
-    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
+    const unsubPengaduan = onSnapshot(collection(db, 'pengaduan_layanan_pelanggan'), (snapshot) => {
       let pending = 0;
       snapshot.forEach(doc => {
         const status = doc.data().status;
@@ -117,7 +117,7 @@ export default function DashboardUtama() {
     });
 
     // Listen to Piutang (tb_pelanggan)
-    const unsubPiutang = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
+    const unsubPiutang = onSnapshot(collection(db, 'data_pelanggan_meteran'), (snapshot) => {
       let totalPiutang = 0;
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -339,7 +339,7 @@ export default function DashboardUtama() {
                   <ArrowUpRight className="text-rose-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </div>
                 <div 
-                  onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'pengaduan' } }))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'pengaduan_layanan_pelanggan' } }))}
                   className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 p-6 rounded-[1.5rem] flex items-center justify-between group cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-4">
@@ -488,5 +488,6 @@ export default function DashboardUtama() {
     </div>
   );
 }
+
 
 

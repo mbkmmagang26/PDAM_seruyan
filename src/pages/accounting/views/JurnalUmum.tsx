@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -53,7 +53,7 @@ export default function JurnalUmum() {
 
   useEffect(() => {
     // Listen to Transactions
-    const qTx = query(collection(db, 'transactions'), orderBy('date', 'desc'), limit(100));
+    const qTx = query(collection(db, 'jurnal_transaksi_keuangan'), orderBy('date', 'desc'), limit(100));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -87,7 +87,7 @@ export default function JurnalUmum() {
         const kreditAmt = Number(row.kredit) || 0;
 
         if (debitAmt > 0) {
-          return addDoc(collection(db, 'transactions'), {
+          return addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
             date: formData.date,
             reference: formData.reference,
             description: formData.description,
@@ -101,7 +101,7 @@ export default function JurnalUmum() {
           });
         }
         if (kreditAmt > 0) {
-          return addDoc(collection(db, 'transactions'), {
+          return addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
             date: formData.date,
             reference: formData.reference,
             description: formData.description,
@@ -159,7 +159,7 @@ export default function JurnalUmum() {
     }
     if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
     try {
-      await deleteDoc(doc(db, 'transactions', id));
+      await deleteDoc(doc(db, 'jurnal_transaksi_keuangan', id));
       logActivity(currentUser, 'Hapus Jurnal', `Menghapus transaksi jurnal ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus transaksi: ' + err.message);
@@ -434,7 +434,7 @@ export default function JurnalUmum() {
                           disabled={['1', '2', '3', '4', '5'].includes(c.code)}
                           className={c.level < 3 || c.isHeader ? 'font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/50' : ''}
                         >
-                          {c.level === 2 ? '　' : c.level >= 3 ? '　　' : ''}
+                          {c.level === 2 ? 'ã€€' : c.level >= 3 ? 'ã€€ã€€' : ''}
                           {c.code} - {c.name}
                         </option>
                       ))}
@@ -500,9 +500,9 @@ export default function JurnalUmum() {
                     <span className="text-slate-500 dark:text-slate-400">Total Kredit: <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(totalKredit)}</span></span>
                   </div>
                   {isBalanced ? (
-                    <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">✓ Jurnal seimbang.</span>
+                    <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">âœ“ Jurnal seimbang.</span>
                   ) : (
-                    <span className="text-rose-500 text-xs font-bold flex items-center gap-1">⚠ Jurnal belum seimbang atau kosong.</span>
+                    <span className="text-rose-500 text-xs font-bold flex items-center gap-1">âš  Jurnal belum seimbang atau kosong.</span>
                   )}
                 </div>
 
@@ -563,4 +563,5 @@ export default function JurnalUmum() {
     </div>
   );
 }
+
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Golongan } from '../../types';
@@ -24,7 +24,7 @@ export default function TarifGolongan() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'tb_golongan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'master_tarif_air'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Golongan));
       setGolongan(data);
       setLoading(false);
@@ -52,7 +52,7 @@ export default function TarifGolongan() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Yakin ingin menghapus golongan ini?')) {
-      await deleteDoc(doc(db, 'tb_golongan', id));
+      await deleteDoc(doc(db, 'master_tarif_air', id));
     }
   };
 
@@ -60,9 +60,9 @@ export default function TarifGolongan() {
     e.preventDefault();
     try {
       if (editingId) {
-        await setDoc(doc(db, 'tb_golongan', editingId), formData, { merge: true });
+        await setDoc(doc(db, 'master_tarif_air', editingId), formData, { merge: true });
       } else {
-        await addDoc(collection(db, 'tb_golongan'), formData);
+        await addDoc(collection(db, 'master_tarif_air'), formData);
       }
       resetForm();
     } catch (err) {
@@ -95,7 +95,7 @@ export default function TarifGolongan() {
 
     try {
       for (const item of defaults) {
-        await addDoc(collection(db, 'tb_golongan'), item);
+        await addDoc(collection(db, 'master_tarif_air'), item);
       }
       alert('Berhasil menambahkan data tarif default!');
     } catch (err: any) {
@@ -111,7 +111,7 @@ export default function TarifGolongan() {
       <header className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-headline font-bold text-slate-800 dark:text-white">Master Tarif Golongan</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola harga air per kubik (m³) berdasarkan golongan pelanggan.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola harga air per kubik (mÂ³) berdasarkan golongan pelanggan.</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -161,15 +161,15 @@ export default function TarifGolongan() {
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.biayaAdmin)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 1 - 10 m³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 1 - 10 mÂ³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif1_10)}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-50">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 11 - 20 m³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif 11 - 20 mÂ³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif11_20)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif {'>'} 20 m³</span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Tarif {'>'} 20 mÂ³</span>
                 <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(g.tarif21_up)}</span>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 1-10 m³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 1-10 mÂ³ (Rp)</label>
                     <input 
                       required
                       type="number" 
@@ -231,7 +231,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 11-20 m³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif 11-20 mÂ³ (Rp)</label>
                     <input 
                       required
                       type="number" 
@@ -241,7 +241,7 @@ export default function TarifGolongan() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif {'>'} 20 m³ (Rp)</label>
+                    <label className="block text-[11px] font-black tracking-widest text-slate-400 uppercase mb-2">Tarif {'>'} 20 mÂ³ (Rp)</label>
                     <input 
                       required
                       type="number" 
@@ -267,3 +267,4 @@ export default function TarifGolongan() {
     </div>
   );
 }
+

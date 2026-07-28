@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../authContext';
 import {
@@ -33,7 +33,7 @@ export type ModuleView =
   | 'dashboard_utama'
   | 'jurnal_umum' | 'buku_besar' | 'neraca_lajur' | 'hutang_ap' | 'piutang_ar' | 'aset_tetap'
   | 'persediaan' | 'anggaran' | 'laporan_keuangan' | 'verifikasi_data'
-  | 'pengaduan' | 'operasional' | 'log_aktivitas' | 'import_data';
+  | 'pengaduan_layanan_pelanggan' | 'operasional' | 'log_aktivitas' | 'import_data';
 
 export default function AccountingDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -78,7 +78,7 @@ export default function AccountingDashboard() {
   useEffect(() => {
     if (user) {
       const q = query(
-        collection(db, 'notifications'),
+        collection(db, 'notifikasi_pengguna'),
         where('userId', 'in', [user.id, 'system', 'all']),
         orderBy('createdAt', 'desc'),
         limit(10)
@@ -118,7 +118,7 @@ export default function AccountingDashboard() {
 
   const markNotifRead = async (id: string) => {
     try {
-      await updateDoc(doc(db, 'notifications', id), { read: true });
+      await updateDoc(doc(db, 'notifikasi_pengguna', id), { read: true });
     } catch (err) {
       console.error(err);
     }
@@ -153,7 +153,7 @@ export default function AccountingDashboard() {
       { id: 'anggaran', label: 'Anggaran', icon: PieChart },
       { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
       { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
-      { id: 'pengaduan', label: 'Pengaduan', icon: MessageCircle },
+      { id: 'pengaduan_layanan_pelanggan', label: 'Pengaduan', icon: MessageCircle },
       { id: 'operasional', label: 'Operasional', icon: Grid },
       { id: 'log_aktivitas', label: 'Log Aktivitas', icon: HistoryIcon },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
@@ -174,7 +174,7 @@ export default function AccountingDashboard() {
       case 'anggaran': return <Anggaran />;
       case 'laporan_keuangan': return <LaporanKeuangan />;
       case 'verifikasi_data': return <VerifikasiData />;
-      case 'pengaduan': return <Pengaduan />;
+      case 'pengaduan_layanan_pelanggan': return <Pengaduan />;
       case 'operasional': return <Operasional />;
       case 'log_aktivitas': return <LogAktivitas />;
       default: return <DashboardUtama />;
@@ -460,3 +460,4 @@ export default function AccountingDashboard() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Target, Loader2, Plus, Search, Filter, Download, ArrowUpRight, BarChart3, X, Calculator, Calendar, Trash2 } from 'lucide-react';
@@ -23,11 +23,11 @@ export default function Anggaran() {
   });
 
   useEffect(() => {
-    const unsubBudgets = onSnapshot(query(collection(db, 'budgets'), where('year', '==', selectedYear)), (snapshot) => {
+    const unsubBudgets = onSnapshot(query(collection(db, 'anggaran_operasional'), where('year', '==', selectedYear)), (snapshot) => {
       setBudgets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const unsubTx = onSnapshot(query(collection(db, 'transactions'), where('type', '==', 'expense')), (snapshot) => {
+    const unsubTx = onSnapshot(query(collection(db, 'jurnal_transaksi_keuangan'), where('type', '==', 'expense')), (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
@@ -64,7 +64,7 @@ export default function Anggaran() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'budgets'), {
+      await addDoc(collection(db, 'anggaran_operasional'), {
         ...formData,
         amount: Number(formData.amount),
         createdAt: serverTimestamp(),
@@ -81,7 +81,7 @@ export default function Anggaran() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus anggaran ini?')) return;
     try {
-      await deleteDoc(doc(db, 'budgets', id));
+      await deleteDoc(doc(db, 'anggaran_operasional', id));
     } catch (err: any) {
       alert('Gagal menghapus anggaran: ' + err.message);
     }
@@ -320,6 +320,7 @@ export default function Anggaran() {
     </div>
   );
 }
+
 
 
 

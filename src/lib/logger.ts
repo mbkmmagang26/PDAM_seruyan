@@ -1,11 +1,11 @@
-import { collection, addDoc } from 'firebase/firestore';
+﻿import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from '../types';
 
 export const logActivity = async (user: User | null, action: string, details: string = '') => {
   if (!user) return;
   try {
-    await addDoc(collection(db, 'tb_activity_user_admin'), {
+    await addDoc(collection(db, 'log_aktivitas_staf_admin'), {
       userId: user.id,
       userName: user.name,
       userRole: user.role,
@@ -17,3 +17,4 @@ export const logActivity = async (user: User | null, action: string, details: st
     console.error('Failed to log activity', error);
   }
 };
+

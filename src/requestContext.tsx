@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ConnectionRequest } from './types';
 import { useTasks } from './taskContext';
 import { db } from './firebase';
@@ -29,7 +29,7 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const q = query(collection(db, 'tb_permohonan'), orderBy('date', 'desc'));
+    const q = query(collection(db, 'permohonan_pasang_baru'), orderBy('date', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const permohonanData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -52,7 +52,7 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
       if (!req) throw new Error("Permohonan tidak ditemukan");
 
       // 1. Update status di Firestore (tb_permohonan)
-      await updateDoc(doc(db, 'tb_permohonan', id), {
+      await updateDoc(doc(db, 'permohonan_pasang_baru', id), {
         status: 'approved'
       });
 
@@ -80,7 +80,7 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
 
   const rejectRequest = async (id: string) => {
     try {
-      await updateDoc(doc(db, 'tb_permohonan', id), {
+      await updateDoc(doc(db, 'permohonan_pasang_baru', id), {
         status: 'rejected'
       });
     } catch (error) {
@@ -103,3 +103,4 @@ export function useRequests() {
   }
   return context;
 }
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Waves,
   Search,
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
 
   const fetchHistoryLogs = async () => {
     try {
-      const q = query(collection(db, 'tb_activity_user_admin'), orderBy('timestamp', 'desc'), limit(50));
+      const q = query(collection(db, 'log_aktivitas_staf_admin'), orderBy('timestamp', 'desc'), limit(50));
       const snap = await getDocs(q);
       const logs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setHistoryLogs(logs);
@@ -219,10 +219,10 @@ export default function AdminDashboard() {
     let q: any;
     const cleanQuery = debouncedSearchQuery.trim().toLowerCase();
     if (cleanQuery === '') {
-      q = query(collection(db, 'tb_pelanggan'), limit(20));
+      q = query(collection(db, 'data_pelanggan_meteran'), limit(20));
     } else {
       q = query(
-        collection(db, 'tb_pelanggan'),
+        collection(db, 'data_pelanggan_meteran'),
         orderBy('nama_search'),
         startAt(cleanQuery),
         endAt(cleanQuery + '\uf8ff'),
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
       console.warn("Search index warning, falling back to local limit query", error);
-      const fallbackQuery = query(collection(db, 'tb_pelanggan'), limit(50));
+      const fallbackQuery = query(collection(db, 'data_pelanggan_meteran'), limit(50));
       onSnapshot(fallbackQuery, (snapshot) => {
         setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
   }, [debouncedSearchQuery]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'pengaduan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'pengaduan_layanan_pelanggan'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a: any, b: any) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, 'tb_golongan'), 
+      collection(db, 'master_tarif_air'), 
       (snapshot) => {
         setGolonganList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
@@ -323,7 +323,7 @@ export default function AdminDashboard() {
           return;
         }
 
-        const docRef = doc(db, 'tb_pelanggan', customerId);
+        const docRef = doc(db, 'data_pelanggan_meteran', customerId);
         await updateDoc(docRef, {
           status: 'Aktif',
           no_meter: noMeter.trim()
@@ -332,7 +332,7 @@ export default function AdminDashboard() {
         showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
-          const docRef = doc(db, 'tb_pelanggan', customerId);
+          const docRef = doc(db, 'data_pelanggan_meteran', customerId);
           await updateDoc(docRef, { status: 'Nonaktif' });
           logActivity(user, 'Nonaktifkan Pelanggan', `Menonaktifkan pelanggan ${customerId}`);
           showNotification(`Status pelanggan berhasil diubah menjadi Nonaktif`, 'success');
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
       // Jika sambungan baru manual (tidak pilih dari permohonan yang ada)
       if (newTaskForm.type === 'new_connection' && !finalPermohonanId) {
         const { addDoc, collection } = await import('firebase/firestore');
-        const newPelangganRef = await addDoc(collection(db, 'tb_pelanggan'), {
+        const newPelangganRef = await addDoc(collection(db, 'data_pelanggan_meteran'), {
           nama: newTaskForm.customerName,
           nama_search: newTaskForm.customerName.toLowerCase(),
           search_tokens: generateSearchTokens(newTaskForm.customerName),
@@ -427,7 +427,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!editCustomerData) return;
     try {
-      const docRef = doc(db, 'tb_pelanggan', editCustomerData.id);
+      const docRef = doc(db, 'data_pelanggan_meteran', editCustomerData.id);
       await updateDoc(docRef, {
         nama: editCustomerData.nama || '',
         nama_search: (editCustomerData.nama || '').toLowerCase(),
@@ -449,13 +449,13 @@ export default function AdminDashboard() {
   const handleDeleteCustomer = async (id: string, name: string) => {
     if (window.confirm(`Yakin ingin menghapus data pelanggan ${name}?`)) {
       try {
-        const targetRef = doc(db, 'tb_pelanggan', id);
+        const targetRef = doc(db, 'data_pelanggan_meteran', id);
         const targetSnap = await getDoc(targetRef);
         if (targetSnap.exists()) {
           const targetData = targetSnap.data();
           const customerUserId = targetData.userId;
           if (customerUserId && customerUserId !== id) {
-            const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+            const parentRef = doc(db, 'data_pelanggan_meteran', customerUserId);
             const parentSnap = await getDoc(parentRef);
             if (parentSnap.exists()) {
               const parentData = parentSnap.data();
@@ -511,7 +511,7 @@ export default function AdminDashboard() {
         pengaduanId: processComplaintData.id
       });
 
-      await updateDoc(doc(db, 'pengaduan', processComplaintData.id), { status: 'Diproses' });
+      await updateDoc(doc(db, 'pengaduan_layanan_pelanggan', processComplaintData.id), { status: 'Diproses' });
       showNotification('Pengaduan berhasil ditugaskan ke staff', 'success');
       setProcessComplaintData(null);
       setSelectedStaffForComplaint('');
@@ -815,7 +815,7 @@ export default function AdminDashboard() {
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2 group/pass">
                           <p className="text-xs font-mono font-bold text-slate-600 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
-                            {visiblePasswords.includes(u.id) ? (u.password || '••••••••') : '••••••••'}
+                            {visiblePasswords.includes(u.id) ? (u.password || 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢') : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'}
                           </p>
                           <button
                             onClick={() => setVisiblePasswords(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
@@ -1125,7 +1125,7 @@ export default function AdminDashboard() {
                               onClick={async () => {
                                 if (window.confirm('Yakin ingin menghapus pengaduan ini?')) {
                                   try {
-                                    await deleteDoc(doc(db, 'pengaduan', complaint.id));
+                                    await deleteDoc(doc(db, 'pengaduan_layanan_pelanggan', complaint.id));
                                     showNotification('Pengaduan dihapus', 'success');
                                   } catch (e) {}
                                 }
@@ -1664,7 +1664,7 @@ export default function AdminDashboard() {
                                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{new Date(log.timestamp).toLocaleString('id-ID')}</span>
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">{log.details}</p>
-                                <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">{log.userName || log.userId} • {log.userRole || 'Sistem'}</span>
+                                <span className="text-[10px] font-bold text-[#00478d] bg-[#00478d]/10 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">{log.userName || log.userId} â€¢ {log.userRole || 'Sistem'}</span>
                               </div>
                             </div>
                           ))
@@ -2169,7 +2169,7 @@ export default function AdminDashboard() {
                                               className="w-full px-5 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 last:border-0 transition-colors"
                                             >
                                               <p className="text-sm font-bold text-slate-700">{c.nama}</p>
-                                              <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} • {c.alamat || 'Tanpa Alamat'}</p>
+                                              <p className="text-[10px] text-slate-400 font-medium">{c.noHp || 'Tanpa No. HP'} â€¢ {c.alamat || 'Tanpa Alamat'}</p>
                                             </button>
                                           ))
                                       )
@@ -2279,3 +2279,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+

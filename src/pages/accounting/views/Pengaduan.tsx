@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { MessageCircle, Loader2, Search, Filter, CheckCircle2, AlertCircle, Clock, Download, User, Trash2 } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function Pengaduan() {
   useEffect(() => {
     setLoading(true);
     const q = query(
-      collection(db, 'pengaduan'),
+      collection(db, 'pengaduan_layanan_pelanggan'),
       orderBy('createdAt', 'desc')
     );
 
@@ -29,7 +29,7 @@ export default function Pengaduan() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini?')) return;
     try {
-      await deleteDoc(doc(db, 'pengaduan', id));
+      await deleteDoc(doc(db, 'pengaduan_layanan_pelanggan', id));
     } catch (err: any) {
       alert('Gagal menghapus pengaduan: ' + err.message);
     }
@@ -198,4 +198,5 @@ export default function Pengaduan() {
     </div>
   );
 }
+
 

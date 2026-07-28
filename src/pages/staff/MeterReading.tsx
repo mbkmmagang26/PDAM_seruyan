@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   Waves,
   Bell,
@@ -48,7 +48,7 @@ export default function MeterReading() {
   const [tbPelanggan, setTbPelanggan] = useState<any[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'tb_pelanggan'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'data_pelanggan_meteran'), (snapshot) => {
       setTbPelanggan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
@@ -75,7 +75,7 @@ export default function MeterReading() {
       setLoadingAwal(true);
       try {
         const meterQ = query(
-          collection(db, 'tb_meter_pelanggan'),
+          collection(db, 'pembacaan_meter_staf'),
           where('customerId', '==', activeCustomer.id)
         );
         const snap = await getDocs(meterQ);
@@ -126,7 +126,7 @@ export default function MeterReading() {
         });
         logActivity(staff, 'Selesai Pencatatan', `Menyelesaikan tugas pencatatan meter ID: ${assignedTask.id}`);
       } else {
-        await setDoc(doc(db, 'aksi_pengaduan', `TSK-MANUAL-${Date.now()}`), {
+        await setDoc(doc(db, 'tugas_perbaikan_staf', `TSK-MANUAL-${Date.now()}`), {
           title: `Pencatatan Manual: ${activeCustomer.nama}`,
           type: 'reading',
           status: 'completed',
@@ -271,7 +271,7 @@ export default function MeterReading() {
                     <label className="block text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">{t('staff.reading.prev')}</label>
                     <div className="w-full px-4 py-3 bg-slate-50 rounded-xl text-slate-500 font-mono text-lg flex items-center justify-between">
                       <span>{loadingAwal ? 'Loading...' : standAwal.toFixed(2)}</span>
-                      <span className="text-xs uppercase ml-2 opacity-50 font-sans">m³</span>
+                      <span className="text-xs uppercase ml-2 opacity-50 font-sans">mÂ³</span>
                     </div>
                   </div>
                   <div>
@@ -329,3 +329,4 @@ export default function MeterReading() {
     </div>
   );
 }
+

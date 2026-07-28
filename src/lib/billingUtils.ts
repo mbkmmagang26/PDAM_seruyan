@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
+﻿import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Bill, Golongan, MeterReading, User } from '../types';
 
@@ -39,7 +39,7 @@ export const processMeterReadingAndBilling = async (
 ): Promise<{ success: boolean; message: string; billId?: string }> => {
   try {
     // 1. Dapatkan data pelanggan dari tb_pelanggan
-    const userDocRef = doc(db, 'tb_pelanggan', customerId);
+    const userDocRef = doc(db, 'data_pelanggan_meteran', customerId);
     const userSnap = await getDoc(userDocRef);
     
     if (!userSnap.exists()) {
@@ -53,7 +53,7 @@ export const processMeterReadingAndBilling = async (
     }
 
     // 2. Dapatkan data Golongan berdasarkan nama
-    const golQ = query(collection(db, 'tb_golongan'), where('name', '==', userGolongan), limit(1));
+    const golQ = query(collection(db, 'master_tarif_air'), where('name', '==', userGolongan), limit(1));
     const golSnap = await getDocs(golQ);
     
     if (golSnap.empty) {
@@ -65,7 +65,7 @@ export const processMeterReadingAndBilling = async (
     // 3. Dapatkan stand meter bulan lalu (Stand Awal)
     let standAwal = 0;
     const meterQ = query(
-      collection(db, 'tb_meter_pelanggan'), 
+      collection(db, 'pembacaan_meter_staf'), 
       where('customerId', '==', customerId)
     );
     
@@ -99,7 +99,7 @@ export const processMeterReadingAndBilling = async (
       createdAt: new Date().toISOString()
     };
     
-    const meterDocRef = await addDoc(collection(db, 'tb_meter_pelanggan'), newMeterData);
+    const meterDocRef = await addDoc(collection(db, 'pembacaan_meter_staf'), newMeterData);
 
     // 5. Kalkulasi Tagihan (tb_billing)
     const biayaPemakaian = calculateBiayaPemakaian(pemakaian, golonganData);
@@ -127,12 +127,12 @@ export const processMeterReadingAndBilling = async (
       createdAt: new Date().toISOString()
     };
 
-    const billDocRef = await addDoc(collection(db, 'tb_billing'), newBillData);
+    const billDocRef = await addDoc(collection(db, 'tagihan_air_pelanggan'), newBillData);
 
     // 6. Update sinkronisasi ke panel Accounting (tb_pelanggan)
     // Di aplikasi ini, Panel Accounting membaca dari tb_pelanggan
     // Kita cek apakah customer sudah ada di tb_pelanggan
-    const tbPelangganRef = doc(db, 'tb_pelanggan', customerId);
+    const tbPelangganRef = doc(db, 'data_pelanggan_meteran', customerId);
     const tbPelangganSnap = await getDoc(tbPelangganRef);
     
     if (tbPelangganSnap.exists()) {
@@ -146,7 +146,7 @@ export const processMeterReadingAndBilling = async (
       // Kirim Notifikasi ke Pelanggan
       const userUid = currentData.userId || '';
       if (userUid) {
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(collection(db, 'notifikasi_pengguna'), {
           title: 'Tagihan Air Baru Diterbitkan',
           message: `Tagihan air periode ${currentMonth} sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalAmount)} telah diterbitkan. Silakan bayar sebelum tanggal jatuh tempo.`,
           userId: userUid,
@@ -198,8 +198,8 @@ export const processMeterReadingAndBilling = async (
  */
 export const processPayment = async (billId: string, customerId: string, amount: number): Promise<{ success: boolean; message: string }> => {
   try {
-    const billRef = doc(db, 'tb_billing', billId);
-    const tbPelangganRef = doc(db, 'tb_pelanggan', customerId);
+    const billRef = doc(db, 'tagihan_air_pelanggan', billId);
+    const tbPelangganRef = doc(db, 'data_pelanggan_meteran', customerId);
 
     // Menggunakan runTransaction untuk memastikan pembaruan data tagihan bulanan
     // dan pemotongan saldo tunggakan berjalan secara atomik (mencegah balapan data/race condition).
@@ -232,7 +232,7 @@ export const processPayment = async (billId: string, customerId: string, amount:
         // Kirim Notifikasi ke Pelanggan
         const userUid = currentData.userId || '';
         if (userUid) {
-          const notifRef = doc(collection(db, 'notifications'));
+          const notifRef = doc(collection(db, 'notifikasi_pengguna'));
           transaction.set(notifRef, {
             title: 'Pembayaran Dikonfirmasi',
             message: `Pembayaran tagihan sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)} telah berhasil dikonfirmasi oleh petugas. Terima kasih atas pembayaran Anda.`,
@@ -278,7 +278,7 @@ export const processPayment = async (billId: string, customerId: string, amount:
       const desc = `Pembayaran Tagihan Air a/n ${billData.customerName || 'Pelanggan'} - Periode ${billData.periodeBulan || ''} ${billData.periodeTahun || ''}`;
       
       // Debit: Kas Loket Kantor
-      await addDoc(collection(db, 'transactions'), {
+      await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
         date: todayStr,
         reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
         description: desc,
@@ -292,7 +292,7 @@ export const processPayment = async (billId: string, customerId: string, amount:
       });
 
       // Kredit: Piutang Air
-      await addDoc(collection(db, 'transactions'), {
+      await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
         date: todayStr,
         reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
         description: desc,
@@ -314,3 +314,4 @@ export const processPayment = async (billId: string, customerId: string, amount:
     return { success: false, message: 'Gagal memproses pembayaran: ' + err.message };
   }
 };
+

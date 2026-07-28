@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { History, Search, Loader2, Clock, User, FileText, CheckCircle, AlertTriangle, Filter } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function LogAktivitas() {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'tb_activity_user_admin'),
+      collection(db, 'log_aktivitas_staf_admin'),
       orderBy('timestamp', 'desc'),
       limit(200)
     );
@@ -148,3 +148,4 @@ export default function LogAktivitas() {
     </div>
   );
 }
+

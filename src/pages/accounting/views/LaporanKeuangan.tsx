@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -28,7 +28,7 @@ export default function LaporanKeuangan() {
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   useEffect(() => {
-    const unsubTx = onSnapshot(query(collection(db, 'transactions')), (snapshot) => {
+    const unsubTx = onSnapshot(query(collection(db, 'jurnal_transaksi_keuangan')), (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
@@ -38,11 +38,11 @@ export default function LaporanKeuangan() {
     });
 
     // Sync Master Data for Report Integration
-    const unsubInv = onSnapshot(collection(db, 'inventory'), (s) => {
+    const unsubInv = onSnapshot(collection(db, 'stok_material_pipa'), (s) => {
       const total = s.docs.reduce((sum, doc) => sum + ((doc.data().price || 0) * (doc.data().stock || 0)), 0);
       setMasterData(prev => ({ ...prev, inventory: total }));
     });
-    const unsubAssets = onSnapshot(collection(db, 'assets'), (s) => {
+    const unsubAssets = onSnapshot(collection(db, 'inventaris_aset_tetap'), (s) => {
       const total = s.docs.reduce((sum, doc) => sum + (doc.data().acquisitionCost || 0), 0);
       const byCat: Record<string, number> = {};
       s.docs.forEach(doc => {
@@ -55,7 +55,7 @@ export default function LaporanKeuangan() {
       const total = s.docs.reduce((sum, doc) => sum + (doc.data().balance || 0), 0);
       setMasterData(prev => ({ ...prev, debt: total }));
     });
-    const unsubCustomers = onSnapshot(collection(db, 'tb_pelanggan'), (s) => {
+    const unsubCustomers = onSnapshot(collection(db, 'data_pelanggan_meteran'), (s) => {
       const total = s.docs.reduce((sum, doc) => sum + (doc.data().balance || 0), 0);
       setMasterData(prev => ({ ...prev, receivable: total }));
     });
@@ -618,5 +618,6 @@ export default function LaporanKeuangan() {
     </div>
   );
 }
+
 
 

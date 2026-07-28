@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -26,7 +26,7 @@ export default function Persediaan() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'inventory')), (snapshot) => {
+    const unsub = onSnapshot(query(collection(db, 'stok_material_pipa')), (snapshot) => {
       setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
@@ -36,7 +36,7 @@ export default function Persediaan() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'inventory'), {
+      await addDoc(collection(db, 'stok_material_pipa'), {
         ...formData,
         stock: Number(formData.stock),
         minStock: Number(formData.minStock),
@@ -55,7 +55,7 @@ export default function Persediaan() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus barang ini?')) return;
     try {
-      await deleteDoc(doc(db, 'inventory', id));
+      await deleteDoc(doc(db, 'stok_material_pipa', id));
     } catch (err: any) {
       alert('Gagal menghapus barang: ' + err.message);
     }
@@ -391,5 +391,6 @@ export default function Persediaan() {
     </div>
   );
 }
+
 
 

@@ -29,10 +29,10 @@ async function runMigration() {
     process.exit(1);
   }
 
-  // 1. Migrasi tb_pelanggan
+  // 1. Migrasi data_pelanggan_meteran
   try {
-    console.log("\n[1/2] Memeriksa koleksi 'tb_pelanggan'...");
-    const pelangganSnap = await getDocs(collection(db, "tb_pelanggan"));
+    console.log("\n[1/2] Memeriksa koleksi 'data_pelanggan_meteran'...");
+    const pelangganSnap = await getDocs(collection(db, "data_pelanggan_meteran"));
     let pelangganUpdated = 0;
 
     for (const d of pelangganSnap.docs) {
@@ -49,7 +49,7 @@ async function runMigration() {
       }
 
       if (Object.keys(updates).length > 0) {
-        await updateDoc(doc(db, "tb_pelanggan", d.id), updates);
+        await updateDoc(doc(db, "data_pelanggan_meteran", d.id), updates);
         pelangganUpdated++;
         console.log(`- Update pelanggan [ID: ${d.id}]:`, updates);
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Settings, User, Building2, Bell, Shield, LogOut, ChevronRight, Save, Trash2, Plus, X, Loader2, Key } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { collection, onSnapshot, query, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ export default function Pengaturan() {
     setIsSaving(true);
     try {
       if (user?.role === 'pelanggan' || user?.role === 'customer') {
-        await updateDoc(doc(db, 'tb_pelanggan', user!.id), {
+        await updateDoc(doc(db, 'data_pelanggan_meteran', user!.id), {
           nama: profileData.name,
           noHp: profileData.phone,
           alamat: profileData.address
@@ -51,13 +51,13 @@ export default function Pengaturan() {
       if (adminDoc.exists()) {
         await deleteDoc(doc(db, 'user_admin', id));
       } else {
-        const targetRef = doc(db, 'tb_pelanggan', id);
+        const targetRef = doc(db, 'data_pelanggan_meteran', id);
         const targetSnap = await getDoc(targetRef);
         if (targetSnap.exists()) {
           const targetData = targetSnap.data();
           const customerUserId = targetData.userId;
           if (customerUserId && customerUserId !== id) {
-            const parentRef = doc(db, 'tb_pelanggan', customerUserId);
+            const parentRef = doc(db, 'data_pelanggan_meteran', customerUserId);
             const parentSnap = await getDoc(parentRef);
             if (parentSnap.exists()) {
               const parentData = parentSnap.data();
@@ -312,3 +312,4 @@ export default function Pengaturan() {
     </div>
   );
 }
+

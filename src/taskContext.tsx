@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from './firebase'; 
 import { collection, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { Task } from './types';
@@ -27,9 +27,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Listener tanpa orderBy dulu agar tidak nyangkut di masalah Index
-    let q = query(collection(db, 'aksi_pengaduan'));
+    let q = query(collection(db, 'tugas_perbaikan_staf'));
     if (user?.role === 'staff') {
-      q = query(collection(db, 'aksi_pengaduan'), where('assignedTo', '==', user.id));
+      q = query(collection(db, 'tugas_perbaikan_staf'), where('assignedTo', '==', user.id));
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -79,7 +79,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         assignedTo: cleanTaskData.assignedTo || null,
         ...cleanTaskData
       };
-      await setDoc(doc(db, 'aksi_pengaduan', newId), newTask);
+      await setDoc(doc(db, 'tugas_perbaikan_staf', newId), newTask);
     } catch (error) {
       console.error("Gagal buat tugas:", error);
       throw error;
@@ -88,7 +88,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const assignTask = async (taskId: string, staffId: string) => {
     try {
-      await updateDoc(doc(db, 'aksi_pengaduan', taskId), {
+      await updateDoc(doc(db, 'tugas_perbaikan_staf', taskId), {
         status: 'assigned',
         assignedTo: staffId
       });
@@ -100,7 +100,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const updateTaskStatus = async (taskId: string, status: string, updates?: any) => {
     try {
       const updateData = { status, ...(updates || {}) };
-      await updateDoc(doc(db, 'aksi_pengaduan', taskId), updateData);
+      await updateDoc(doc(db, 'tugas_perbaikan_staf', taskId), updateData);
     } catch (error) {
       console.error("Gagal update status:", error);
     }
