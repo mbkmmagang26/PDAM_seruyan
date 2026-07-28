@@ -515,7 +515,8 @@ export default function AdminDashboard() {
         reason: `${processComplaintData.category} - ${processComplaintData.description}`,
         assignedTo: selectedStaffForComplaint,
         deadline: 'URGENT',
-        pengaduanId: processComplaintData.id
+        pengaduanId: processComplaintData.id,
+        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan'
       });
 
       await updateDoc(doc(db, 'pengaduan_layanan_pelanggan', processComplaintData.id), { status: 'Diproses' });
