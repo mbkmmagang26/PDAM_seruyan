@@ -51,6 +51,12 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
       const req = requests.find(r => r.id === id);
       if (!req) throw new Error("Permohonan tidak ditemukan");
 
+      // Fix 3: Normalisasi field — handle format lama (nama/noHp/alamat) & baru (name/phone/address)
+      const reqName    = (req as any).name    || (req as any).nama    || 'Pelanggan';
+      const reqAddress = (req as any).address || (req as any).alamat  || '-';
+      const reqPhone   = (req as any).phone   || (req as any).noHp    || '-';
+      const reqJenis   = (req as any).jenisBangunan || '';
+
       // 1. Generate nomor meteran baru berdasarkan urutan (otomatisasi nomor meter)
       const qMeter = query(collection(db, 'data_pelanggan_meteran'), orderBy('no_meter', 'desc'), limit(1));
       const meterSnapshot = await getDocs(qMeter);
@@ -84,13 +90,13 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
 
       // 4. Buat penugasan baru (Task) untuk Staff Lapangan beserta info Nomor Meter baru
       await createTask({
-        title: `Penyambungan Baru: ${req.name}`, 
-        location: req.address,
+        title: `Penyambungan Baru: ${reqName}`,
+        location: reqAddress,
         district: 'Seruyan',
         priority: 'normal',
         type: 'new_connection',
-        customerName: req.name,
-        reason: `Pemasangan Baru Sesuai Permohonan. Pasang meteran dengan Nomor Baru: ${nextMeterNumber}`,
+        customerName: reqName,
+        reason: `Pemasangan Baru Sesuai Permohonan.${reqJenis ? ` Jenis: ${reqJenis}.` : ''} Pasang meteran dengan Nomor Baru: ${nextMeterNumber}`,
         assignedTo: staffId,
         deadline: 'CYCLE',
         permohonanId: id,

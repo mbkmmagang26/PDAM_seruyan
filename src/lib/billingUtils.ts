@@ -48,16 +48,19 @@ export const processMeterReadingAndBilling = async (
     
     const userData = userSnap.data();
     const userGolongan = userData.golongan || userData.gol;
-    if (!userGolongan) {
-       return { success: false, message: 'Pelanggan belum memiliki Golongan Tarif.' };
-    }
-
+    
     // 2. Dapatkan data Golongan berdasarkan nama
-    const golQ = query(collection(db, 'master_tarif_air'), where('name', '==', userGolongan), limit(1));
+    let golQ;
+    if (userGolongan) {
+      golQ = query(collection(db, 'master_tarif_air'), where('name', '==', userGolongan), limit(1));
+    } else {
+      // Fallback: pakai tarif pertama yang tersedia jika golongan belum diset admin
+      golQ = query(collection(db, 'master_tarif_air'), limit(1));
+    }
     const golSnap = await getDocs(golQ);
     
     if (golSnap.empty) {
-      return { success: false, message: 'Data Golongan tidak ditemukan.' };
+      return { success: false, message: 'Tidak ada data tarif di database. Hubungi administrator.' };
     }
     
     const golonganData = golSnap.docs[0].data() as Golongan;

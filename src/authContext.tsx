@@ -300,7 +300,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (adminDoc.exists()) {
         await updateDoc(doc(db, 'user_admin', userId), { status });
       } else {
-        await updateDoc(doc(db, 'data_pelanggan_meteran', userId), { status_akun: status });
+        // Fix 4: Sync kedua field status agar UI pelanggan dan validasi login tetap konsisten
+        const statusMap: Record<string, string> = {
+          active: 'Aktif',
+          pending: 'Menunggu',
+          blocked: 'Nonaktif'
+        };
+        await updateDoc(doc(db, 'data_pelanggan_meteran', userId), {
+          status_akun: status,
+          status: statusMap[status] || 'Nonaktif'
+        });
       }
     } catch (error) {
       console.error('Update user status error:', error);
