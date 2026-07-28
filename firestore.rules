@@ -1,10 +1,10 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // HELPER FUNCTIONS (Role-Based Access Control)
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
     function isAdmin() {
       return request.auth != null && 
@@ -34,18 +34,19 @@ service cloud.firestore {
       return isAdmin() || isAccounting() || isStaff();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // KOLEKSI PENGGUNA
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
-    // tb_pelanggan: Profil & data teknis pelanggan
+    // data_pelanggan_meteran: Profil & data teknis pelanggan
     match /data_pelanggan_meteran/{userId} {
       allow read: if request.auth != null && (
         isOwner(userId) || 
         (resource != null && resource.data.userId == request.auth.uid) || 
         isInternalUser()
       );
-      allow write: if isOwner(userId) || isAdmin() || isAccounting();
+      // Izinkan penulisan saat pendaftaran (user baru / owner / admin / accounting)
+      allow write: if request.auth != null || isOwner(userId) || isAdmin() || isAccounting();
     }
 
     // user_admin: Akun admin, staff, accounting
@@ -54,11 +55,11 @@ service cloud.firestore {
       allow write: if isAdmin() || isOwner(userId);
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // KOLEKSI PERMOHONAN & TUGAS
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
-    // tb_permohonan: Pengajuan sambungan baru dari pelanggan
+    // permohonan_pasang_baru: Pengajuan sambungan baru dari pelanggan
     match /permohonan_pasang_baru/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) ||
@@ -70,8 +71,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // tasks: Tugas kerja yang diberikan ke staff
-    match /tasks/{docId} {
+    // tugas_perbaikan_staf: Perintah kerja & penugasan staf lapangan
+    match /tugas_perbaikan_staf/{docId} {
       allow read: if request.auth != null && (
         isInternalUser() ||
         (resource != null && resource.data.userId == request.auth.uid)
@@ -81,11 +82,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // KOLEKSI LAYANAN PELANGGAN
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
-    // pengaduan: Laporan gangguan/keluhan dari pelanggan
+    // pengaduan_layanan_pelanggan: Laporan gangguan/keluhan dari pelanggan
     match /pengaduan_layanan_pelanggan/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) || 
@@ -99,11 +100,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // KOLEKSI KEUANGAN & TAGIHAN
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
-    // tb_billing: Tagihan air bulanan pelanggan
+    // tagihan_air_pelanggan: Tagihan air bulanan pelanggan
     match /tagihan_air_pelanggan/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) ||
@@ -112,7 +113,7 @@ service cloud.firestore {
       allow write: if isAdmin() || isAccounting();
     }
 
-    // tb_meter_pelanggan: Catatan pembacaan meteran
+    // pembacaan_meter_staf: Catatan pembacaan meteran
     match /pembacaan_meter_staf/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) ||
@@ -121,11 +122,17 @@ service cloud.firestore {
       allow write: if isInternalUser();
     }
 
-    // transactions: Jurnal keuangan
+    // jurnal_transaksi_keuangan: Jurnal keuangan
     match /jurnal_transaksi_keuangan/{docId} {
       allow read: if isInternalUser();
       allow create: if isInternalUser();
       allow update, delete: if isAdmin() || isAccounting();
+    }
+
+    // laporan_penagihan_kasir: LPP Kasir
+    match /laporan_penagihan_kasir/{docId} {
+      allow read: if isInternalUser();
+      allow write: if isAdmin() || isAccounting();
     }
 
     // coa: Chart of Accounts (Master Akun Keuangan)
@@ -134,17 +141,17 @@ service cloud.firestore {
       allow write: if isAdmin() || isAccounting();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // KOLEKSI MASTER DATA
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
+    // KOLEKSI MASTER DATA & VENDOR
+    // ─────────────────────────────────────────────
 
-    // tb_golongan: Master tarif/golongan pelanggan
+    // master_tarif_air: Master tarif/golongan pelanggan
     match /master_tarif_air/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdmin() || isAccounting();
     }
 
-    // inventory & assets: Data aset dan inventaris
+    // stok_material_pipa & inventaris_aset_tetap
     match /stok_material_pipa/{docId} {
       allow read: if isInternalUser();
       allow write: if isAdmin() || isAccounting();
@@ -154,34 +161,40 @@ service cloud.firestore {
       allow write: if isAdmin() || isAccounting();
     }
 
-    // budgets: Anggaran operasional
+    // mitra_vendor_pemasok: Data vendor & pemasok
+    match /mitra_vendor_pemasok/{docId} {
+      allow read: if isInternalUser();
+      allow write: if isAdmin() || isAccounting();
+    }
+
+    // anggaran_operasional: Anggaran operasional
     match /anggaran_operasional/{docId} {
       allow read: if isInternalUser();
       allow write: if isAdmin() || isAccounting();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
     // KOLEKSI LOG & NOTIFIKASI
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────
 
-    // customer_activity: Log aktivitas pelanggan
+    // log_aktivitas_pelanggan: Log aktivitas pelanggan
     match /log_aktivitas_pelanggan/{docId} {
       allow read: if request.auth != null && (
         (resource != null && resource.data.userId == request.auth.uid) || 
         isInternalUser()
       );
       allow create: if request.auth != null;
-      allow update, delete: if isAdmin(); // Log dapat dibersihkan oleh Admin
+      allow update, delete: if isAdmin();
     }
 
-    // tb_activity_user_admin: Log aktivitas staf/admin internal
+    // log_aktivitas_staf_admin: Log aktivitas staf/admin internal
     match /log_aktivitas_staf_admin/{docId} {
       allow read: if isInternalUser();
       allow create: if isInternalUser();
-      allow update, delete: if isAdmin(); // Log dapat dibersihkan oleh Admin
+      allow update, delete: if isAdmin();
     }
 
-    // notifications: Notifikasi ke pengguna
+    // notifikasi_pengguna: Notifikasi ke pengguna
     match /notifikasi_pengguna/{docId} {
       allow read: if request.auth != null && (
         (resource != null && (resource.data.userId == request.auth.uid || resource.data.userId == 'all')) || 
@@ -191,5 +204,3 @@ service cloud.firestore {
     }
   }
 }
-
-

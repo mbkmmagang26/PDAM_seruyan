@@ -10,6 +10,7 @@ export default function Operasional() {
   const [activeStatus, setActiveStatus] = useState('all');
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     setLoading(true);
     let q;
     if (activeStatus !== 'all') {
@@ -32,7 +33,7 @@ export default function Operasional() {
       console.error("Firestore Error in Operasional query:", error);
       setLoading(false);
     });
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, [activeStatus]);
 
   const filtered = tasks.filter(t => {
@@ -177,5 +178,6 @@ export default function Operasional() {
     </div>
   );
 }
+
 
 

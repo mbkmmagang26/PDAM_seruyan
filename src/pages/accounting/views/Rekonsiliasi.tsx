@@ -21,6 +21,7 @@ export default function RekonsiliasiView() {
   const [showCalcModal, setShowCalcModal] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to COA
     const qCoa = query(collection(db, 'coa'));
     const unsubCoa = onSnapshot(qCoa, (snapshot) => {
@@ -34,7 +35,7 @@ export default function RekonsiliasiView() {
       setLoading(false);
     });
 
-    return () => { unsubCoa(); unsubLpp(); };
+    return () => { clearTimeout(timer);  unsubCoa(); unsubLpp(); };
   }, []);
 
   const getAccount = (codePrefix: string, fallbackName: string) => {
@@ -306,4 +307,5 @@ export default function RekonsiliasiView() {
     </div>
   );
 }
+
 

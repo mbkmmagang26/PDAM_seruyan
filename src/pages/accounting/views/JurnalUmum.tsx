@@ -22,6 +22,7 @@ export default function JurnalUmum() {
 
   // Debouncing effect
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 300);
@@ -30,6 +31,7 @@ export default function JurnalUmum() {
 
   // Listen to global dashboard search event
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handleGlobalSearch = (e: any) => {
       if (e.detail?.query !== undefined) {
         setSearchTerm(e.detail.query);
@@ -52,6 +54,7 @@ export default function JurnalUmum() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to Transactions
     const qTx = query(collection(db, 'jurnal_transaksi_keuangan'), orderBy('date', 'desc'), limit(100));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
@@ -65,7 +68,7 @@ export default function JurnalUmum() {
       setCoa(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    return () => { unsubTx(); unsubCoa(); };
+    return () => { clearTimeout(timer);  unsubTx(); unsubCoa(); };
   }, []);
 
   const totalDebit = rows.reduce((sum, row) => sum + (Number(row.debit) || 0), 0);
@@ -563,5 +566,6 @@ export default function JurnalUmum() {
     </div>
   );
 }
+
 
 

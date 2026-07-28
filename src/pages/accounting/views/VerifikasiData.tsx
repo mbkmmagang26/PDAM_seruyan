@@ -13,6 +13,7 @@ export default function VerifikasiData() {
   const [counts, setCounts] = useState({ pending: 0, verified: 0 });
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen for pending transactions
     const q = query(collection(db, 'jurnal_transaksi_keuangan'), where('status', '==', 'pending'));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -23,11 +24,12 @@ export default function VerifikasiData() {
 
     // Count verified today (simplified: just count all for now or filter by date if possible)
     // For now we just use the pending count
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, []);
 
   // Listen to global dashboard search event
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handleGlobalSearch = (e: any) => {
       if (e.detail?.query !== undefined) {
         setSearchTerm(e.detail.query);
@@ -203,6 +205,7 @@ export default function VerifikasiData() {
     </div>
   );
 }
+
 
 
 

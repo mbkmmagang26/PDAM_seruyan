@@ -23,6 +23,7 @@ export default function Anggaran() {
   });
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const unsubBudgets = onSnapshot(query(collection(db, 'anggaran_operasional'), where('year', '==', selectedYear)), (snapshot) => {
       setBudgets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -36,7 +37,7 @@ export default function Anggaran() {
       setLoading(false);
     });
 
-    return () => { unsubBudgets(); unsubTx(); unsubCoa(); };
+    return () => { clearTimeout(timer);  unsubBudgets(); unsubTx(); unsubCoa(); };
   }, [selectedYear]);
 
   const processedBudgets = useMemo(() => {
@@ -320,6 +321,7 @@ export default function Anggaran() {
     </div>
   );
 }
+
 
 
 

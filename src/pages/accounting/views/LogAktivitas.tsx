@@ -11,6 +11,7 @@ export default function LogAktivitas() {
   const [filterRole, setFilterRole] = useState('Semua');
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const q = query(
       collection(db, 'log_aktivitas_staf_admin'),
       orderBy('timestamp', 'desc'),
@@ -20,11 +21,12 @@ export default function LogAktivitas() {
       setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, []);
 
   // Listen to global dashboard search event
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handleGlobalSearch = (e: any) => {
       if (e.detail?.query !== undefined) {
         setSearchTerm(e.detail.query);
@@ -148,4 +150,5 @@ export default function LogAktivitas() {
     </div>
   );
 }
+
 

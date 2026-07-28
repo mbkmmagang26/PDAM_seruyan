@@ -28,11 +28,12 @@ export default function AsetTetap() {
   });
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const unsub = onSnapshot(query(collection(db, 'inventaris_aset_tetap')), (snapshot) => {
       setAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -438,6 +439,7 @@ export default function AsetTetap() {
     </div>
   );
 }
+
 
 
 

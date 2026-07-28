@@ -15,6 +15,7 @@ export default function NeracaLajurView() {
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to COA
     const qCoa = query(collection(db, 'coa'), orderBy('code', 'asc'));
     const unsubCoa = onSnapshot(qCoa, (snapshot) => {
@@ -28,7 +29,7 @@ export default function NeracaLajurView() {
       setLoading(false);
     });
 
-    return () => { unsubCoa(); unsubTx(); };
+    return () => { clearTimeout(timer);  unsubCoa(); unsubTx(); };
   }, []);
 
   // Compute Neraca Lajur Data
@@ -365,4 +366,5 @@ export default function NeracaLajurView() {
     </div>
   );
 }
+
 

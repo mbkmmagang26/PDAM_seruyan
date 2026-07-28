@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -26,17 +26,21 @@ export default function HutangAP() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'vendors')), (snapshot) => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    const unsub = onSnapshot(query(collection(db, 'mitra_vendor_pemasok')), (snapshot) => {
       setVendors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
+    }, (err) => {
+      console.error('Error fetching vendors:', err);
+      setLoading(false);
     });
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'vendors'), {
+      await addDoc(collection(db, 'mitra_vendor_pemasok'), {
         ...formData,
         balance: Number(formData.balance),
         createdAt: serverTimestamp(),
@@ -54,7 +58,7 @@ export default function HutangAP() {
   const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus vendor ini?')) return;
     try {
-      await deleteDoc(doc(db, 'vendors', id));
+      await deleteDoc(doc(db, 'mitra_vendor_pemasok', id));
       logActivity(user, 'Hapus Vendor', `Menghapus vendor ID: ${id}`);
     } catch (err: any) {
       alert('Gagal menghapus vendor: ' + err.message);
@@ -382,4 +386,5 @@ export default function HutangAP() {
     </div>
   );
 }
+
 

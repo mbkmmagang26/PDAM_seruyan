@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
@@ -34,6 +34,7 @@ export default function DashboardUtama() {
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to Transactions of current budget year
     const currentYearStart = `${selectedYear}-01-01`;
     const currentYearEnd = `${selectedYear}-12-31`;
@@ -129,7 +130,7 @@ export default function DashboardUtama() {
     // Set loading false immediately so UI renders, data will populate as it arrives
     setLoading(false);
 
-    return () => {
+    return () => { clearTimeout(timer); 
       unsubTx();
       unsubInv();
       unsubAssets();
@@ -490,6 +491,7 @@ export default function DashboardUtama() {
     </div>
   );
 }
+
 
 
 

@@ -27,6 +27,7 @@ export default function PiutangAR() {
   const tabs = ["Piutang Pelanggan", "Riwayat Tagihan", "Analisis Umur Piutang"];
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const unsubPelanggan = onSnapshot(query(collection(db, 'data_pelanggan_meteran')), (snapshot) => {
       setPelanggan(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
@@ -36,7 +37,7 @@ export default function PiutangAR() {
       setBills(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    return () => {
+    return () => { clearTimeout(timer); 
       unsubPelanggan();
       unsubBills();
     };
@@ -439,5 +440,6 @@ export default function PiutangAR() {
     </div>
   );
 }
+
 
 

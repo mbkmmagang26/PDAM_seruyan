@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -187,6 +187,7 @@ export default function Persediaan() {
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold border-b border-slate-100">
                   <tr>
                     <th className="p-4 uppercase tracking-wider text-xs">Informasi Barang</th>
                     <th className="p-4 uppercase tracking-wider text-xs">Kategori</th>
@@ -196,6 +197,7 @@ export default function Persediaan() {
                     <th className="p-4 uppercase tracking-wider text-xs text-center">Status Stok</th>
                     <th className="p-4 uppercase tracking-wider text-xs text-right">Aksi</th>
                   </tr>
+                </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filtered.length === 0 ? (
                     <tr><td colSpan={6} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Belum ada data barang dalam inventaris.</td></tr>

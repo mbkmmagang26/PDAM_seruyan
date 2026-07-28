@@ -28,6 +28,7 @@ export default function LaporanKeuangan() {
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const unsubTx = onSnapshot(query(collection(db, 'jurnal_transaksi_keuangan')), (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -51,7 +52,7 @@ export default function LaporanKeuangan() {
       });
       setMasterData(prev => ({ ...prev, assets: total, assetsByCat: byCat }));
     });
-    const unsubVendors = onSnapshot(collection(db, 'vendors'), (s) => {
+    const unsubVendors = onSnapshot(collection(db, 'mitra_vendor_pemasok'), (s) => {
       const total = s.docs.reduce((sum, doc) => sum + (doc.data().balance || 0), 0);
       setMasterData(prev => ({ ...prev, debt: total }));
     });
@@ -60,7 +61,7 @@ export default function LaporanKeuangan() {
       setMasterData(prev => ({ ...prev, receivable: total }));
     });
 
-    return () => { unsubTx(); unsubCoa(); unsubInv(); unsubAssets(); unsubVendors(); unsubCustomers(); };
+    return () => { clearTimeout(timer);  unsubTx(); unsubCoa(); unsubInv(); unsubAssets(); unsubVendors(); unsubCustomers(); };
   }, []);
 
   const reportData = useMemo(() => {
@@ -618,6 +619,7 @@ export default function LaporanKeuangan() {
     </div>
   );
 }
+
 
 
 

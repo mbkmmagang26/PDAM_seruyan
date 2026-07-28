@@ -23,13 +23,14 @@ export default function LPPView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to recent LPP uploads
     const q = query(collection(db, 'laporan_penagihan_kasir'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setRecentLpps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).slice(0, 8));
       setLoading(false);
     });
-    return () => unsubscribe();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsubscribe();
   }, []);
 
   const handleExcelParse = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,4 +311,5 @@ export default function LPPView() {
     </div>
   );
 }
+
 

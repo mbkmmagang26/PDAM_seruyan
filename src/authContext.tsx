@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -19,7 +19,8 @@ import {
   onSnapshot,
   updateDoc,
   query,
-  where
+  where,
+  getFirestore
 } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from './firebase';
 import { User, UserRole } from './types';
@@ -202,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
+      const secondaryDb = getFirestore(secondaryApp);
 
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
       const firebaseUser = userCredential.user;
@@ -216,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 
       if (role === 'customer' || role === 'pelanggan') {
-        // Simpan langsung ke tb_pelanggan menggunakan UID Auth
+        // Simpan langsung ke data_pelanggan_meteran menggunakan UID Auth pada secondaryDb
         const newUserPelanggan: any = {
           userId: firebaseUser.uid,
           nama: name,
@@ -236,9 +238,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString(),
           avatar
         };
-        await setDoc(doc(db, 'data_pelanggan_meteran', firebaseUser.uid), newUserPelanggan);
+        await setDoc(doc(secondaryDb, 'data_pelanggan_meteran', firebaseUser.uid), newUserPelanggan);
       } else {
-        // Simpan ke user_admin
+        // Simpan ke user_admin pada secondaryDb
         const newUserAdmin: any = {
           id: firebaseUser.uid,
           name,
@@ -253,7 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (verificationCode) {
           newUserAdmin.verificationCode = verificationCode;
         }
-        await setDoc(doc(db, 'user_admin', firebaseUser.uid), newUserAdmin);
+        await setDoc(doc(secondaryDb, 'user_admin', firebaseUser.uid), newUserAdmin);
       }
 
       await signOut(secondaryAuth);

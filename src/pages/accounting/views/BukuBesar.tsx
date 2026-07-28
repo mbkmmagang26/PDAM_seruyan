@@ -22,6 +22,7 @@ export default function BukuBesar() {
 
   // Debounce search input
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 300);
@@ -30,6 +31,7 @@ export default function BukuBesar() {
 
   // Listen to global dashboard search event
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const handleGlobalSearch = (e: any) => {
       if (e.detail?.query !== undefined) {
         setSearchTerm(e.detail.query);
@@ -48,6 +50,7 @@ export default function BukuBesar() {
   const tabs = ["Daftar Akun (COA)", "Buku Besar Per Akun"];
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     const qTx = query(collection(db, 'jurnal_transaksi_keuangan'), orderBy('date', 'asc'));
     const unsubTx = onSnapshot(qTx, (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -69,7 +72,7 @@ export default function BukuBesar() {
       }
     });
 
-    return () => { unsubTx(); unsubCoa(); };
+    return () => { clearTimeout(timer);  unsubTx(); unsubCoa(); };
   }, [selectedCoa]);
 
   const handleAddCoa = async (e: React.FormEvent) => {
@@ -495,5 +498,6 @@ export default function BukuBesar() {
     </div>
   );
 }
+
 
 

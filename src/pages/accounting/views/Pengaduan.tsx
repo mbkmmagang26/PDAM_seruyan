@@ -10,6 +10,7 @@ export default function Pengaduan() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     setLoading(true);
     const q = query(
       collection(db, 'pengaduan_layanan_pelanggan'),
@@ -23,7 +24,7 @@ export default function Pengaduan() {
       console.error("Firestore Error in Pengaduan query:", error);
       setLoading(false);
     });
-    return () => unsub();
+    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -198,5 +199,6 @@ export default function Pengaduan() {
     </div>
   );
 }
+
 
 

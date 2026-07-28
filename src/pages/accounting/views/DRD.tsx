@@ -23,6 +23,7 @@ export default function DRDView() {
   const [recentUploads, setRecentUploads] = useState<any[]>([]);
 
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
     // Listen to COA
     const qCoa = query(collection(db, 'coa'));
     const unsubCoa = onSnapshot(qCoa, (snapshot) => {
@@ -54,7 +55,7 @@ export default function DRDView() {
       setRecentUploads(Array.from(uniqueUploadsMap.values()).slice(0, 5));
     });
 
-    return () => { unsubCoa(); unsubDRD(); };
+    return () => { clearTimeout(timer);  unsubCoa(); unsubDRD(); };
   }, []);
 
   // Find appropriate account codes from COA
@@ -444,4 +445,5 @@ export default function DRDView() {
     </div>
   );
 }
+
 
