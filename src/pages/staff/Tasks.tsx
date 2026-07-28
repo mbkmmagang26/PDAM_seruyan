@@ -173,7 +173,8 @@ export default function StaffDashboard() {
           });
 
           // Update data_pelanggan_meteran (sinkronisasi data pelanggan baru)
-          if (task.userId) {
+          const targetUserId = task.userId || (permData ? permData.userId : null);
+          if (targetUserId) {
             const newMeterData = {
               idPelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
               lokasi: task.location || 'Alamat Baru',
@@ -206,13 +207,19 @@ export default function StaffDashboard() {
               }
             }
 
-            await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), payloadToUpdate);
+            try {
+              await updateDoc(doc(db, 'data_pelanggan_meteran', targetUserId), payloadToUpdate);
+            } catch (updateErr) {
+              console.error("Gagal update profil:", updateErr);
+            }
           } else if (task.permohonanId) {
-             // Fallback for older tasks
-             await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
-              no_meter: updates.meterNumber || '',
-              id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
-            });
+             // Fallback for extremely old tasks with no user relation
+             try {
+               await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
+                no_meter: updates.meterNumber || '',
+                id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              });
+             } catch (e) { console.error("Fallback update failed:", e); }
           }
         }
         
