@@ -10,7 +10,7 @@ export default function Anggaran() {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -320,6 +320,7 @@ export default function Anggaran() {
     </div>
   );
 }
+
 
 
 

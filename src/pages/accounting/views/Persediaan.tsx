@@ -8,7 +8,7 @@ import { useAuth } from '../../../authContext';
 export default function Persediaan() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Daftar Stok');
@@ -391,6 +391,7 @@ export default function Persediaan() {
     </div>
   );
 }
+
 
 
 

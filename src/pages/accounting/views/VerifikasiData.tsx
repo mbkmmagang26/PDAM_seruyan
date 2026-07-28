@@ -8,7 +8,7 @@ import { useAuth } from '../../../authContext';
 export default function VerifikasiData() {
   const { user: currentUser } = useAuth();
   const [pendingData, setPendingData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [counts, setCounts] = useState({ pending: 0, verified: 0 });
 
@@ -203,6 +203,7 @@ export default function VerifikasiData() {
     </div>
   );
 }
+
 
 
 
