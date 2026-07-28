@@ -315,21 +315,28 @@ export default function AdminDashboard() {
   const handleToggleCustomerStatus = async (customerId: string, currentStatus: string) => {
     try {
       if (currentStatus === 'Nonaktif' || !currentStatus) {
-        const noMeter = window.prompt("Masukkan Nomor Meter untuk mengaktifkan pelanggan:");
-        if (noMeter === null) return; // User cancelled
-
-        if (!noMeter.trim()) {
-          showNotification('Nomor Meter wajib diisi untuk mengaktifkan pelanggan', 'error');
-          return;
+        // Auto-generate nomor meter
+        const qMeter = query(collection(db, 'data_pelanggan_meteran'), orderBy('no_meter', 'desc'), limit(1));
+        const meterSnapshot = await getDocs(qMeter);
+        
+        let nextMeterNumber = 'MTR-0001';
+        if (!meterSnapshot.empty) {
+          const lastMeter = meterSnapshot.docs[0].data().no_meter;
+          if (lastMeter && lastMeter.startsWith('MTR-')) {
+             const lastNum = parseInt(lastMeter.split('-')[1]);
+             if (!isNaN(lastNum)) {
+                nextMeterNumber = `MTR-${String(lastNum + 1).padStart(4, '0')}`;
+             }
+          }
         }
 
         const docRef = doc(db, 'data_pelanggan_meteran', customerId);
         await updateDoc(docRef, {
           status: 'Aktif',
-          no_meter: noMeter.trim()
+          no_meter: nextMeterNumber
         });
-        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
-        showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${nextMeterNumber}`);
+        showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter Otomatis: ${nextMeterNumber}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'data_pelanggan_meteran', customerId);
