@@ -16,7 +16,8 @@ import {
   Scissors,
   CheckCircle2,
   AlertTriangle,
-  Gauge
+  Gauge,
+  Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -581,10 +582,23 @@ export default function StaffDashboard() {
                            </button>
                         )}
                         
-                        {/* Tombol Tiga Titik hanya muncul jika belum dikerjakan */}
+                        {/* Tombol Hubungi Pelanggan muncul jika belum dikerjakan */}
                         {task.status !== 'in-progress' && (
-                          <button className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all">
-                            <MoreHorizontal size={24} />
+                          <button 
+                            onClick={() => {
+                               const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                               if (phone) {
+                                  let formatted = phone.replace(/\D/g, '');
+                                  if (formatted.startsWith('0')) formatted = '62' + formatted.substring(1);
+                                  window.open(`https://wa.me/${formatted}`, '_blank');
+                               } else {
+                                  alert('Nomor HP pelanggan tidak tersedia untuk tugas ini.');
+                               }
+                            }}
+                            className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400"
+                            title="Hubungi Pelanggan (WhatsApp)"
+                          >
+                            <Phone size={24} />
                           </button>
                         )}
                       </div>

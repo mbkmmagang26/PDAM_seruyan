@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [complaints, setComplaints] = useState<any[]>([]);
   const [golonganList, setGolonganList] = useState<any[]>([]);
+  const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
 
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -153,12 +154,13 @@ export default function AdminDashboard() {
     }
   });
 
-  const pendingRequests = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
+  const pendingRequestsList = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
   const pendingComplaints = complaints.filter(c => 
     (!c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons') &&
     !clickedNotifIds.includes(`comp-${c.id}`)
   );
-  const unreadNotifs = pendingRequests.length + pendingComplaints.length;
+  const unreadRegistrations = pendingRegistrations.filter(r => !clickedNotifIds.includes(`reg-${r.id}`));
+  const unreadNotifs = pendingRequestsList.length + pendingComplaints.length + unreadRegistrations.length;
 
   const handleNotifClick = (id: string, targetView: AdminView) => {
     const updated = [...clickedNotifIds, id];
@@ -252,6 +254,16 @@ export default function AdminDashboard() {
         return timeB - timeA;
       });
       setComplaints(data);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    // Ambil pendaftaran baru (pelanggan yang statusnya belum aktif atau status_akun pending)
+    const unsub = onSnapshot(collection(db, 'data_pelanggan_meteran'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const newRegs = data.filter((c: any) => c.status_akun === 'pending' || c.status === 'Nonaktif');
+      setPendingRegistrations(newRegs);
     });
     return () => unsub();
   }, []);
@@ -1175,9 +1187,9 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <h3 className={`text-3xl font-headline font-extrabold mt-1 ${stat.color}`}>{stat.value}</h3>
+                  <h3 className={`text-3xl font-headline font-extrabold mt-1 ${stat.color} dark:text-white`}>{stat.value}</h3>
                 </div>
-                <div className={`p-4 rounded-2xl ${stat.color === 'text-[#00478d]' ? 'bg-[#00478d]/5 text-[#00478d]' : stat.color === 'text-[#005051]' ? 'bg-[#005051]/5 text-[#005051]' : 'bg-[#4b6175]/5 text-[#4b6175]'} group-hover:scale-110 transition-transform`}>
+                <div className={`p-4 rounded-2xl ${stat.color === 'text-[#00478d]' ? 'bg-[#00478d]/5 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400' : stat.color === 'text-[#005051]' ? 'bg-[#005051]/5 text-[#005051] dark:bg-teal-400/10 dark:text-teal-400' : 'bg-[#4b6175]/5 text-[#4b6175] dark:bg-slate-300/10 dark:text-slate-300'} group-hover:scale-110 transition-transform`}>
                   <stat.icon size={28} />
                 </div>
               </div>
@@ -1199,15 +1211,15 @@ export default function AdminDashboard() {
             className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white dark:group-hover:bg-blue-500 transition-all">
                 <Users size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.user.management')}</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">{t('admin.user.management')}</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.user.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] dark:group-hover:bg-blue-400/10 dark:group-hover:text-blue-400 transition-all">
               <Plus size={20} />
             </div>
           </button>
@@ -1217,15 +1229,15 @@ export default function AdminDashboard() {
             className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] dark:bg-slate-300/10 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white dark:group-hover:bg-slate-500 transition-all">
                 <Wrench size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.tasks.management')}</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">{t('admin.tasks.management')}</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.tasks.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] dark:group-hover:bg-slate-400/10 dark:group-hover:text-slate-300 transition-all">
               <Plus size={20} />
             </div>
           </button>
@@ -1460,14 +1472,24 @@ export default function AdminDashboard() {
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{c.userName || 'Tanpa Nama'} - {c.category}</p>
                           </button>
                         ))}
-                        {pendingRequests.map(r => (
+                        {pendingRequestsList.map(r => (
                           <button
                             key={`req-${r.id}`}
                             onClick={() => handleNotifClick(`req-${r.id}`, 'requests')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
                           >
-                            <p className="text-xs font-bold text-slate-800 dark:text-white">Permohonan Baru</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.name}</p>
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Penyambungan Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.name || (r as any).nama || 'Pelanggan'} - {r.address || (r as any).alamat}</p>
+                          </button>
+                        ))}
+                        {unreadRegistrations.map(r => (
+                          <button
+                            key={`reg-${r.id}`}
+                            onClick={() => handleNotifClick(`reg-${r.id}`, 'users')}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Pendaftaran Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.nama || r.name || 'Tanpa Nama'} - {r.email || r.username}</p>
                           </button>
                         ))}
                       </>
