@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
@@ -124,8 +124,10 @@ export default function DashboardUtama() {
         totalPiutang += data.tagihanTunggakan || data.balance || 0;
       });
       setStats(s => ({ ...s, piutang: totalPiutang }));
-      setLoading(false);
     });
+
+    // Set loading false immediately so UI renders, data will populate as it arrives
+    setLoading(false);
 
     return () => {
       unsubTx();
