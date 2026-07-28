@@ -1,4 +1,4 @@
-﻿import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc, query, where, orderBy, limit, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Bill, Golongan, MeterReading, User } from '../types';
 
@@ -173,12 +173,13 @@ export const processMeterReadingAndBilling = async (
     }
 
     // 7. Kirim log aktivitas
-    await addDoc(collection(db, 'log_aktivitas_internal'), {
+    await addDoc(collection(db, 'log_aktivitas_staf_admin'), {
       userId: auth.currentUser?.uid || 'system',
       userName: auth.currentUser?.displayName || 'Petugas Akuntansi',
-      activityType: 'Cetak Tagihan',
-      description: `Menerbitkan tagihan air periode ${currentMonth} untuk pelanggan ${userData.nama || 'Pelanggan'} sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalAmount)}`,
-      createdAt: serverTimestamp()
+      userRole: 'accounting',
+      action: 'Cetak Tagihan',
+      details: `Menerbitkan tagihan air periode ${currentMonth} untuk pelanggan ${userData.nama || 'Pelanggan'} sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalAmount)}`,
+      timestamp: new Date().toISOString()
     });
 
     return { 
@@ -247,13 +248,14 @@ export const processPayment = async (billId: string, customerId: string, amount:
       }
 
       // Kirim log aktivitas ke manager
-      const activityRef = doc(collection(db, 'log_aktivitas_internal'));
+      const activityRef = doc(collection(db, 'log_aktivitas_staf_admin'));
       transaction.set(activityRef, {
         userId: auth.currentUser?.uid || 'system',
         userName: auth.currentUser?.displayName || 'Petugas Pembayaran',
-        activityType: 'Penerimaan Pembayaran',
-        description: `Memverifikasi pembayaran tagihan sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)} untuk customer ID: ${customerId}`,
-        createdAt: serverTimestamp()
+        userRole: 'accounting',
+        action: 'Penerimaan Pembayaran',
+        details: `Memverifikasi pembayaran tagihan sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)} untuk customer ID: ${customerId}`,
+        timestamp: new Date().toISOString()
       });
     });
 
