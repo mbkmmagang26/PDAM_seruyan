@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Grid, Loader2, Search, Filter, CheckCircle2, Clock, AlertCircle, Calendar, Download } from 'lucide-react';
@@ -33,7 +33,7 @@ export default function Operasional() {
       console.error("Firestore Error in Operasional query:", error);
       setLoading(false);
     });
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, [activeStatus]);
 
   const filtered = tasks.filter(t => {

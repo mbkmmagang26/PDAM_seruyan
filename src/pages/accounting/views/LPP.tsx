@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
@@ -30,7 +30,7 @@ export default function LPPView() {
       setRecentLpps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).slice(0, 8));
       setLoading(false);
     });
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsubscribe();
+    return () => { clearTimeout(timer); unsubscribe(); };
   }, []);
 
   const handleExcelParse = (e: React.ChangeEvent<HTMLInputElement>) => {

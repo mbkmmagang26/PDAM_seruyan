@@ -26,6 +26,7 @@ import VerifikasiData from './views/VerifikasiData';
 import NeracaLajurView from './views/NeracaLajur';
 import LogAktivitas from './views/LogAktivitas';
 import ImportDataView from './views/ImportData';
+import Pengaduan from './views/Pengaduan';
 
 export type ModuleView = 
   | 'dashboard_utama'
@@ -175,6 +176,7 @@ export default function AccountingDashboard() {
       case 'laporan_keuangan': return <LaporanKeuangan />;
       case 'verifikasi_data': return <VerifikasiData />;
       case 'log_aktivitas': return <LogAktivitas />;
+      case 'pengaduan_layanan_pelanggan': return <Pengaduan />;
       default: return <DashboardUtama />;
     }
   };

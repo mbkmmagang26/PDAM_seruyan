@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { History, Search, Loader2, Clock, User, FileText, CheckCircle, AlertTriangle, Filter } from 'lucide-react';
@@ -21,7 +21,7 @@ export default function LogAktivitas() {
       setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, []);
 
   // Listen to global dashboard search event

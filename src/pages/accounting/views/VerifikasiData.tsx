@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { ShieldCheck, Loader2, Search, Filter, CheckCircle, XCircle, Clock, Info, AlertTriangle } from 'lucide-react';
@@ -24,7 +24,7 @@ export default function VerifikasiData() {
 
     // Count verified today (simplified: just count all for now or filter by date if possible)
     // For now we just use the pending count
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, []);
 
   // Listen to global dashboard search event

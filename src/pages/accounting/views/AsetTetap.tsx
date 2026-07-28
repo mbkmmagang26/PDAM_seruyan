@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
@@ -33,7 +33,7 @@ export default function AsetTetap() {
       setAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, where } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { MessageCircle, Loader2, Search, Filter, CheckCircle2, AlertCircle, Clock, Download, User, Trash2 } from 'lucide-react';
@@ -24,7 +24,7 @@ export default function Pengaduan() {
       console.error("Firestore Error in Pengaduan query:", error);
       setLoading(false);
     });
-    return () => { clearTimeout(timer);  clearTimeout(timer); unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, []);
 
   const handleDelete = async (id: string) => {
