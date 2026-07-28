@@ -25,7 +25,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import ThemeToggle from '../../components/ThemeToggle';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -159,6 +159,14 @@ export default function StaffDashboard() {
         // Update status permohonan jadi selesai (jika tugas ini berasal dari permohonan baru)
         if (task.permohonanId) {
           const permohonanRef = doc(db, 'permohonan_pasang_baru', task.permohonanId);
+          
+          // Fetch the form data to overwrite the old profile info
+          const permohonanSnap = await getDoc(permohonanRef);
+          let permData: any = null;
+          if (permohonanSnap.exists()) {
+            permData = permohonanSnap.data();
+          }
+
           await updateDoc(permohonanRef, {
             status: 'Selesai',
             no_meter: updates.meterNumber || ''
@@ -173,13 +181,32 @@ export default function StaffDashboard() {
               addedAt: new Date().toISOString()
             };
             
-            await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), {
+            const payloadToUpdate: any = {
               no_meter: updates.meterNumber || '',
               id_pelanggan: newMeterData.idPelanggan,
               status: 'Aktif',
               status_akun: 'active',
               meters: arrayUnion(newMeterData)
-            });
+            };
+
+            // Jika ada data formulir terbaru, timpa data profil lama sesuai request
+            if (permData) {
+              const newName = permData.name || permData.nama || task.customerName;
+              if (newName) {
+                payloadToUpdate.nama = newName;
+                payloadToUpdate.nama_search = String(newName).toLowerCase();
+              }
+              const newAddress = permData.address || permData.alamat || task.location;
+              if (newAddress) {
+                payloadToUpdate.alamat = newAddress;
+              }
+              const newPhone = permData.phone || permData.noHp;
+              if (newPhone) {
+                payloadToUpdate.noHp = newPhone;
+              }
+            }
+
+            await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), payloadToUpdate);
           } else if (task.permohonanId) {
              // Fallback for older tasks
              await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
