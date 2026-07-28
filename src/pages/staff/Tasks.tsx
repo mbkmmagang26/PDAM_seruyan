@@ -205,6 +205,11 @@ export default function StaffDashboard() {
               if (newPhone) {
                 payloadToUpdate.noHp = newPhone;
               }
+              const newGolongan = permData.jenisBangunan || permData.golongan;
+              if (newGolongan) {
+                payloadToUpdate.golongan = newGolongan;
+                payloadToUpdate.gol = newGolongan;
+              }
             }
 
             try {
