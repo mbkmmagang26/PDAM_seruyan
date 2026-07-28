@@ -17,7 +17,7 @@ export default function PiutangAR() {
   const { user } = useAuth();
   const [pelanggan, setPelanggan] = useState<any[]>([]);
   const [bills, setBills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Piutang Pelanggan');
   const [showFilter, setShowFilter] = useState(false);

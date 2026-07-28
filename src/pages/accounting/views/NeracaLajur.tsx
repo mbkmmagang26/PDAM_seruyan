@@ -7,7 +7,7 @@ import { Search, Loader2, Download, Table, RefreshCw, Calendar } from 'lucide-re
 export default function NeracaLajurView() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

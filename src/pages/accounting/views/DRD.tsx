@@ -10,7 +10,7 @@ import { sendNotification } from '../../../lib/notifications';
 export default function DRDView() {
   const { user } = useAuth();
   const [coa, setCoa] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [fileData, setFileData] = useState<any[]>([]);
   const [parsedSummary, setParsedSummary] = useState({
     totalAir: 0,

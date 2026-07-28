@@ -10,7 +10,7 @@ export default function BukuBesar() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCoa, setSelectedCoa] = useState<string>('');
   
   const [activeTab, setActiveTab] = useState('Daftar Akun (COA)');

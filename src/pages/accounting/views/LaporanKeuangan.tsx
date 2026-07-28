@@ -11,7 +11,7 @@ type ReportType = 'laba_rugi' | 'ekuitas' | 'neraca' | 'arus_kas' | 'rincian';
 export default function LaporanKeuangan() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [coa, setCoa] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportType>('laba_rugi');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

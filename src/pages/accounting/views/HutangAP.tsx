@@ -9,7 +9,7 @@ import { logActivity } from '../../../lib/logger';
 export default function HutangAP() {
   const { user } = useAuth();
   const [vendors, setVendors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Daftar Vendor');

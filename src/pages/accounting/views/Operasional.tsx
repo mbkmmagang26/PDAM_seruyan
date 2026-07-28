@@ -5,7 +5,7 @@ import { Grid, Loader2, Search, Filter, CheckCircle2, Clock, AlertCircle, Calend
 
 export default function Operasional() {
   const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeStatus, setActiveStatus] = useState('all');
 

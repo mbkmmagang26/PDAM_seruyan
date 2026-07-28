@@ -10,7 +10,7 @@ export default function RekonsiliasiView() {
   const { user } = useAuth();
   const [coa, setCoa] = useState<any[]>([]);
   const [lppList, setLppList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [physicalCashInput, setPhysicalCashInput] = useState<Record<string, string>>({});
   const [selectedLpp, setSelectedLpp] = useState<any>(null);
   

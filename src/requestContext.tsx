@@ -1,8 +1,8 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ConnectionRequest } from './types';
 import { useTasks } from './taskContext';
 import { db } from './firebase';
-import { collection, onSnapshot, doc, updateDoc, query, orderBy, addDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, query, orderBy, addDoc, setDoc, limit, getDocs } from 'firebase/firestore';
 import { useAuth } from './authContext';
 import { generateSearchTokens } from './lib/searchUtils';
 
@@ -51,13 +51,38 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
       const req = requests.find(r => r.id === id);
       if (!req) throw new Error("Permohonan tidak ditemukan");
 
-      // 1. Update status di Firestore (tb_permohonan)
+      // 1. Generate nomor meteran baru berdasarkan urutan (otomatisasi nomor meter)
+      const qMeter = query(collection(db, 'data_pelanggan_meteran'), orderBy('no_meter', 'desc'), limit(1));
+      const meterSnapshot = await getDocs(qMeter);
+      
+      let nextMeterNumber = 'MTR-0001';
+      if (!meterSnapshot.empty) {
+        const lastMeter = meterSnapshot.docs[0].data().no_meter;
+        if (lastMeter && lastMeter.startsWith('MTR-')) {
+           const lastNum = parseInt(lastMeter.split('-')[1]);
+           if (!isNaN(lastNum)) {
+              nextMeterNumber = `MTR-${String(lastNum + 1).padStart(4, '0')}`;
+           }
+        }
+      }
+
+      // 2. Update status permohonan dengan no meteran baru di Firestore
       await updateDoc(doc(db, 'permohonan_pasang_baru', id), {
-        status: 'approved'
+        status: 'approved',
+        no_meter_baru: nextMeterNumber
       });
 
-      // 2. Data Pelanggan sudah ada sejak Registrasi, tidak perlu buat dokumen yatim (orphan) baru.
-      // Akan diupdate oleh Staff saat pekerjaan selesai.      // 3. Create a new task automatically untuk Staff
+      // 3. Update Data Pelanggan dengan nomor meteran yang baru di-generate
+      if (req.userId) {
+          const userDocRef = doc(db, 'data_pelanggan_meteran', req.userId);
+          try {
+            await updateDoc(userDocRef, { no_meter: nextMeterNumber });
+          } catch (e) {
+            console.log("Customer document might not be ready, skipping meter update...", e);
+          }
+      }
+
+      // 4. Buat penugasan baru (Task) untuk Staff Lapangan beserta info Nomor Meter baru
       await createTask({
         title: `Penyambungan Baru: ${req.name}`, 
         location: req.address,
@@ -65,7 +90,7 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         priority: 'normal',
         type: 'new_connection',
         customerName: req.name,
-        reason: 'Pemasangan Baru Sesuai Permohonan',
+        reason: `Pemasangan Baru Sesuai Permohonan. Pasang meteran dengan Nomor Baru: ${nextMeterNumber}`,
         assignedTo: staffId,
         deadline: 'CYCLE',
         permohonanId: id,

@@ -5,7 +5,7 @@ import { MessageCircle, Loader2, Search, Filter, CheckCircle2, AlertCircle, Cloc
 
 export default function Pengaduan() {
   const [pengaduan, setPengaduan] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 

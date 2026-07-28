@@ -29,7 +29,7 @@ export default function DashboardUtama() {
     assetCategoriesCount: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState('2026');
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 

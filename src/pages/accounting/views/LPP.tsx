@@ -20,7 +20,7 @@ export default function LPPView() {
     totalRecords: 0
   });
   const [recentLpps, setRecentLpps] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);

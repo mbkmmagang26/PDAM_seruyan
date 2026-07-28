@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 
 export default function LogAktivitas() {
   const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('Semua');
 
