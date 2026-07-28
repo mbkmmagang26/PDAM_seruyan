@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency } from '../../../lib/utils';
@@ -150,13 +150,7 @@ export default function DRDView() {
           });
         }
 
-        // Heuristic fallback mock if parsing real file resulted in 0 to ensure demo works beautifully
-        if (totalAir === 0) {
-          totalAir = 245000000;
-          totalNonAir = 35000000;
-          totalDenda = 5500000;
-          totalRecords = 1250;
-        }
+        // Explicit zero if no matching columns/values were found
 
         setFileData(data);
         setParsedSummary(prev => ({

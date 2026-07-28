@@ -94,13 +94,7 @@ export default function LPPView() {
           }
         });
 
-        // Fallback mockup calculations if no actual columns were detected
-        if (totalAir === 0) {
-          totalAir = 15200000;
-          totalDenda = 450000;
-          totalNonAir = 250000;
-          totalRecords = 84;
-        }
+        // Explicit zero if no matching columns/values were found
 
         setParsedData({
           totalAir,
