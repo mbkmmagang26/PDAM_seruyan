@@ -936,15 +936,15 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-visible">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
                     <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      <th className="px-8 py-4">{t('admin.tasks.table.details')}</th>
+                      <th className="px-8 py-4 first:rounded-tl-[2.5rem]">{t('admin.tasks.table.details')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.reason')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.assignee')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.status')}</th>
-                      <th className="px-8 py-4 text-right">{t('admin.tasks.table.actions')}</th>
+                      <th className="px-8 py-4 text-right last:rounded-tr-[2.5rem]">{t('admin.tasks.table.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
