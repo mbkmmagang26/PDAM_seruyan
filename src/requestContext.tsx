@@ -101,7 +101,8 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         deadline: 'CYCLE',
         permohonanId: id,
         userId: req.userId || '',
-        meterNumber: nextMeterNumber
+        meterNumber: nextMeterNumber,
+        customerPhone: reqPhone
       });
 
     } catch (error: any) {

@@ -412,6 +412,7 @@ export default function AdminDashboard() {
         assignedTo: newTaskForm.assignedTo || undefined,
         deadline: 'CYCLE',
         customerName: newTaskForm.customerName || undefined,
+        customerPhone: newTaskForm.customerPhone || undefined,
         customerId: newTaskForm.customerId || undefined,
         permohonanId: finalPermohonanId || undefined
       });
@@ -531,7 +532,8 @@ export default function AdminDashboard() {
         assignedTo: selectedStaffForComplaint,
         deadline: 'URGENT',
         pengaduanId: processComplaintData.id,
-        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan'
+        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan',
+        customerPhone: processComplaintData.userPhone || processComplaintData.phone || undefined
       });
 
       await updateDoc(doc(db, 'pengaduan_layanan_pelanggan', processComplaintData.id), { status: 'Diproses' });
