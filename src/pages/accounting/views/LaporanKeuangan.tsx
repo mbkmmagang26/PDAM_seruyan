@@ -102,19 +102,10 @@ export default function LaporanKeuangan() {
           let debit = t.type === 'expense' ? (t.amount || 0) : 0;
           let kredit = t.type === 'income' ? (t.amount || 0) : 0;
           
-<<<<<<< HEAD
-          if (t.type === 'income') {
-             debit = t.amount || 0;
-          } else if (t.type === 'expense') {
-             kredit = t.amount || 0;
-          } else {
-             debit = t.amount || 0;
-=======
-          // Override khusus untuk data dari system-billing yang memiliki salah format debit/kredit di database
+          // Override khusus untuk data dari system-billing yang memiliki format berbeda di database
           if (t.authorId === 'system-billing') {
             debit = t.amount || 0; // Kas masuk (Debit)
             kredit = 0;
->>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
@@ -133,19 +124,10 @@ export default function LaporanKeuangan() {
           let cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
           let cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
 
-<<<<<<< HEAD
-          if (t.type === 'income') {
-             cKredit = t.contraEntry.amount || 0;
-          } else if (t.type === 'expense') {
-             cDebit = t.contraEntry.amount || 0;
-          } else {
-             cKredit = t.contraEntry.amount || 0;
-=======
           // Override khusus untuk data dari system-billing
           if (t.authorId === 'system-billing') {
             cDebit = 0;
             cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
->>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
