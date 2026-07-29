@@ -99,14 +99,13 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          let debit = 0;
-          let kredit = 0;
+          let debit = t.type === 'expense' ? (t.amount || 0) : 0;
+          let kredit = t.type === 'income' ? (t.amount || 0) : 0;
           
-          if (t.type === 'income') {
-             if (typeStr === 'ASSET') debit = t.amount || 0;
-             else kredit = t.amount || 0;
-          } else {
-             debit = t.amount || 0;
+          // Override khusus untuk data dari system-billing yang memiliki salah format debit/kredit di database
+          if (t.authorId === 'system-billing') {
+            debit = t.amount || 0; // Kas masuk (Debit)
+            kredit = 0;
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
@@ -122,15 +121,13 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (cCat.startsWith('1') ? 'ASSET' : cCat.startsWith('2') ? 'LIABILITY' : cCat.startsWith('3') ? 'EQUITY' : cCat.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const cIsAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          let cDebit = 0;
-          let cKredit = 0;
+          let cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
+          let cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
 
-          if (t.type === 'income') {
-             if (typeStr === 'ASSET') cKredit = t.contraEntry.amount || 0;
-             else cKredit = t.contraEntry.amount || 0;
-          } else {
-             if (typeStr === 'ASSET') cKredit = t.contraEntry.amount || 0;
-             else cKredit = t.contraEntry.amount || 0;
+          // Override khusus untuk data dari system-billing
+          if (t.authorId === 'system-billing') {
+            cDebit = 0;
+            cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
