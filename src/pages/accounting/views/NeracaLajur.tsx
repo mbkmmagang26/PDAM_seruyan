@@ -19,7 +19,13 @@ export default function NeracaLajurView() {
     // Listen to COA
     const qCoa = query(collection(db, 'coa'), orderBy('code', 'asc'));
     const unsubCoa = onSnapshot(qCoa, (snapshot) => {
-      setCoa(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const coaData = snapshot.docs.map(doc => {
+        const data = doc.data() as any;
+        const codeParts = (data.code || '').split('.');
+        const level = data.level ? Number(data.level) : (codeParts.length > 0 ? codeParts.length : 1);
+        return { id: doc.id, ...data, level };
+      });
+      setCoa(coaData);
     });
 
     // Listen to Transactions
@@ -115,7 +121,7 @@ export default function NeracaLajurView() {
     let totalNDebit = 0;
     let totalNKredit = 0;
 
-    const rows = coa.filter(c => c.level === 3).map(c => {
+    const rows = coa.filter(c => !c.isHeader && (c.level >= 3 || (c.code && (c.code.split('.').length >= 3 || c.code.split('-').length >= 3)) || !c.level)).map(c => {
       const code = c.code;
       const b = balances[code] || { nsDebit: 0, nsKredit: 0, adjDebit: 0, adjKredit: 0 };
       
