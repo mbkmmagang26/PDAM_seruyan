@@ -288,117 +288,95 @@ export default function NeracaLajurView() {
         </div>
       </div>
 
-      {/* Worksheet Table Container with Frozen Column Left and Scroll Right */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex">
-        
-        {/* Left Side: Frozen Columns (Code and Name) */}
-        <div className="border-r border-slate-200 shrink-0 bg-slate-50 dark:bg-slate-900/50/50 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
-          <table className="text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider h-[48px]">
-              <tr>
-                <th className="p-4 border-b border-slate-200">Kode</th>
-                <th className="p-4 border-b border-slate-200 w-52">Nama Akun</th>
+      {/* Unified Worksheet Table with Sticky Frozen Columns */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+        <table className="w-full text-sm whitespace-nowrap text-right border-collapse">
+          <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+            <tr className="border-b border-slate-200 text-center">
+              <th rowSpan={2} className="p-3.5 border-r border-slate-200 text-left sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 min-w-[100px]">
+                Kode
+              </th>
+              <th rowSpan={2} className="p-3.5 border-r border-slate-200 text-left sticky left-[100px] z-20 bg-slate-100 dark:bg-slate-700 min-w-[260px] shadow-[4px_0_6px_-2px_rgba(0,0,0,0.08)]">
+                Nama Akun
+              </th>
+              <th colSpan={2} className="p-2.5 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Neraca Saldo</th>
+              <th colSpan={2} className="p-2.5 border-r border-slate-200 bg-slate-100 dark:bg-slate-700">Penyesuaian</th>
+              <th colSpan={2} className="p-2.5 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Laba / Rugi</th>
+              <th colSpan={2} className="p-2.5 bg-slate-100 dark:bg-slate-700">Neraca</th>
+            </tr>
+            <tr className="border-b border-slate-200">
+              <th className="p-2.5 font-bold w-32 border-r border-slate-150">Debit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-200">Kredit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-150">Debit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-200">Kredit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-150">Debit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-200">Kredit</th>
+              <th className="p-2.5 font-bold w-32 border-r border-slate-150">Debit</th>
+              <th className="p-2.5 font-bold w-32">Kredit</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 font-medium">
+            {worksheetData.rows.filter(r => r.code.includes(searchTerm) || r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((r, idx) => (
+              <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="p-3 text-left font-bold text-slate-800 dark:text-white sticky left-0 z-10 bg-white dark:bg-slate-800 border-r border-slate-100">
+                  {r.code}
+                </td>
+                <td className="p-3 text-left text-slate-700 dark:text-slate-200 font-semibold sticky left-[100px] z-10 bg-white dark:bg-slate-800 border-r border-slate-200 max-w-[18rem] truncate shadow-[4px_0_6px_-2px_rgba(0,0,0,0.06)]" title={r.name}>
+                  {r.name}
+                </td>
+                <td className="p-3 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nsDebit > 0 ? formatCurrency(r.nsDebit) : '-'}</td>
+                <td className="p-3 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.nsKredit > 0 ? formatCurrency(r.nsKredit) : '-'}</td>
+                <td className="p-3 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.adjDebit > 0 ? formatCurrency(r.adjDebit) : '-'}</td>
+                <td className="p-3 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.adjKredit > 0 ? formatCurrency(r.adjKredit) : '-'}</td>
+                <td className="p-3 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.lrDebit > 0 ? formatCurrency(r.lrDebit) : '-'}</td>
+                <td className="p-3 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.lrKredit > 0 ? formatCurrency(r.lrKredit) : '-'}</td>
+                <td className="p-3 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nDebit > 0 ? formatCurrency(r.nDebit) : '-'}</td>
+                <td className="p-3 text-slate-600 dark:text-slate-300">{r.nKredit > 0 ? formatCurrency(r.nKredit) : '-'}</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {worksheetData.rows.filter(r => r.code.includes(searchTerm) || r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((r, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors h-[48px]">
-                  <td className="p-4 font-bold text-slate-800 dark:text-white">{r.code}</td>
-                  <td className="p-4 text-slate-700 dark:text-slate-200 max-w-[13rem] truncate font-semibold" title={r.name}>{r.name}</td>
-                </tr>
-              ))}
-              {/* Balancing/Net Income Label */}
-              <tr className="bg-slate-50 dark:bg-slate-900/50 font-black h-[48px] border-t border-slate-200">
-                <td className="p-4"></td>
-                <td className="p-4 text-blue-600">LABA/RUGI BERJALAN</td>
-              </tr>
-              {/* Totals Row */}
-              <tr className="bg-slate-100 dark:bg-slate-700 font-black h-[48px] border-t-2 border-slate-300">
-                <td className="p-4"></td>
-                <td className="p-4 text-slate-800 dark:text-white">TOTAL BALANCE</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            ))}
 
-        {/* Right Side: Scrollable Columns (Debit/Kredit sections) */}
-        <div className="overflow-x-auto flex-1 scrollbar-thin">
-          <table className="text-right text-sm whitespace-nowrap w-full">
-            <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
-              {/* Top Headers */}
-              <tr className="border-b border-slate-200 text-center">
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Neraca Saldo</th>
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-100 dark:bg-slate-700">Penyesuaian</th>
-                <th colSpan={2} className="p-2 border-r border-slate-200 bg-slate-50 dark:bg-slate-900/50">Laba / Rugi</th>
-                <th colSpan={2} className="p-2 bg-slate-100 dark:bg-slate-700">Neraca</th>
-              </tr>
-              {/* Sub Headers */}
-              <tr className="border-b border-slate-200">
-                <th className="p-2 font-bold w-32 border-r border-slate-150">Debit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-200">Kredit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-150">Debit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-200">Kredit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-150">Debit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-200">Kredit</th>
-                <th className="p-2 font-bold w-32 border-r border-slate-150">Debit</th>
-                <th className="p-2 font-bold w-32">Kredit</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {worksheetData.rows.filter(r => r.code.includes(searchTerm) || r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((r, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-colors h-[48px]">
-                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nsDebit > 0 ? formatCurrency(r.nsDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.nsKredit > 0 ? formatCurrency(r.nsKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.adjDebit > 0 ? formatCurrency(r.adjDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.adjKredit > 0 ? formatCurrency(r.adjKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.lrDebit > 0 ? formatCurrency(r.lrDebit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 dark:text-slate-300">{r.lrKredit > 0 ? formatCurrency(r.lrKredit) : '-'}</td>
-                  <td className="p-2 border-r border-slate-150 text-slate-600 dark:text-slate-300">{r.nDebit > 0 ? formatCurrency(r.nDebit) : '-'}</td>
-                  <td className="p-2 text-slate-600 dark:text-slate-300">{r.nKredit > 0 ? formatCurrency(r.nKredit) : '-'}</td>
-                </tr>
-              ))}
+            {/* Balancing net Income Row */}
+            <tr className="bg-slate-50 dark:bg-slate-900/50 font-black border-t border-slate-200">
+              <td className="p-3 text-left sticky left-0 z-10 bg-slate-50 dark:bg-slate-900/50 border-r border-slate-100"></td>
+              <td className="p-3 text-left text-blue-600 sticky left-[100px] z-10 bg-slate-50 dark:bg-slate-900/50 border-r border-slate-200 shadow-[4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                LABA/RUGI BERJALAN
+              </td>
+              <td className="p-3 border-r border-slate-150">-</td>
+              <td className="p-3 border-r border-slate-200">-</td>
+              <td className="p-3 border-r border-slate-150">-</td>
+              <td className="p-3 border-r border-slate-200">-</td>
+              <td className="p-3 border-r border-slate-150 text-blue-600">{worksheetData.balancing.lrBalancingDebit > 0 ? formatCurrency(worksheetData.balancing.lrBalancingDebit) : '-'}</td>
+              <td className="p-3 border-r border-slate-200 text-blue-600">{worksheetData.balancing.lrBalancingKredit > 0 ? formatCurrency(worksheetData.balancing.lrBalancingKredit) : '-'}</td>
+              <td className="p-3 border-r border-slate-150 text-blue-600">{worksheetData.balancing.nBalancingDebit > 0 ? formatCurrency(worksheetData.balancing.nBalancingDebit) : '-'}</td>
+              <td className="p-3 text-blue-600">{worksheetData.balancing.nBalancingKredit > 0 ? formatCurrency(worksheetData.balancing.nBalancingKredit) : '-'}</td>
+            </tr>
 
-              {/* Balancing net Income Row */}
-              <tr className="bg-slate-50 dark:bg-slate-900/50 font-black h-[48px] border-t border-slate-200">
-                {/* NS & Adjustments */}
-                <td className="p-2 border-r border-slate-150">-</td>
-                <td className="p-2 border-r border-slate-200">-</td>
-                <td className="p-2 border-r border-slate-150">-</td>
-                <td className="p-2 border-r border-slate-200">-</td>
-                {/* LR balancing */}
-                <td className="p-2 border-r border-slate-150 text-blue-600">{worksheetData.balancing.lrBalancingDebit > 0 ? formatCurrency(worksheetData.balancing.lrBalancingDebit) : '-'}</td>
-                <td className="p-2 border-r border-slate-200 text-blue-600">{worksheetData.balancing.lrBalancingKredit > 0 ? formatCurrency(worksheetData.balancing.lrBalancingKredit) : '-'}</td>
-                {/* Neraca balancing */}
-                <td className="p-2 border-r border-slate-150 text-blue-600">{worksheetData.balancing.nBalancingDebit > 0 ? formatCurrency(worksheetData.balancing.nBalancingDebit) : '-'}</td>
-                <td className="p-2 text-blue-600">{worksheetData.balancing.nBalancingKredit > 0 ? formatCurrency(worksheetData.balancing.nBalancingKredit) : '-'}</td>
-              </tr>
-
-              {/* Final Balance Row */}
-              <tr className="bg-slate-100 dark:bg-slate-700 font-black h-[48px] border-t-2 border-slate-300">
-                {/* NS Totals */}
-                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsDebit)}</td>
-                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsKredit)}</td>
-                {/* Adj Totals */}
-                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjDebit)}</td>
-                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjKredit)}</td>
-                {/* LR Totals + balancing */}
-                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">
-                  {formatCurrency(worksheetData.totals.lrDebit + worksheetData.balancing.lrBalancingDebit)}
-                </td>
-                <td className="p-2 border-r border-slate-200 text-slate-800 dark:text-white">
-                  {formatCurrency(worksheetData.totals.lrKredit + worksheetData.balancing.lrBalancingKredit)}
-                </td>
-                {/* Neraca Totals + balancing */}
-                <td className="p-2 border-r border-slate-150 text-slate-800 dark:text-white">
-                  {formatCurrency(worksheetData.totals.nDebit + worksheetData.balancing.nBalancingDebit)}
-                </td>
-                <td className="p-2 text-slate-800 dark:text-white">
-                  {formatCurrency(worksheetData.totals.nKredit + worksheetData.balancing.nBalancingKredit)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            {/* Final Totals Row */}
+            <tr className="bg-slate-100 dark:bg-slate-700 font-black border-t-2 border-slate-300">
+              <td className="p-3 text-left sticky left-0 z-10 bg-slate-100 dark:bg-slate-700 border-r border-slate-200"></td>
+              <td className="p-3 text-left text-slate-800 dark:text-white sticky left-[100px] z-10 bg-slate-100 dark:bg-slate-700 border-r border-slate-200 shadow-[4px_0_6px_-2px_rgba(0,0,0,0.06)]">
+                TOTAL BALANCE
+              </td>
+              <td className="p-3 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsDebit)}</td>
+              <td className="p-3 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.nsKredit)}</td>
+              <td className="p-3 border-r border-slate-150 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjDebit)}</td>
+              <td className="p-3 border-r border-slate-200 text-slate-800 dark:text-white">{formatCurrency(worksheetData.totals.adjKredit)}</td>
+              <td className="p-3 border-r border-slate-150 text-slate-800 dark:text-white">
+                {formatCurrency(worksheetData.totals.lrDebit + worksheetData.balancing.lrBalancingDebit)}
+              </td>
+              <td className="p-3 border-r border-slate-200 text-slate-800 dark:text-white">
+                {formatCurrency(worksheetData.totals.lrKredit + worksheetData.balancing.lrBalancingKredit)}
+              </td>
+              <td className="p-3 border-r border-slate-150 text-slate-800 dark:text-white">
+                {formatCurrency(worksheetData.totals.nDebit + worksheetData.balancing.nBalancingDebit)}
+              </td>
+              <td className="p-3 text-slate-800 dark:text-white">
+                {formatCurrency(worksheetData.totals.nKredit + worksheetData.balancing.nBalancingKredit)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       </div>
     </div>
