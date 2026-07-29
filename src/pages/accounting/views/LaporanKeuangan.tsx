@@ -87,13 +87,9 @@ export default function LaporanKeuangan() {
       return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
     });
 
-    const calculateBalances = (txList: any[], isForRevenue = false) => {
+    const calculateBalances = (txList: any[]) => {
       const balances: Record<string, number> = {};
       localCoa.forEach(c => { if (c.code) balances[c.code] = 0; });
-      
-      // Cari akun Pendapatan utama (kode 4.x) untuk mencatat billing revenue
-      const revenueAccCode = localCoa.find(c => c.code && c.code.startsWith('4') && c.level === 3)?.code ||
-                             localCoa.find(c => c.code && c.code.startsWith('4'))?.code;
       
       txList.forEach(t => {
         // Entri Utama (Debit/Kredit)
@@ -115,21 +111,17 @@ export default function LaporanKeuangan() {
              debit = t.amount || 0;
           }
 
+          // system-billing: Piutang (Aset) bertambah = Debit
           if (t.authorId === 'system-billing') {
             debit = t.amount || 0;
             kredit = 0;
-            
-            // Catat juga sebagai Pendapatan (Kredit akun Revenue) agar muncul di Laba Rugi
-            if (revenueAccCode) {
-              if (balances[revenueAccCode] === undefined) balances[revenueAccCode] = 0;
-              balances[revenueAccCode] += t.amount || 0; // Revenue bertambah
-            }
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
           else balances[t.category] += (kredit - debit);
         }
 
+        // Contra Entry (sisi lawannya)
         if (t.contraEntry && t.contraEntry.category) {
           const cCat = t.contraEntry.category;
           if (balances[cCat] === undefined) balances[cCat] = 0;
@@ -149,10 +141,10 @@ export default function LaporanKeuangan() {
              cKredit = t.contraEntry.amount || 0;
           }
 
-          // Override khusus untuk data dari system-billing
+          // system-billing: Pendapatan bertambah = Kredit pada contra entry
           if (t.authorId === 'system-billing') {
             cDebit = 0;
-            cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
+            cKredit = t.contraEntry.amount || 0;
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
@@ -164,6 +156,39 @@ export default function LaporanKeuangan() {
 
     const cumulativeBalances = calculateBalances(cumulativeTx);
     const periodBalances = calculateBalances(periodTx);
+
+    // REMAPPING: Jika kode billing (mis. 4.1.1, 4.1.2) tidak ada di COA tapi punya saldo,
+    // cari akun COA yang paling cocok berdasarkan nama dan gabungkan saldonya ke sana.
+    // Ini mencegah double-entry dan memastikan semua pendapatan masuk ke akun COA yang sudah ada.
+    const remapOrphanBalance = (orphanCode: string, balancesObj: Record<string, number>) => {
+      const bal = balancesObj[orphanCode] || 0;
+      if (Math.abs(bal) < 0.01) return; // tidak ada saldo, skip
+      if (localCoa.find(c => c.code === orphanCode)) return; // sudah ada di COA, biarkan
+      
+      // Tentukan tipe akun dari kode
+      const orphanType = orphanCode.startsWith('1') ? 'ASSET' : orphanCode.startsWith('2') ? 'LIABILITY' : orphanCode.startsWith('3') ? 'EQUITY' : orphanCode.startsWith('4') ? 'REVENUE' : 'EXPENSE';
+      
+      // Cari akun COA dengan tipe yang sama dan nama paling mirip
+      const candidates = localCoa.filter(c => {
+        const t = c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
+        return t === orphanType && c.level === 3;
+      });
+      
+      if (candidates.length > 0) {
+        // Merge ke akun COA pertama yang tipenya cocok (level 3 = akun detail)
+        const target = candidates[0];
+        balancesObj[target.code] = (balancesObj[target.code] || 0) + bal;
+        delete balancesObj[orphanCode]; // hapus entri duplikat
+      }
+      // Jika tidak ada kandidat, biarkan saja (akan dibuat baris baru)
+    };
+
+    // Daftar kode yang dihasilkan sistem billing — akan di-remap ke COA existing
+    const billingOrphanCodes = ['4.1.1', '4.1.2', '1.1.1.01'];
+    billingOrphanCodes.forEach(code => {
+      remapOrphanBalance(code, cumulativeBalances);
+      remapOrphanBalance(code, periodBalances);
+    });
 
     // 1. Sync Master Data for Integration (Neraca)
     let totalInjectedAssets = 0;
