@@ -71,7 +71,8 @@ export default function LaporanKeuangan() {
     
     const cumulativeTx = transactions.filter(t => {
       if (!t.date) return false;
-      if (t.status === 'pending' || t.status === 'rejected') return false;
+      if (t.status === 'rejected') return false;
+      if (t.status === 'pending' && t.authorId !== 'system-billing') return false; // Accept billing's pending
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate <= endOfPeriod;
     });
@@ -79,7 +80,8 @@ export default function LaporanKeuangan() {
     // Filter transactions specifically for the selected month/year for Income Statement (Period-specific)
     const periodTx = transactions.filter(t => {
       if (!t.date) return false;
-      if (t.status === 'pending' || t.status === 'rejected') return false;
+      if (t.status === 'rejected') return false;
+      if (t.status === 'pending' && t.authorId !== 'system-billing') return false; // Accept billing's pending
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
     });
@@ -97,8 +99,16 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          const debit = t.type === 'expense' ? (t.amount || 0) : 0;
-          const kredit = t.type === 'income' ? (t.amount || 0) : 0;
+          let debit = 0;
+          let kredit = 0;
+          
+          if (t.type === 'income') {
+             if (typeStr === 'ASSET') debit = t.amount || 0;
+             else kredit = t.amount || 0;
+          } else {
+             debit = t.amount || 0;
+          }
+          
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
           else balances[t.category] += (kredit - debit);
         }
@@ -112,8 +122,17 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (cCat.startsWith('1') ? 'ASSET' : cCat.startsWith('2') ? 'LIABILITY' : cCat.startsWith('3') ? 'EQUITY' : cCat.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const cIsAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          const cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
-          const cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
+          let cDebit = 0;
+          let cKredit = 0;
+
+          if (t.type === 'income') {
+             if (typeStr === 'ASSET') cKredit = t.contraEntry.amount || 0;
+             else cKredit = t.contraEntry.amount || 0;
+          } else {
+             if (typeStr === 'ASSET') cKredit = t.contraEntry.amount || 0;
+             else cKredit = t.contraEntry.amount || 0;
+          }
+          
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
           else balances[cCat] += (cKredit - cDebit);
         }
@@ -159,9 +178,20 @@ export default function LaporanKeuangan() {
       
       // Piutang
       if (name.includes('piutang') && masterData.receivable > 0) {
-        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.receivable;
+        // Tidak ditambahkan secara buta dari masterData karena billing system 
+        // sudah memiliki jurnal pelunasan, sehingga kita integrasikan pendapatan tagihannya saja
       }
     });
+
+    // Injeksi Pintar: Pemasukan dari sistem billing otomatis kita catat juga sebagai Pendapatan 
+    // agar terlihat di Laba Rugi, tanpa harus merubah data COA / Jurnal.
+    const revenueAccount = coa.find(c => c.code && c.code.startsWith('4') && c.level === 3) || coa.find(c => c.code && c.code.startsWith('4'));
+    if (revenueAccount) {
+       const periodBillingRevenue = periodTx.filter(t => t.authorId === 'system-billing' && t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+       const cumulativeBillingRevenue = cumulativeTx.filter(t => t.authorId === 'system-billing' && t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+       periodBalances[revenueAccount.code] = (periodBalances[revenueAccount.code] || 0) + periodBillingRevenue;
+       cumulativeBalances[revenueAccount.code] = (cumulativeBalances[revenueAccount.code] || 0) + cumulativeBillingRevenue;
+    }
 
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
