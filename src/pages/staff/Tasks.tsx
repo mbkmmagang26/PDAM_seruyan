@@ -66,10 +66,30 @@ export default function StaffDashboard() {
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
 
+  const [clickedNotifIds, setClickedNotifIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('clicked_staff_notifs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Filter tugas khusus untuk staff yang sedang login
   const myTasks = tasks.filter(t => t.assignedTo === user?.id);
   
-  const unreadTasks = myTasks.filter(t => t.status === 'assigned' || t.status === 'pending');
+  const unreadTasks = myTasks.filter(t => (t.status === 'assigned' || t.status === 'pending') && !clickedNotifIds.includes(t.id));
+
+  const handleNotifClick = (t: any) => {
+    if (t.id) {
+      const updated = [...clickedNotifIds, t.id];
+      setClickedNotifIds(updated);
+      localStorage.setItem('clicked_staff_notifs', JSON.stringify(updated));
+    }
+    const targetTab = (t.type === 'installation' || t.type === 'new_connection') ? 'new_connection' : t.type as Tab;
+    setActiveTab(targetTab); 
+    setIsNotifOpen(false);
+  };
 
   const searchResults = () => {
     if (!globalSearchQuery) return [];
@@ -296,11 +316,7 @@ export default function StaffDashboard() {
                       unreadTasks.map(t => (
                         <button
                           key={t.id}
-                          onClick={() => { 
-                            const targetTab = (t.type === 'installation' || t.type === 'new_connection') ? 'new_connection' : t.type as Tab;
-                            setActiveTab(targetTab); 
-                            setIsNotifOpen(false); 
-                          }}
+                          onClick={() => handleNotifClick(t)}
                           className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 border-b border-slate-50 dark:border-slate-700/50 transition-colors"
                         >
                           <p className="text-xs font-bold text-slate-800 dark:text-white">Perintah Kerja</p>

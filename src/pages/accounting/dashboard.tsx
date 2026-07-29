@@ -328,16 +328,16 @@ export default function AccountingDashboard() {
                       <span className="text-[10px] text-blue-600 font-bold">{unreadCount} Baru</span>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {notifications.filter(n => !n.read).length === 0 ? (
                         <div className="p-8 text-center text-slate-400 dark:text-slate-500">
                           <p className="text-[10px] font-bold uppercase tracking-widest">Tidak ada notifikasi</p>
                         </div>
                       ) : (
-                        notifications.map(n => (
+                        notifications.filter(n => !n.read).map(n => (
                           <button 
                             key={n.id} 
                             onClick={() => handleNotifClick(n)} 
-                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0 ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
+                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0 bg-blue-50/30 dark:bg-blue-900/10`}
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{n.title}</p>
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
