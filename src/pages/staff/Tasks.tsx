@@ -27,7 +27,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import ThemeToggle from '../../components/ThemeToggle';
-import { doc, updateDoc, arrayUnion, getDoc, getDocs, query, collection, orderBy, limit } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, getDoc, getDocs, collection } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -168,26 +168,26 @@ export default function StaffDashboard() {
           if (task.meterNumber) {
             updates.meterNumber = task.meterNumber;
           } else {
-            // Query nomor meter terakhir untuk generate berikutnya secara urut
-            const qMeter = query(
-              collection(db, 'data_pelanggan_meteran'),
-              orderBy('no_meter', 'desc'),
-              limit(1)
-            );
-            const meterSnapshot = await getDocs(qMeter);
-            let nextMeterNumber = 'MTR-0001';
-            if (!meterSnapshot.empty) {
-              const lastMeter = meterSnapshot.docs[0].data().no_meter;
-              if (lastMeter && lastMeter.startsWith('MTR-')) {
-                const lastNum = parseInt(lastMeter.split('-')[1]);
-                if (!isNaN(lastNum)) {
-                  nextMeterNumber = `MTR-${String(lastNum + 1).padStart(4, '0')}`;
+            // Ambil semua dokumen lalu cari nomor MTR terbesar secara lokal
+            // (tidak pakai orderBy agar tidak perlu Firestore Index)
+            try {
+              const allDocsSnap = await getDocs(collection(db, 'data_pelanggan_meteran'));
+              let maxNum = 0;
+              allDocsSnap.forEach(docSnap => {
+                const nm = docSnap.data().no_meter;
+                if (nm && nm.startsWith('MTR-')) {
+                  const num = parseInt(nm.split('-')[1]);
+                  if (!isNaN(num) && num > maxNum) maxNum = num;
                 }
-              }
+              });
+              updates.meterNumber = `MTR-${String(maxNum + 1).padStart(4, '0')}`;
+            } catch (_) {
+              // Fallback aman jika gagal query
+              updates.meterNumber = `MTR-${String(Date.now()).slice(-4)}`;
             }
-            updates.meterNumber = nextMeterNumber;
           }
         }
+
 
         // Update status perintah kerja jadi selesai
         const taskRef = doc(db, 'tugas_perbaikan_staf', task.id);
