@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, deleteDoc, doc, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calendar, LayoutDashboard, X, Trash2, FileText, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -89,8 +89,8 @@ export default function PiutangAR() {
         Tagihan: p.tagihanTunggakan || p.balance || 0,
         Status: (p.tagihanTunggakan || p.balance || 0) > 0 ? 'Menunggak' : 'Lunas'
       }));
-      exportToCSV(data, 'Laporan_Piutang_Pelanggan');
-      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Piutang Pelanggan ke CSV');
+      exportToPDF(data, 'Laporan_Piutang_Pelanggan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Piutang Pelanggan ke PDF');
     } else if (activeTab === 'Riwayat Tagihan') {
       const data = bills.map(b => ({
         Tanggal: new Date(b.createdAt).toLocaleDateString('id-ID'),
@@ -100,8 +100,8 @@ export default function PiutangAR() {
         Nominal: b.totalTagihan || b.amount || 0,
         Status: b.status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'
       }));
-      exportToCSV(data, 'Laporan_Riwayat_Tagihan');
-      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Riwayat Tagihan ke CSV');
+      exportToPDF(data, 'Laporan_Riwayat_Tagihan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Riwayat Tagihan ke PDF');
     }
   };
 
@@ -149,8 +149,8 @@ export default function PiutangAR() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center shrink-0">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
+          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <UserCheck size={28} />
           </div>
           <div>

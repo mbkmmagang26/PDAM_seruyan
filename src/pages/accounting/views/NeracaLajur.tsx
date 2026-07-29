@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Search, Loader2, Download, Table, RefreshCw, Calendar } from 'lucide-react';
 
 export default function NeracaLajurView() {
@@ -203,7 +203,7 @@ export default function NeracaLajurView() {
       'Neraca Debit': r.nDebit,
       'Neraca Kredit': r.nKredit
     }));
-    exportToCSV(dataToExport, `Neraca_Lajur_${months[selectedMonth]}_${selectedYear}`);
+    exportToPDF(dataToExport, `Neraca_Lajur_${months[selectedMonth]}_${selectedYear}`);
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Menyiapkan Neraca Lajur...</div>;

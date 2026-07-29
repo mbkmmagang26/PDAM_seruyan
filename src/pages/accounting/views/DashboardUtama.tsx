@@ -7,7 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Wallet, LayoutGrid, Clock,
   Layers, MessageCircle
 } from 'lucide-react';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useAuth } from '../../../authContext';
 import { Download } from 'lucide-react';
@@ -141,7 +141,7 @@ export default function DashboardUtama() {
   }, [selectedYear]);
 
   const handleExportChart = () => {
-    exportToCSV(chartData, 'Analisis_Keuangan_Bulanan');
+    exportToPDF(chartData, 'Analisis_Keuangan_Bulanan');
   };
 
   if (loading) {

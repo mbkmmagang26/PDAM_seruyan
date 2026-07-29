@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Package, Loader2, Plus, X, Search, Filter, Download, AlertTriangle, ArrowRightLeft, Layers, LayoutDashboard, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 
@@ -79,7 +79,7 @@ export default function Persediaan() {
       Harga: i.price,
       Total_Nilai: (i.stock || 0) * (i.price || 0)
     }));
-    exportToCSV(data, 'Laporan_Persediaan');
+    exportToPDF(data, 'Laporan_Persediaan');
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Inventaris...</div>;
@@ -126,7 +126,7 @@ export default function Persediaan() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
           <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <Layers size={28} />
           </div>

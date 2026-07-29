@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Target, Loader2, Plus, Search, Filter, Download, ArrowUpRight, BarChart3, X, Calculator, Calendar, Trash2 } from 'lucide-react';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { useAuth } from '../../../authContext';
 
 export default function Anggaran() {
@@ -164,7 +164,7 @@ export default function Anggaran() {
                   Realisasi: b.realized,
                   Persen: b.amount > 0 ? Math.round((b.realized / b.amount) * 100) : 0
                 }));
-                exportToCSV(data, `RKAP_${selectedYear}`);
+                exportToPDF(data, `RKAP_${selectedYear}`);
               }}
               className="bg-white dark:bg-slate-800 border border-slate-200 text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 transition-all flex items-center gap-2 shadow-sm text-sm"
             >

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Wallet, Loader2, Plus, X, Search, Filter, Download, UserPlus, History, LayoutDashboard, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -84,8 +84,8 @@ export default function HutangAP() {
       Saldo_Hutang: v.balance || 0,
       Status: (v.balance || 0) > 0 ? 'Hutang Aktif' : 'Lunas'
     }));
-    exportToCSV(data, 'Laporan_Hutang_Vendor');
-    logActivity(user, 'Export Hutang Vendor', 'Mengekspor laporan hutang vendor ke CSV');
+    exportToPDF(data, 'Laporan_Hutang_Vendor');
+    logActivity(user, 'Export Hutang Vendor', 'Mengekspor laporan hutang vendor ke PDF');
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Hutang...</div>;
@@ -132,8 +132,8 @@ export default function HutangAP() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center shrink-0">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
+          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <LayoutDashboard size={28} />
           </div>
           <div>

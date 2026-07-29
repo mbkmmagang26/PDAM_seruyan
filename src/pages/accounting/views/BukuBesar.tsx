@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Book, Loader2, Filter, Search, Plus, Download, X, Layers, Calendar, Trash2, Pencil } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -153,8 +153,8 @@ export default function BukuBesar() {
       Tipe: c.type,
       Level: c.level
     }));
-    exportToCSV(data, 'Daftar_COA');
-    logActivity(user, 'Export COA', 'Mengekspor daftar akun COA ke CSV');
+    exportToPDF(data, 'Daftar_COA');
+    logActivity(user, 'Export COA', 'Mengekspor daftar akun COA ke PDF');
   };
 
   const handleExportLedger = () => {
@@ -166,7 +166,7 @@ export default function BukuBesar() {
       Kredit: t.kredit,
       Saldo: t.balance
     }));
-    exportToCSV(data, `Buku_Besar_${selectedCoa}`);
+    exportToPDF(data, `Buku_Besar_${selectedCoa}`);
     logActivity(user, 'Export Buku Besar', `Mengekspor laporan buku besar untuk akun: ${selectedCoa}`);
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { HardDrive, Loader2, Plus, X, Search, Filter, Download, Activity, PieChart, LayoutDashboard, Briefcase, Calculator, Trash2, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../../../authContext';
@@ -145,7 +145,7 @@ export default function AsetTetap() {
       Nilai_Buku: a.bookValue || a.acquisitionCost,
       Kondisi: a.condition
     }));
-    exportToCSV(data, 'Daftar_Aset_Tetap');
+    exportToPDF(data, 'Daftar_Aset_Tetap');
   };
 
   const handleImportXLS = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +240,7 @@ export default function AsetTetap() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-5 lg:p-6 rounded-3xl shadow-sm flex flex-col gap-4 text-white overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-5 lg:p-6 rounded-3xl shadow-sm flex flex-col gap-4 text-white overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
               <Activity className="w-5 h-5 lg:w-6 lg:h-6" />
