@@ -27,6 +27,7 @@ import NeracaLajurView from './views/NeracaLajur';
 import LogAktivitas from './views/LogAktivitas';
 import ImportDataView from './views/ImportData';
 import Pengaduan from './views/Pengaduan';
+import Operasional from './views/Operasional';
 
 export type ModuleView = 
   | 'dashboard_utama'
@@ -181,6 +182,8 @@ export default function AccountingDashboard() {
       { id: 'anggaran', label: 'Anggaran', icon: PieChart },
       { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
       { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
+      { id: 'operasional', label: 'Operasional', icon: CheckSquare },
+      { id: 'pengaduan_layanan_pelanggan', label: 'Pengaduan', icon: MessageCircle },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
     ] as MenuItem[] : []),
     ...(isDirektur ? [
@@ -205,6 +208,7 @@ export default function AccountingDashboard() {
       case 'verifikasi_data': return <VerifikasiData />;
       case 'log_aktivitas': return <LogAktivitas />;
       case 'pengaduan_layanan_pelanggan': return <Pengaduan />;
+      case 'operasional': return <Operasional />;
       default: return <DashboardUtama />;
     }
   };
