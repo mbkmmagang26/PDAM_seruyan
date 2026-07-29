@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
 import { HardDrive, Loader2, Plus, X, Search, Filter, Download, Activity, PieChart, LayoutDashboard, Briefcase, Calculator, Trash2, Upload } from 'lucide-react';
@@ -17,6 +17,16 @@ export default function AsetTetap() {
   const [filterCategory, setFilterCategory] = useState('Semua');
   const tabs = ["Daftar Aset", "Penyusutan", "Mutasi Aset"];
 
+  const [mutations, setMutations] = useState<any[]>([]);
+  const [showMutasiForm, setShowMutasiForm] = useState(false);
+  const [mutasiForm, setMutasiForm] = useState({
+    assetId: '',
+    type: 'Penjualan',
+    date: new Date().toISOString().split('T')[0],
+    value: 0,
+    notes: ''
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     category: 'Peralatan & Mesin',
@@ -30,11 +40,14 @@ export default function AsetTetap() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
-    const unsub = onSnapshot(query(collection(db, 'inventaris_aset_tetap')), (snapshot) => {
+    const unsubAssets = onSnapshot(query(collection(db, 'inventaris_aset_tetap')), (snapshot) => {
       setAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     });
-    return () => { clearTimeout(timer); unsub(); };
+    const unsubMutations = onSnapshot(query(collection(db, 'tb_mutasi_aset')), (snapshot) => {
+      setMutations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => { clearTimeout(timer); unsubAssets(); unsubMutations(); };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +76,45 @@ export default function AsetTetap() {
       });
     } catch (err: any) {
       alert('Gagal menambah aset: ' + err.message);
+    }
+  };
+
+  const handleMutasiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mutasiForm.assetId) {
+      alert('Pilih aset terlebih dahulu');
+      return;
+    }
+    
+    try {
+      const asset = assets.find(a => a.id === mutasiForm.assetId);
+      
+      await addDoc(collection(db, 'tb_mutasi_aset'), {
+        ...mutasiForm,
+        assetName: asset?.name || 'Unknown Aset',
+        value: Number(mutasiForm.value),
+        createdAt: serverTimestamp(),
+        authorId: user?.id || 'system',
+        authorName: user?.name || 'Unknown'
+      });
+
+      // Update asset status based on mutation type
+      if (mutasiForm.type === 'Penghapusan' || mutasiForm.type === 'Penjualan' || mutasiForm.type === 'Rusak Berat') {
+        const assetRef = doc(db, 'inventaris_aset_tetap', mutasiForm.assetId);
+        await updateDoc(assetRef, { condition: mutasiForm.type === 'Rusak Berat' ? 'rusak_berat' : 'dihapus' });
+      }
+
+      setShowMutasiForm(false);
+      setMutasiForm({
+        assetId: '',
+        type: 'Penjualan',
+        date: new Date().toISOString().split('T')[0],
+        value: 0,
+        notes: ''
+      });
+      alert('Mutasi aset berhasil dicatat!');
+    } catch (err: any) {
+      alert('Gagal mencatat mutasi: ' + err.message);
     }
   };
 
@@ -220,7 +272,7 @@ export default function AsetTetap() {
         ))}
       </div>
 
-      {activeTab === 'Daftar Aset' ? (
+      {activeTab === 'Daftar Aset' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="relative w-full max-w-md">
@@ -316,6 +368,7 @@ export default function AsetTetap() {
             </div>
           </div>
         </div>
+      )}
       {activeTab === 'Penyusutan' && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -333,7 +386,7 @@ export default function AsetTetap() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan').map(a => {
+                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan' && a.condition !== 'dihapus').map(a => {
                     const currentYear = new Date().getFullYear();
                     const acqYear = new Date(a.acquisitionDate).getFullYear();
                     const yearsUsed = Math.min(Math.max(0, currentYear - acqYear), a.usefulLife || 0);
@@ -359,7 +412,7 @@ export default function AsetTetap() {
                       </tr>
                     );
                   })}
-                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan').length === 0 && (
+                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan' && a.condition !== 'dihapus').length === 0 && (
                      <tr><td colSpan={7} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Tidak ada data aset yang disusutkan.</td></tr>
                   )}
                 </tbody>
@@ -377,16 +430,154 @@ export default function AsetTetap() {
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white">Riwayat Mutasi Aset</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Catatan perpindahan, penjualan, atau penghapusan aset tetap.</p>
               </div>
-              <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <button onClick={() => setShowMutasiForm(true)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <Plus size={16} /> Catat Mutasi
               </button>
             </div>
-            <div className="p-16 text-center flex flex-col items-center">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4 shadow-inner">
-                <Activity size={32} />
+            
+            {mutations.length === 0 ? (
+              <div className="p-16 text-center flex flex-col items-center">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4 shadow-inner">
+                  <Activity size={32} />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">Belum ada riwayat mutasi aset yang tercatat.</p>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Belum ada riwayat mutasi aset yang tercatat.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                      <th className="p-4 uppercase tracking-wider text-xs">Tanggal</th>
+                      <th className="p-4 uppercase tracking-wider text-xs">Aset</th>
+                      <th className="p-4 uppercase tracking-wider text-xs">Jenis Mutasi</th>
+                      <th className="p-4 uppercase tracking-wider text-xs text-right">Nilai (Rp)</th>
+                      <th className="p-4 uppercase tracking-wider text-xs">Keterangan</th>
+                      <th className="p-4 uppercase tracking-wider text-xs text-right">Oleh</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    {mutations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(m => (
+                      <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td className="p-4 text-slate-600 dark:text-slate-300 font-medium">{m.date}</td>
+                        <td className="p-4 font-bold text-slate-800 dark:text-white">{m.assetName}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${
+                            m.type === 'Penjualan' ? 'bg-emerald-100 text-emerald-700' :
+                            m.type === 'Penghapusan' ? 'bg-rose-100 text-rose-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {m.type}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right font-medium text-slate-700 dark:text-slate-300">{formatCurrency(m.value)}</td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate" title={m.notes}>{m.notes || '-'}</td>
+                        <td className="p-4 text-right text-xs text-slate-400">{m.authorName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mutasi Modal Form */}
+      {showMutasiForm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white">Catat Mutasi Aset</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Rekam aktivitas penjualan, perpindahan, atau penghapusan.</p>
+              </div>
+              <button onClick={() => setShowMutasiForm(false)} className="text-slate-400 hover:bg-white dark:bg-slate-800 hover:text-rose-500 p-2 rounded-full transition-all shadow-sm border border-slate-100 dark:border-slate-700">
+                <X size={20}/>
+              </button>
             </div>
+            
+            <form onSubmit={handleMutasiSubmit} className="p-6 space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pilih Aset</label>
+                <select 
+                  required
+                  value={mutasiForm.assetId} 
+                  onChange={e => setMutasiForm({...mutasiForm, assetId: e.target.value})} 
+                  className="w-full p-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
+                >
+                  <option value="">-- Pilih Aset Tetap --</option>
+                  {assets.filter(a => a.condition !== 'dihapus').map(a => (
+                    <option key={a.id} value={a.id}>{a.name} (Buku: {formatCurrency(a.bookValue || a.acquisitionCost || 0)})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jenis Mutasi</label>
+                  <select 
+                    value={mutasiForm.type} 
+                    onChange={e => setMutasiForm({...mutasiForm, type: e.target.value})} 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
+                  >
+                    <option value="Penjualan">Penjualan</option>
+                    <option value="Penghapusan">Penghapusan (Afkir)</option>
+                    <option value="Perpindahan Lokasi">Perpindahan Lokasi</option>
+                    <option value="Rusak Berat">Rusak Berat</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={mutasiForm.date} 
+                    onChange={e => setMutasiForm({...mutasiForm, date: e.target.value})} 
+                    className="w-full p-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nilai Mutasi / Harga Jual (Opsional)</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  placeholder="0"
+                  value={mutasiForm.value} 
+                  onChange={e => setMutasiForm({...mutasiForm, value: Number(e.target.value)})} 
+                  className="w-full p-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Keterangan / Alasan</label>
+                <textarea 
+                  required
+                  placeholder="Misal: Dijual karena peremajaan aset..."
+                  value={mutasiForm.notes} 
+                  onChange={e => setMutasiForm({...mutasiForm, notes: e.target.value})} 
+                  className="w-full p-3 rounded-xl border-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowMutasiForm(false)}
+                  className="flex-1 px-6 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-[2] bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-2 text-sm"
+                >
+                  Simpan Mutasi
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
