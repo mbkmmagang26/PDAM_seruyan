@@ -304,8 +304,9 @@ export const processPayment = async (billId: string, customerId: string, amount:
           amount: amount
         }
       });
-    } catch (journalErr) {
+    } catch (journalErr: any) {
       console.error('Gagal mencatatkan ayat jurnal otomatis:', journalErr);
+      throw new Error('Pembayaran berhasil, tapi gagal mencatat ke Jurnal Akuntansi: ' + journalErr.message);
     }
 
     return { success: true, message: 'Pembayaran berhasil dikonfirmasi dan dicatat ke keuangan.' };
