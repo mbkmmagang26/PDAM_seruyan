@@ -732,14 +732,23 @@ export default function AdminDashboard() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {userFilter === 'customer' ? (
-                customers.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
-                      Tidak ada data pelanggan yang ditemukan
-                    </td>
-                  </tr>
-                ) : (
-                  customers.map((c: any) => (
+                (() => {
+                  const combinedCustomers = [
+                    ...pendingRegistrations,
+                    ...customers.filter(c => !pendingRegistrations.some(pr => pr.id === c.id))
+                  ];
+                  
+                  if (combinedCustomers.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                          Tidak ada data pelanggan yang ditemukan
+                        </td>
+                      </tr>
+                    );
+                  }
+                  
+                  return combinedCustomers.map((c: any) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
@@ -810,8 +819,8 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )
+                  ));
+                })()
               ) : (
                 allUsers.filter((u: User) => u.role === userFilter).length === 0 ? (
                   <tr>
