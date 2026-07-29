@@ -99,29 +99,26 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          let debit = t.type === 'expense' ? (t.amount || 0) : 0;
-          let kredit = t.type === 'income' ? (t.amount || 0) : 0;
-          
-<<<<<<< HEAD
+          let debit = 0;
+          let kredit = 0;
+
           if (t.type === 'income') {
              debit = t.amount || 0;
           } else if (t.type === 'expense') {
              kredit = t.amount || 0;
           } else {
              debit = t.amount || 0;
-=======
-          // Override khusus untuk data dari system-billing yang memiliki salah format debit/kredit di database
+          }
+
           if (t.authorId === 'system-billing') {
-            debit = t.amount || 0; // Kas masuk (Debit)
+            debit = t.amount || 0;
             kredit = 0;
->>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
           else balances[t.category] += (kredit - debit);
         }
 
-        // Entri Pasangan (Double-Entry Fix)
         if (t.contraEntry && t.contraEntry.category) {
           const cCat = t.contraEntry.category;
           if (balances[cCat] === undefined) balances[cCat] = 0;
@@ -130,22 +127,20 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (cCat.startsWith('1') ? 'ASSET' : cCat.startsWith('2') ? 'LIABILITY' : cCat.startsWith('3') ? 'EQUITY' : cCat.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const cIsAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          let cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
-          let cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
+          let cDebit = 0;
+          let cKredit = 0;
 
-<<<<<<< HEAD
           if (t.type === 'income') {
              cKredit = t.contraEntry.amount || 0;
           } else if (t.type === 'expense') {
              cDebit = t.contraEntry.amount || 0;
           } else {
              cKredit = t.contraEntry.amount || 0;
-=======
-          // Override khusus untuk data dari system-billing
+          }
+
           if (t.authorId === 'system-billing') {
             cDebit = 0;
-            cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
->>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
+            cKredit = t.contraEntry.amount || 0;
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
@@ -157,6 +152,70 @@ export default function LaporanKeuangan() {
 
     const cumulativeBalances = calculateBalances(cumulativeTx);
     const periodBalances = calculateBalances(periodTx);
+
+    // Injeksi akun yang tidak ada di master COA tapi memiliki saldo (Manual Journal Entries)
+    Object.keys(cumulativeBalances).forEach(code => {
+      if (!coa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
+        coa.push({
+          id: code,
+          code: code,
+          name: 'Akun ' + code + ' (Tidak Terdaftar)',
+          type: code.startsWith('1') ? 'ASSET' : code.startsWith('2') ? 'LIABILITY' : code.startsWith('3') ? 'EQUITY' : code.startsWith('4') ? 'REVENUE' : 'EXPENSE',
+          level: code.split('.').length > 2 ? 3 : 2
+        });
+      }
+    });
+
+    // Sync Master Data for Integration (Neraca)
+    let totalInjectedAssets = 0;
+    let totalInjectedLiabilities = 0;
+
+    coa.forEach(c => {
+      const name = (c.name || '').toLowerCase();
+      const code = (c.code || '');
+      
+      // Persediaan
+      if (name.includes('persediaan') && masterData.inventory > 0) {
+        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.inventory;
+        totalInjectedAssets += masterData.inventory;
+      }
+      
+      // Aset Tetap Mapping
+      if (code.startsWith('1.3')) {
+        let injected = 0;
+        if (name.includes('tanah') && masterData.assetsByCat['Tanah']) {
+          injected = masterData.assetsByCat['Tanah'];
+        } else if ((name.includes('bangunan') || name.includes('instalasi')) && masterData.assetsByCat['Bangunan Air / Instalasi']) {
+          injected = masterData.assetsByCat['Bangunan Air / Instalasi'];
+        } else if ((name.includes('peralatan') || name.includes('mesin')) && masterData.assetsByCat['Peralatan & Mesin']) {
+          injected = masterData.assetsByCat['Peralatan & Mesin'];
+        } else if (name.includes('aset tetap') && !name.includes('akumulasi')) {
+           const mappedTotal = (masterData.assetsByCat['Tanah'] || 0) + (masterData.assetsByCat['Bangunan Air / Instalasi'] || 0) + (masterData.assetsByCat['Peralatan & Mesin'] || 0);
+           if (masterData.assets - mappedTotal > 0) {
+             injected = (masterData.assets - mappedTotal);
+           }
+        }
+        if (injected > 0) {
+          cumulativeBalances[code] = (cumulativeBalances[code] || 0) + injected;
+          totalInjectedAssets += injected;
+        }
+      }
+
+      // Hutang
+      if ((name.includes('hutang') || name.includes('utang')) && masterData.debt > 0) {
+        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.debt;
+        totalInjectedLiabilities += masterData.debt;
+      }
+    });
+
+    // Menyeimbangkan Neraca akibat injeksi Master Data
+    const netInjection = totalInjectedAssets - totalInjectedLiabilities;
+    if (netInjection > 0) {
+      const equityAccount = coa.find(c => c.code && c.code.startsWith('3') && c.level === 3) || coa.find(c => c.code && c.code.startsWith('3'));
+      if (equityAccount) {
+        cumulativeBalances[equityAccount.code] = (cumulativeBalances[equityAccount.code] || 0) + netInjection;
+      }
+    }
 
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
