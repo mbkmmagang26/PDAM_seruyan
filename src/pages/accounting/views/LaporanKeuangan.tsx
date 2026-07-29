@@ -67,6 +67,7 @@ export default function LaporanKeuangan() {
   const reportData = useMemo(() => {
     // Filter transactions up to the end of the selected month/year for Balance Sheet (Cumulative)
     const endOfPeriod = new Date(selectedYear, selectedMonth + 1, 0); // Last day of month
+    endOfPeriod.setHours(23, 59, 59, 999);
     
     const cumulativeTx = transactions.filter(t => {
       if (!t.date) return false;
@@ -91,7 +92,11 @@ export default function LaporanKeuangan() {
         // Entri Utama (Debit/Kredit)
         if (t.category) {
           if (balances[t.category] === undefined) balances[t.category] = 0;
-          const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
+          
+          const acc = coa.find(c => c.code === t.category);
+          const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
+          const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
+
           const debit = t.type === 'income' ? (t.amount || 0) : 0;
           const kredit = t.type === 'expense' ? (t.amount || 0) : 0;
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
@@ -102,7 +107,11 @@ export default function LaporanKeuangan() {
         if (t.contraEntry && t.contraEntry.category) {
           const cCat = t.contraEntry.category;
           if (balances[cCat] === undefined) balances[cCat] = 0;
-          const cIsAssetOrExpense = cCat.startsWith('1') || cCat.startsWith('5');
+          
+          const acc = coa.find(c => c.code === cCat);
+          const typeStr = acc ? acc.type : (cCat.startsWith('1') ? 'ASSET' : cCat.startsWith('2') ? 'LIABILITY' : cCat.startsWith('3') ? 'EQUITY' : cCat.startsWith('4') ? 'REVENUE' : 'EXPENSE');
+          const cIsAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
+
           const cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
           const cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
@@ -155,16 +164,18 @@ export default function LaporanKeuangan() {
     });
 
     // Laba Rugi Data (Period-specific)
-    const pendapatan = coa.filter(c => c.code && c.code.startsWith('4')).map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
-    const beban = coa.filter(c => c.code && c.code.startsWith('5')).map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
+    const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
+
+    const pendapatan = coa.filter(c => c.code && getAccType(c) === 'REVENUE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
+    const beban = coa.filter(c => c.code && getAccType(c) === 'EXPENSE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
     const totalPendapatan = pendapatan.reduce((sum, item) => sum + item.amount, 0);
     const totalBeban = beban.reduce((sum, item) => sum + item.amount, 0);
     const labaBersih = totalPendapatan - totalBeban;
 
     // Neraca Data (Cumulative)
-    const aset = coa.filter(c => c.code && c.code.startsWith('1')).map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
-    const kewajiban = coa.filter(c => c.code && c.code.startsWith('2')).map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
-    const ekuitas = coa.filter(c => c.code && c.code.startsWith('3')).map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const aset = coa.filter(c => c.code && getAccType(c) === 'ASSET').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const kewajiban = coa.filter(c => c.code && getAccType(c) === 'LIABILITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const ekuitas = coa.filter(c => c.code && getAccType(c) === 'EQUITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
     const totalAset = aset.reduce((sum, item) => sum + item.amount, 0);
     const totalKewajiban = kewajiban.reduce((sum, item) => sum + item.amount, 0);
     

@@ -116,7 +116,9 @@ export default function BukuBesar() {
     if (!selectedCoa) return [];
     
     let currentBalance = 0;
-    const isAssetOrExpense = (selectedCoa || '').startsWith('1') || (selectedCoa || '').startsWith('5');
+    const acc = coa.find(c => c.code === selectedCoa);
+    const typeStr = acc ? acc.type : ((selectedCoa || '').startsWith('1') ? 'ASSET' : (selectedCoa || '').startsWith('2') ? 'LIABILITY' : (selectedCoa || '').startsWith('3') ? 'EQUITY' : (selectedCoa || '').startsWith('4') ? 'REVENUE' : 'EXPENSE');
+    const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
     
     const accountTx = transactions.filter(t => {
       const matchCoa = t.category === selectedCoa;
@@ -144,7 +146,7 @@ export default function BukuBesar() {
         balance: currentBalance
       };
     });
-  }, [transactions, selectedCoa, filterDates]);
+  }, [transactions, selectedCoa, filterDates, coa]);
 
   const handleExportCoa = () => {
     const data = coa.map(c => ({
