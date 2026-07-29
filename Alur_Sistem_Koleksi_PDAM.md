@@ -113,3 +113,62 @@ Jika diibaratkan, DBA adalah **Kepala Gudang Brankas**. Dia yang menentukan siap
 
 ### Kesimpulan Pembelajaran DBA
 Menjadi DBA bukan sekadar tahu cara menyimpan data, melainkan memikirkan **"Bagaimana agar data ini aman, cepat diakses 10 tahun ke depan, dan tidak hancur saat terjadi bencana/kelalaian."** Dengan memahami daftar ke-18 koleksi di atas beserta pembuatan `firestore.rules`, secara tidak langsung Anda sebenarnya sudah mulai mempraktekkan ilmu fundamental seorang DBA!
+
+---
+
+## BAGIAN 4: Alur Manajemen Internal & Keamanan (Sistem Pendukung)
+
+Setelah diaudit, sistem utama dari hulu ke hilir sudah dibahas. Namun, agar dokumentasi ini 100% lengkap mencakup seluruh **18 koleksi**, berikut adalah alur pendukung (di balik layar) yang sangat vital bagi perusahaan:
+
+### 1. Manajemen Karyawan Baru (Onboarding Pegawai)
+* **Aktivitas:** Ada Staf Lapangan atau Kasir baru yang direkrut. Admin IT mendaftarkan email dan password mereka.
+* **Data Tersimpan di:** `user_admin`
+* **Alur Penampilan Data:** Karyawan baru bisa login ke Dashboard Internal. Akses menu mereka akan dibatasi secara otomatis oleh sistem sesuai jabatannya (Role: Admin / Staf / Akuntan).
+
+### 2. Persiapan Tahun Buku Akuntansi (Setup Awal)
+* **Aktivitas:** Di awal tahun, Kepala Akuntan menyusun kode akun standar (misal: 101 Kas) dan menetapkan jatah anggaran untuk setiap divisi.
+* **Data Tersimpan di:** `coa` (Untuk master kode akun) dan `anggaran_operasional` (Untuk penjatahan budget).
+* **Alur Penampilan Data:** Saat kasir atau akuntan melakukan transaksi harian, mereka diwajibkan memilih sandi akun dari koleksi `coa`. Jika pengeluaran melebihi batas `anggaran_operasional`, sistem di Dashboard Akuntan akan memberikan peringatan merah (Overbudget).
+
+### 3. Pengadaan Barang Modal (Investasi)
+* **Aktivitas:** PDAM membeli aset yang berumur panjang dan mahal, misalnya Truk Tangki Air seharga Rp 400 Juta.
+* **Data Tersimpan di:** `inventaris_aset_tetap`
+* **Alur Penampilan Data:** Pada akhir tahun, Akuntan membuka menu Aset. Sistem akan otomatis menghitung penyusutan (depresiasi) dari truk tersebut (misalnya nilai truk berkurang Rp 40 Juta setiap tahun) lalu dicatat otomatis ke dalam `jurnal_transaksi_keuangan`.
+
+### 4. Pemantauan & Investigasi (Audit Keamanan)
+* **Aktivitas:** Setiap kali ada tombol yang diklik, data yang dihapus, atau halaman yang dibuka, sistem merekamnya secara diam-diam layaknya CCTV digital.
+* **Data Tersimpan di:** `log_aktivitas_pelanggan` (Untuk CCTV masyarakat umum) dan `log_aktivitas_staf_admin` (Untuk CCTV pegawai internal).
+* **Alur Penampilan Data:** Data ini **disembunyikan** dari pegawai biasa. Hanya Administrator IT tertinggi atau Manajer yang bisa membuka menu "Audit Trail". Jika suatu saat ada data tagihan yang tiba-tiba "terhapus", Manajer tinggal membuka log ini untuk melihat, "Oh, ternyata Akuntan A yang menghapusnya pada jam 14:00 WIB." Ini adalah kunci utama keamanan sistem perusahaan (Prinsip *Accountability*).
+
+---
+
+## BAGIAN 5: Skema Relasi Data Inti (Entity Relationship / Foreign Key)
+
+Sebagai pelengkap arsitektur *database*, berikut adalah hasil audit mendalam mengenai isi struktur kolom (kolom-kolom di dalam dokumen) dan bagaimana sebuah koleksi terkait (terkorelasi) dengan koleksi lainnya melalui pengait ID *(Foreign Key)*.
+
+Berdasarkan struktur antarmuka TypeScript (`types.ts`) sistem ini, korelasi saling silang antar koleksinya dirancang dengan sangat erat (Relasional) meskipun berada di dalam database NoSQL (Firestore).
+
+### 1. Relasi Profil Pelanggan & Golongan Tarif
+Setiap dokumen pelanggan di dalam `data_pelanggan_meteran` tidak berdiri sendiri, melainkan memiliki *"Tali Pengait"*:
+* Memiliki kaitan dengan `master_tarif_air`. 
+* **Bukti Kode:** Terdapat kolom `golonganId`. 
+* **Dampak:** Saat sistem menagih air, sistem akan melihat `golonganId` si Budi, lalu "terbang" ke `master_tarif_air` untuk mencari tahu berapa tarif per meter kubik untuk golongan tersebut. Jika harga di Master Tarif naik, tagihan Budi otomatis ikut menyesuaikan.
+
+### 2. Relasi Tugas Lapangan (SPK)
+Setiap tugas perbaikan atau pasang baru di `tugas_perbaikan_staf` ibarat persimpangan jalan yang mengikat 4 koleksi sekaligus:
+* **Bukti Kode Kolom:**
+  * `assignedTo`: Mengait ke `user_admin` (Menandakan Staf siapa yang harus bekerja).
+  * `customerId`: Mengait ke `data_pelanggan_meteran` (Rumah siapa yang dituju).
+  * `pengaduanId`: Mengait ke `pengaduan_layanan_pelanggan` (Jika tugas ini berasal dari komplain pelanggan).
+  * `permohonanId`: Mengait ke `permohonan_pasang_baru` (Jika tugas ini berasal dari pendaftaran pasang pipa baru).
+* **Dampak Kinerja:** Berkat kaitan ini, Admin bisa melacak balik dengan akurat. Jika staf selesai pasang pipa, sistem otomatis tahu formulir permohonan mana yang harus ditandai *"Selesai"*.
+
+### 3. Relasi Rantai Penagihan (Billing Chain)
+Inilah urat nadi keuangan perusahaan. Di dalam koleksi `tagihan_air_pelanggan` (Bill), strukturnya juga mengikat data-data sebelumnya:
+* **Bukti Kode Kolom:**
+  * `customerId`: Mengait ke `data_pelanggan_meteran` (Siapa yang berutang).
+  * `meterReadingId`: Mengait ke `pembacaan_meter_staf`. 
+* **Dampak Audit Keuangan:** Kaitan ganda ini memastikan tidak ada "Tagihan Fiktif". Setiap lembar tagihan Rp 150.000 harus bisa dibuktikan dari angka meteran riil, dan angka meteran riil itu harus merujuk ke ID Foto Bukti (Foto meteran) yang diunggah staf. Jadi, rantaian validasinya adalah: **Tagihan ➡️ Bukti Catat Staf ➡️ Data Pelanggan**.
+
+### Mengapa Korelasi Ini Penting?
+Desain pengaitan ID (*Foreign Key mapping*) yang ketat seperti di atas memastikan bahwa aplikasi PDAM Seruyan memiliki **Integritas Data** yang kebal. Pelanggan tidak bisa memiliki tagihan jika belum ada bukti pencatatan meteran. Sebuah tugas tidak bisa ada tanpa ada rujukan pengaduan atau pengajuan. Inilah definisi dari sistem perusahaan (ERP) kelas atas yang sehat dan siap menampung jutaan riwayat transaksi.
