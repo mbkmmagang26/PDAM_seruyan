@@ -271,38 +271,56 @@ export default function LaporanKeuangan() {
     const netInjection = totalInjectedAssets - totalInjectedLiabilities;
     if (netInjection > 0) {
       const equityCode = localCoa.find(c => c.code && c.code.startsWith('3') && c.level === 3)?.code || 
-                         localCoa.find(c => c.code && c.code.startsWith('3'))?.code || '3.1.1';
-      cumulativeBalances[equityCode] = (cumulativeBalances[equityCode] || 0) + netInjection;
-    } else if (netInjection < 0) {
-      // Jika liabilities lebih besar (jarang terjadi di master data murni), seimbangkan ke Aset Lainnya
-      cumulativeBalances['1.9.9'] = (cumulativeBalances['1.9.9'] || 0) + Math.abs(netInjection);
+                         localCoa.find(c => c.code && c.code.startsWith('3'))?.code;
+      if (equityCode) cumulativeBalances[equityCode] = (cumulativeBalances[equityCode] || 0) + netInjection;
     }
 
-    // 2. Injeksi akun yang tidak ada di master COA tapi memiliki saldo (Manual Journal Entries / System / Master Data Fallback)
-    const standardNames: Record<string, string> = {
-      '1.1.1.01': 'Kas Loket',
-      '1.1.3': 'Piutang Air',
-      '1.3.1': 'Aset Tetap (Inventaris)',
-      '1.9.9': 'Aset Penyeimbang (Sistem)',
-      '2.1.1': 'Hutang Usaha (Vendor)',
-      '3.1.1': 'Ekuitas / Modal',
-      '4.1.1': 'Pendapatan Air',
-      '4.1.2': 'Pendapatan Non-Air',
-      '11.01.00': 'Dana Belum Disetorkan',
-      '14.03.00': 'Persediaan'
+    // UNIVERSAL REMAP: Semua kode yang tidak ada di COA terdaftar akan dicari padanannya
+    // di COA berdasarkan tipe akun (prefix kode). Tidak ada akun baru yang dibuat.
+    const getTypeFromCode = (code: string) =>
+      code.startsWith('1') ? 'ASSET' : code.startsWith('2') ? 'LIABILITY' :
+      code.startsWith('3') ? 'EQUITY' : code.startsWith('4') ? 'REVENUE' : 'EXPENSE';
+
+    // Helper: cari akun COA terdaftar paling cocok berdasarkan tipe dan kemiripan kode
+    const findBestMatch = (orphanCode: string): any | null => {
+      const targetType = getTypeFromCode(orphanCode);
+      // Urutkan: level 3 dulu, lalu level 2, lalu apapun — dan pastikan tipe cocok
+      const same = localCoa.filter(c => {
+        const t = c.type || getTypeFromCode(c.code || '');
+        return t === targetType && c.code && c.level === 3;
+      });
+      if (same.length > 0) {
+        // Cari yang prefixnya paling mirip (mis. orphan '4.1.1' → cari yg dimulai '4.1')
+        const prefix = orphanCode.split('.').slice(0, 2).join('.');
+        return same.find(c => c.code.startsWith(prefix)) || same[0];
+      }
+      // Fallback: level 2 dengan tipe cocok
+      const level2 = localCoa.filter(c => {
+        const t = c.type || getTypeFromCode(c.code || '');
+        return t === targetType && c.code;
+      });
+      return level2[0] || null;
     };
 
-    Object.keys(cumulativeBalances).forEach(code => {
-      if (!localCoa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
-        localCoa.push({
-          id: code,
-          code: code,
-          name: standardNames[code] || `Akun ${code} (Perlu Didaftarkan di COA)`,
-          type: code.startsWith('1') ? 'ASSET' : code.startsWith('2') ? 'LIABILITY' : code.startsWith('3') ? 'EQUITY' : code.startsWith('4') ? 'REVENUE' : 'EXPENSE',
-          level: code.split('.').length > 2 ? 3 : 2
-        });
-      }
+    // Proses SEMUA kode di cumulativeBalances dan periodBalances
+    [cumulativeBalances, periodBalances].forEach(balancesObj => {
+      Object.keys(balancesObj).forEach(code => {
+        if (localCoa.find(c => c.code === code)) return; // sudah terdaftar di COA, aman
+        const bal = balancesObj[code] || 0;
+        if (Math.abs(bal) < 0.01) { delete balancesObj[code]; return; } // nol, hapus saja
+
+        const match = findBestMatch(code);
+        if (match) {
+          // Gabungkan ke akun COA yang paling cocok
+          balancesObj[match.code] = (balancesObj[match.code] || 0) + bal;
+          delete balancesObj[code];
+        }
+        // Jika benar-benar tidak ada akun COA sama sekali untuk tipe ini, biarkan
+        // (akan muncul tapi tidak bikin COA baru)
+      });
     });
+
+
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
 
