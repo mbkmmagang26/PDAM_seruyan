@@ -162,23 +162,16 @@ export default function LaporanKeuangan() {
     const cumulativeBalances = calculateBalances(cumulativeTx);
     const periodBalances = calculateBalances(periodTx);
 
-    // Injeksi akun yang tidak ada di master COA tapi memiliki saldo (Manual Journal Entries)
-    Object.keys(cumulativeBalances).forEach(code => {
-      if (!coa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
-        coa.push({
-          id: code,
-          code: code,
-          name: 'Akun ' + code + ' (Tidak Terdaftar)',
-          type: code.startsWith('1') ? 'ASSET' : code.startsWith('2') ? 'LIABILITY' : code.startsWith('3') ? 'EQUITY' : code.startsWith('4') ? 'REVENUE' : 'EXPENSE',
-          level: code.split('.').length > 2 ? 3 : 2
-        });
-      }
-    });
-
-    // Sync Master Data for Integration (Neraca)
+    // 1. Sync Master Data for Integration (Neraca)
     let totalInjectedAssets = 0;
     let totalInjectedLiabilities = 0;
 
+    let inventoryInjected = false;
+    let debtInjected = false;
+    let receivableInjected = false;
+    let assetsInjected = 0;
+
+    // Coba injeksi ke akun yang sudah ada di COA
     coa.forEach(c => {
       const name = (c.name || '').toLowerCase();
       const code = (c.code || '');
@@ -187,6 +180,14 @@ export default function LaporanKeuangan() {
       if (name.includes('persediaan') && masterData.inventory > 0) {
         cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.inventory;
         totalInjectedAssets += masterData.inventory;
+        inventoryInjected = true;
+      }
+
+      // Piutang
+      if (name.includes('piutang') && masterData.receivable > 0 && !receivableInjected) {
+        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.receivable;
+        totalInjectedAssets += masterData.receivable;
+        receivableInjected = true;
       }
       
       // Aset Tetap Mapping
@@ -207,6 +208,7 @@ export default function LaporanKeuangan() {
         if (injected > 0) {
           cumulativeBalances[code] = (cumulativeBalances[code] || 0) + injected;
           totalInjectedAssets += injected;
+          assetsInjected += injected;
         }
       }
 
@@ -214,18 +216,65 @@ export default function LaporanKeuangan() {
       if ((name.includes('hutang') || name.includes('utang')) && masterData.debt > 0) {
         cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.debt;
         totalInjectedLiabilities += masterData.debt;
+        debtInjected = true;
       }
     });
+
+    // Fallback: Jika tidak ada akun yang cocok di COA, paksa buat saldonya di kode standar
+    if (!inventoryInjected && masterData.inventory > 0) {
+      cumulativeBalances['14.03.00'] = (cumulativeBalances['14.03.00'] || 0) + masterData.inventory;
+      totalInjectedAssets += masterData.inventory;
+    }
+    if (!receivableInjected && masterData.receivable > 0) {
+      cumulativeBalances['1.1.3'] = (cumulativeBalances['1.1.3'] || 0) + masterData.receivable;
+      totalInjectedAssets += masterData.receivable;
+    }
+    if (assetsInjected < masterData.assets && masterData.assets > 0) {
+      const remainingAssets = masterData.assets - assetsInjected;
+      cumulativeBalances['1.3.1'] = (cumulativeBalances['1.3.1'] || 0) + remainingAssets;
+      totalInjectedAssets += remainingAssets;
+    }
+    if (!debtInjected && masterData.debt > 0) {
+      cumulativeBalances['2.1.1'] = (cumulativeBalances['2.1.1'] || 0) + masterData.debt;
+      totalInjectedLiabilities += masterData.debt;
+    }
 
     // Menyeimbangkan Neraca akibat injeksi Master Data
     const netInjection = totalInjectedAssets - totalInjectedLiabilities;
     if (netInjection > 0) {
-      const equityAccount = coa.find(c => c.code && c.code.startsWith('3') && c.level === 3) || coa.find(c => c.code && c.code.startsWith('3'));
-      if (equityAccount) {
-        cumulativeBalances[equityAccount.code] = (cumulativeBalances[equityAccount.code] || 0) + netInjection;
-      }
+      const equityCode = coa.find(c => c.code && c.code.startsWith('3') && c.level === 3)?.code || 
+                         coa.find(c => c.code && c.code.startsWith('3'))?.code || '3.1.1';
+      cumulativeBalances[equityCode] = (cumulativeBalances[equityCode] || 0) + netInjection;
+    } else if (netInjection < 0) {
+      // Jika liabilities lebih besar (jarang terjadi di master data murni), seimbangkan ke Aset Lainnya
+      cumulativeBalances['1.9.9'] = (cumulativeBalances['1.9.9'] || 0) + Math.abs(netInjection);
     }
 
+    // 2. Injeksi akun yang tidak ada di master COA tapi memiliki saldo (Manual Journal Entries / System / Master Data Fallback)
+    const standardNames: Record<string, string> = {
+      '1.1.1.01': 'Kas Loket',
+      '1.1.3': 'Piutang Air',
+      '1.3.1': 'Aset Tetap (Inventaris)',
+      '1.9.9': 'Aset Penyeimbang (Sistem)',
+      '2.1.1': 'Hutang Usaha (Vendor)',
+      '3.1.1': 'Ekuitas / Modal',
+      '4.1.1': 'Pendapatan Air',
+      '4.1.2': 'Pendapatan Non-Air',
+      '11.01.00': 'Dana Belum Disetorkan',
+      '14.03.00': 'Persediaan'
+    };
+
+    Object.keys(cumulativeBalances).forEach(code => {
+      if (!coa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
+        coa.push({
+          id: code,
+          code: code,
+          name: standardNames[code] || `Akun ${code} (Perlu Didaftarkan di COA)`,
+          type: code.startsWith('1') ? 'ASSET' : code.startsWith('2') ? 'LIABILITY' : code.startsWith('3') ? 'EQUITY' : code.startsWith('4') ? 'REVENUE' : 'EXPENSE',
+          level: code.split('.').length > 2 ? 3 : 2
+        });
+      }
+    });
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
 
