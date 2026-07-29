@@ -296,7 +296,11 @@ export default function StaffDashboard() {
                       unreadTasks.map(t => (
                         <button
                           key={t.id}
-                          onClick={() => { setActiveTab(t.type as Tab); setIsNotifOpen(false); }}
+                          onClick={() => { 
+                            const targetTab = (t.type === 'installation' || t.type === 'new_connection') ? 'new_connection' : t.type as Tab;
+                            setActiveTab(targetTab); 
+                            setIsNotifOpen(false); 
+                          }}
                           className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 border-b border-slate-50 dark:border-slate-700/50 transition-colors"
                         >
                           <p className="text-xs font-bold text-slate-800 dark:text-white">Perintah Kerja</p>

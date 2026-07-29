@@ -162,11 +162,14 @@ export default function AdminDashboard() {
   const unreadRegistrations = pendingRegistrations.filter(r => !clickedNotifIds.includes(`reg-${r.id}`));
   const unreadNotifs = pendingRequestsList.length + pendingComplaints.length + unreadRegistrations.length;
 
-  const handleNotifClick = (id: string, targetView: AdminView) => {
+  const handleNotifClick = (id: string, targetView: AdminView, targetTab?: TaskTab) => {
     const updated = [...clickedNotifIds, id];
     setClickedNotifIds(updated);
     localStorage.setItem('clicked_admin_notifs', JSON.stringify(updated));
     setActiveView(targetView);
+    if (targetTab) {
+      setTaskTab(targetTab);
+    }
     setIsNotifOpen(false);
   };
 
@@ -1465,7 +1468,7 @@ export default function AdminDashboard() {
                         {pendingComplaints.map(c => (
                           <button
                             key={`comp-${c.id}`}
-                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tugas_perbaikan_staf')}
+                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tugas_perbaikan_staf', 'complaints')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-white">Pengaduan Baru</p>
