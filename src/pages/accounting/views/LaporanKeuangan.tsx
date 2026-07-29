@@ -102,10 +102,19 @@ export default function LaporanKeuangan() {
           let debit = t.type === 'expense' ? (t.amount || 0) : 0;
           let kredit = t.type === 'income' ? (t.amount || 0) : 0;
           
+<<<<<<< HEAD
+          if (t.type === 'income') {
+             debit = t.amount || 0;
+          } else if (t.type === 'expense') {
+             kredit = t.amount || 0;
+          } else {
+             debit = t.amount || 0;
+=======
           // Override khusus untuk data dari system-billing yang memiliki salah format debit/kredit di database
           if (t.authorId === 'system-billing') {
             debit = t.amount || 0; // Kas masuk (Debit)
             kredit = 0;
+>>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
@@ -124,10 +133,19 @@ export default function LaporanKeuangan() {
           let cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
           let cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
 
+<<<<<<< HEAD
+          if (t.type === 'income') {
+             cKredit = t.contraEntry.amount || 0;
+          } else if (t.type === 'expense') {
+             cDebit = t.contraEntry.amount || 0;
+          } else {
+             cKredit = t.contraEntry.amount || 0;
+=======
           // Override khusus untuk data dari system-billing
           if (t.authorId === 'system-billing') {
             cDebit = 0;
             cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
+>>>>>>> 6914259d2596f271d81cf9a54dcd67b42ac929ca
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
@@ -139,56 +157,6 @@ export default function LaporanKeuangan() {
 
     const cumulativeBalances = calculateBalances(cumulativeTx);
     const periodBalances = calculateBalances(periodTx);
-
-    // Sync Master Data for Integration (Neraca)
-    coa.forEach(c => {
-      const name = (c.name || '').toLowerCase();
-      const code = (c.code || '');
-      
-      // Persediaan
-      if (name.includes('persediaan') && masterData.inventory > 0) {
-        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.inventory;
-      }
-      
-      // Aset Tetap Mapping
-      if (code.startsWith('1.3')) {
-        // We can match by keywords in the COA name
-        if (name.includes('tanah') && masterData.assetsByCat['Tanah']) {
-          cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.assetsByCat['Tanah'];
-        } else if ((name.includes('bangunan') || name.includes('instalasi')) && masterData.assetsByCat['Bangunan Air / Instalasi']) {
-          cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.assetsByCat['Bangunan Air / Instalasi'];
-        } else if ((name.includes('peralatan') || name.includes('mesin')) && masterData.assetsByCat['Peralatan & Mesin']) {
-          cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.assetsByCat['Peralatan & Mesin'];
-        } else if (name.includes('aset tetap') && !name.includes('akumulasi')) {
-           // Fallback for generic asset line if others not matched
-           const mappedTotal = (masterData.assetsByCat['Tanah'] || 0) + (masterData.assetsByCat['Bangunan Air / Instalasi'] || 0) + (masterData.assetsByCat['Peralatan & Mesin'] || 0);
-           if (masterData.assets - mappedTotal > 0) {
-             cumulativeBalances[code] = (cumulativeBalances[code] || 0) + (masterData.assets - mappedTotal);
-           }
-        }
-      }
-
-      // Hutang
-      if (name.includes('hutang dagang') && masterData.debt > 0) {
-        cumulativeBalances[code] = (cumulativeBalances[code] || 0) + masterData.debt;
-      }
-      
-      // Piutang
-      if (name.includes('piutang') && masterData.receivable > 0) {
-        // Tidak ditambahkan secara buta dari masterData karena billing system 
-        // sudah memiliki jurnal pelunasan, sehingga kita integrasikan pendapatan tagihannya saja
-      }
-    });
-
-    // Injeksi Pintar: Pemasukan dari sistem billing otomatis kita catat juga sebagai Pendapatan 
-    // agar terlihat di Laba Rugi, tanpa harus merubah data COA / Jurnal.
-    const revenueAccount = coa.find(c => c.code && c.code.startsWith('4') && c.level === 3) || coa.find(c => c.code && c.code.startsWith('4'));
-    if (revenueAccount) {
-       const periodBillingRevenue = periodTx.filter(t => t.authorId === 'system-billing' && t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-       const cumulativeBillingRevenue = cumulativeTx.filter(t => t.authorId === 'system-billing' && t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-       periodBalances[revenueAccount.code] = (periodBalances[revenueAccount.code] || 0) + periodBillingRevenue;
-       cumulativeBalances[revenueAccount.code] = (cumulativeBalances[revenueAccount.code] || 0) + cumulativeBillingRevenue;
-    }
 
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
