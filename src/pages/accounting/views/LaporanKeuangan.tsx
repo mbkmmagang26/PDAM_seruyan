@@ -101,18 +101,26 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-let debit = t.type === 'expense' ? (t.amount || 0) : 0;
-let kredit = t.type === 'income' ? (t.amount || 0) : 0;
+          let debit = 0;
+          let kredit = 0;
 
-// Override khusus untuk data dari system-billing yang memiliki format berbeda di database
+          if (t.type === 'income') {
+             debit = t.amount || 0;
+          } else if (t.type === 'expense') {
+             kredit = t.amount || 0;
+          } else {
+             debit = t.amount || 0;
+          }
+
           if (t.authorId === 'system-billing') {
             debit = t.amount || 0;
             kredit = 0;
-// Catat juga sebagai Pendapatan (Kredit akun Revenue) agar muncul di Laba Rugi
-if (revenueAccCode) {
-  if (balances[revenueAccCode] === undefined) balances[revenueAccCode] = 0;
-  balances[revenueAccCode] += t.amount || 0; // Revenue bertambah
-}
+            
+            // Catat juga sebagai Pendapatan (Kredit akun Revenue) agar muncul di Laba Rugi
+            if (revenueAccCode) {
+              if (balances[revenueAccCode] === undefined) balances[revenueAccCode] = 0;
+              balances[revenueAccCode] += t.amount || 0; // Revenue bertambah
+            }
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
@@ -130,19 +138,18 @@ if (revenueAccCode) {
           let cDebit = 0;
           let cKredit = 0;
 
-if (t.type === 'income') {
-  cKredit = t.contraEntry.amount || 0;
-} else if (t.type === 'expense') {
-  cDebit = t.contraEntry.amount || 0;
-} else {
-  cKredit = t.contraEntry.amount || 0;
-}
+          if (t.type === 'income') {
+             cKredit = t.contraEntry.amount || 0;
+          } else if (t.type === 'expense') {
+             cDebit = t.contraEntry.amount || 0;
+          } else {
+             cKredit = t.contraEntry.amount || 0;
+          }
 
-// Override khusus untuk data dari system-billing
-if (t.authorId === 'system-billing') {
-  cDebit = 0;
-  cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
-}
+          // Override khusus untuk data dari system-billing
+          if (t.authorId === 'system-billing') {
+            cDebit = 0;
+            cKredit = t.contraEntry.amount || 0; // Piutang berkurang (Kredit)
           }
           
           if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
