@@ -1248,37 +1248,7 @@ export default function AdminDashboard() {
           </button>
         </section>
 
-        <section className="bg-slate-900 rounded-[3.5rem] p-10 text-white border-l-[10px] border-[#00478d] relative overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-[#00478d]/10 rounded-full blur-[80px]" />
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-[#00478d]/20 rounded-xl flex items-center justify-center text-[#00478d]">
-              <History size={24} />
-            </div>
-            <h2 className="font-bold text-xl font-headline tracking-tight">{t('common.history')}</h2>
-          </div>
-          <div className="space-y-8 relative z-10">
-            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
-              <div className="w-2.5 h-2.5 mt-2 rounded-full bg-[#00478d] ring-4 ring-primary/20 shrink-0 group-hover:scale-125 transition-transform"></div>
-              <div className="flex-grow">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-sm font-bold text-slate-100">{t('admin.activity.tariff_update')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">14 MINS AGO</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.tariff_desc')}</p>
-              </div>
-            </div>
-            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
-              <div className="w-2.5 h-2.5 mt-2 rounded-full bg-slate-700 shrink-0 group-hover:scale-125 transition-transform"></div>
-              <div className="flex-grow">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-sm font-bold text-slate-100">{t('admin.activity.new_staff')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">2 HOURS AGO</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.staff_desc')}</p>
-              </div>
-            </div>
-          </div>
-        </section>
+
       </div>
     );
   };
