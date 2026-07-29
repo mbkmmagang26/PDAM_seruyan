@@ -26,7 +26,8 @@ export default function DashboardUtama() {
     pengaduanPending: 0,
     cashTransit: 0,
     piutang: 0,
-    assetCategoriesCount: 0
+    assetCategoriesCount: 0,
+    penerimaanTagihan: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export default function DashboardUtama() {
         let totalInc = 0;
         let totalExp = 0;
         let transit = 0;
+        let tagihanAir = 0;
         const monthly = new Map<string, { income: number; expense: number }>();
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
         monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
@@ -54,6 +56,14 @@ export default function DashboardUtama() {
           // Filter per tahun secara lokal
           const docYear = (data.date || '').substring(0, 4);
           if (docYear !== selectedYear) return;
+
+          // Hitung penerimaan khusus dari tagihan air pelanggan
+          if (data.billId || data.authorId === 'system-billing' || (data.description && data.description.includes('Pembayaran Tagihan Air'))) {
+            // Hanya hitung jika statusnya verified atau completed
+            if (data.status !== 'rejected') {
+              tagihanAir += data.amount || 0;
+            }
+          }
 
           // Hitung hanya dari entri utama (bukan dari contraEntry)
           // agar nilai tidak double-count akibat format double-entry
@@ -86,7 +96,7 @@ export default function DashboardUtama() {
         const formattedChart = Array.from(monthly.entries())
           .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
 
-        setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit }));
+        setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit, penerimaanTagihan: tagihanAir }));
         setChartData(formattedChart);
       },
       (error) => {
@@ -265,6 +275,13 @@ export default function DashboardUtama() {
                       <span className="text-xs font-bold text-slate-300">Kas Transit (1.1.6)</span>
                     </div>
                     <span className="text-xs font-black text-white">{formatCurrency(stats.cashTransit)}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
+                    <div className="flex items-center gap-3">
+                      <DollarSign size={16} className="text-emerald-400" />
+                      <span className="text-xs font-bold text-emerald-100">Tagihan Air Terbayar</span>
+                    </div>
+                    <span className="text-xs font-black text-emerald-400">+{formatCurrency(stats.penerimaanTagihan)}</span>
                   </div>
                 </div>
               </div>

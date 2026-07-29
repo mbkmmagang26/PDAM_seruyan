@@ -86,13 +86,26 @@ export default function LaporanKeuangan() {
       coa.forEach(c => { if (c.code) balances[c.code] = 0; });
       
       txList.forEach(t => {
-        if (!t.category) return;
-        if (balances[t.category] === undefined) balances[t.category] = 0;
-        const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
-        const debit = t.type === 'income' ? t.amount : 0;
-        const kredit = t.type === 'expense' ? t.amount : 0;
-        if (isAssetOrExpense) balances[t.category] += (debit - kredit);
-        else balances[t.category] += (kredit - debit);
+        // Entri Utama (Debit/Kredit)
+        if (t.category) {
+          if (balances[t.category] === undefined) balances[t.category] = 0;
+          const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
+          const debit = t.type === 'income' ? (t.amount || 0) : 0;
+          const kredit = t.type === 'expense' ? (t.amount || 0) : 0;
+          if (isAssetOrExpense) balances[t.category] += (debit - kredit);
+          else balances[t.category] += (kredit - debit);
+        }
+
+        // Entri Pasangan (Double-Entry Fix)
+        if (t.contraEntry && t.contraEntry.category) {
+          const cCat = t.contraEntry.category;
+          if (balances[cCat] === undefined) balances[cCat] = 0;
+          const cIsAssetOrExpense = cCat.startsWith('1') || cCat.startsWith('5');
+          const cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
+          const cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
+          if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
+          else balances[cCat] += (cKredit - cDebit);
+        }
       });
       return balances;
     };

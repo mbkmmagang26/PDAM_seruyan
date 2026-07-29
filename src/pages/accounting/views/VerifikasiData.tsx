@@ -205,6 +205,15 @@ export default function VerifikasiData() {
                 </tr>
               ))}
             </tbody>
+            <tfoot className="bg-slate-50 dark:bg-slate-900/80 font-black text-slate-800 dark:text-white border-t-2 border-slate-200 dark:border-slate-700">
+              <tr>
+                <td colSpan={2} className="p-5 text-right uppercase tracking-widest text-xs">Total Menunggu Verifikasi</td>
+                <td className="p-5 text-right text-blue-600 dark:text-blue-400 text-lg">
+                  {formatCurrency(filtered.reduce((sum, item) => sum + (item.amount || 0), 0))}
+                </td>
+                <td colSpan={3}></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
