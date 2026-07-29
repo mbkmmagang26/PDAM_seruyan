@@ -377,8 +377,6 @@ export default function NeracaLajurView() {
           </tbody>
         </table>
       </div>
-
-      </div>
     </div>
   );
 }
