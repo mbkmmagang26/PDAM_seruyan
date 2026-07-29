@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import ThemeToggle from '../../components/ThemeToggle';
 
 // Subviews
@@ -83,7 +83,13 @@ export default function AccountingDashboard() {
         limit(10)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        docs.forEach((d: any) => {
+          if (d.title === 'DRD Berhasil Diposting' && d.message && d.message.includes('Rp 0')) {
+            deleteDoc(doc(db, 'notifikasi_pengguna', d.id)).catch(() => {});
+          }
+        });
+        setNotifications(docs.filter((d: any) => !(d.title === 'DRD Berhasil Diposting' && d.message && d.message.includes('Rp 0'))));
       });
       return () => unsubscribe();
     }

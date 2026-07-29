@@ -244,15 +244,54 @@ export default function Persediaan() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
-             <ArrowRightLeft size={32} />
-           </div>
-           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Modul Segera Hadir</h3>
-           <p className="text-slate-500 dark:text-slate-400 max-w-xs">Fitur mutasi stok dan manajemen kategori sedang dalam tahap pengembangan.</p>
+      ) : activeTab === 'Mutasi Stok' ? (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Riwayat Mutasi Stok</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Catatan barang masuk dan keluar.</p>
+              </div>
+              <button className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 hover:bg-emerald-700 transition-colors">
+                <Plus size={16} /> Catat Mutasi
+              </button>
+            </div>
+            <div className="p-16 text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4 shadow-inner">
+                <ArrowRightLeft size={32} />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Belum ada riwayat mutasi stok yang tercatat.</p>
+            </div>
+          </div>
         </div>
-      )}
+      ) : activeTab === 'Kategori Barang' ? (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
+             <div className="flex justify-between items-center mb-6">
+                <div>
+                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Pengaturan Kategori</h3>
+                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola jenis kategori barang inventaris.</p>
+                </div>
+                <button className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                  <Plus size={16} /> Tambah Kategori
+                </button>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               {['Pipa & Sambungan', 'Water Meter', 'Pompa & Mesin', 'Chemical / Kaporit', 'ATK & Inventaris', 'Lainnya'].map(kat => (
+                  <div key={kat} className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center gap-3">
+                     <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                        <Layers size={20} />
+                     </div>
+                     <div>
+                        <p className="font-bold text-slate-800 dark:text-white">{kat}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{items.filter(i => i.category === kat).length} item terdaftar</p>
+                     </div>
+                  </div>
+               ))}
+             </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Add Item Modal */}
       {showAddForm && (
