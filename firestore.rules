@@ -30,8 +30,14 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function isDirektur() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/user_admin/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/user_admin/$(request.auth.uid)).data.role == 'direktur';
+    }
+
     function isInternalUser() {
-      return isAdmin() || isAccounting() || isStaff();
+      return isAdmin() || isAccounting() || isStaff() || isDirektur();
     }
 
     // ─────────────────────────────────────────────

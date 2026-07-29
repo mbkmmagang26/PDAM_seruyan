@@ -146,7 +146,7 @@ export const processMeterReadingAndBilling = async (
       });
 
       // Kirim Notifikasi ke Pelanggan
-      const userUid = currentData.userId || '';
+      const userUid = userData.userId || userData.uid || '';
       if (userUid) {
         await addDoc(collection(db, 'notifikasi_pengguna'), {
           title: 'Tagihan Air Baru Diterbitkan',
@@ -280,33 +280,29 @@ export const processPayment = async (billId: string, customerId: string, amount:
       const billSnap = await getDoc(billRef);
       const billData = billSnap.exists() ? billSnap.data() : {};
       const desc = `Pembayaran Tagihan Air a/n ${billData.customerName || 'Pelanggan'} - Periode ${billData.periodeBulan || ''} ${billData.periodeTahun || ''}`;
-      
-      // Debit: Kas Loket Kantor
-      await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
-        date: todayStr,
-        reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
-        description: desc,
-        category: kasAccount,
-        type: 'income', // Debit
-        amount: amount,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        authorId: 'system-billing',
-        authorName: 'Sistem Billing Otomatis'
-      });
+      const refCode = `BKM-${billId.substring(0, 5).toUpperCase()}`;
 
-      // Kredit: Piutang Air
+      // Simpan SATU dokumen jurnal yang berisi pasangan debit & kredit
+      // (double-entry accounting format) agar tidak terduplikat di Verifikasi Data
       await addDoc(collection(db, 'jurnal_transaksi_keuangan'), {
         date: todayStr,
-        reference: `BKM-${billId.substring(0, 5).toUpperCase()}`,
+        reference: refCode,
         description: desc,
-        category: piutangAccount,
-        type: 'expense', // Kredit
+        category: kasAccount,       // Akun utama: Kas Loket (Debit)
+        type: 'income',             // Tipe utama: Debit
         amount: amount,
         status: 'pending',
         createdAt: new Date().toISOString(),
         authorId: 'system-billing',
-        authorName: 'Sistem Billing Otomatis'
+        authorName: 'Sistem Billing Otomatis',
+        billId: billId,
+        customerId: customerId,
+        // Pasangan Kredit (Piutang Air) disimpan di dalam satu dokumen yang sama
+        contraEntry: {
+          category: piutangAccount,
+          type: 'expense',
+          amount: amount
+        }
       });
     } catch (journalErr) {
       console.error('Gagal mencatatkan ayat jurnal otomatis:', journalErr);

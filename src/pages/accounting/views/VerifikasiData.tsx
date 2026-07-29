@@ -154,10 +154,16 @@ export default function VerifikasiData() {
                 <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50/80 transition-colors group">
                   <td className="p-5">
                     <div className="flex flex-col">
-                      <span className="px-2 py-0.5 w-fit bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase tracking-wider mb-1">
+                      <span className={`px-2 py-0.5 w-fit rounded text-[9px] font-black uppercase tracking-wider mb-1 ${item.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>
                         {item.type === 'income' ? 'DEBIT' : 'KREDIT'}
                       </span>
                       <p className="font-bold text-slate-700 dark:text-slate-200">{item.category}</p>
+                      {item.contraEntry && (
+                        <div className="mt-1 pl-2 border-l-2 border-slate-200">
+                          <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded text-[9px] font-black uppercase tracking-wider">KREDIT</span>
+                          <p className="text-[10px] text-slate-400 font-bold">{item.contraEntry.category}</p>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="p-5">
@@ -199,6 +205,15 @@ export default function VerifikasiData() {
                 </tr>
               ))}
             </tbody>
+            <tfoot className="bg-slate-50 dark:bg-slate-900/80 font-black text-slate-800 dark:text-white border-t-2 border-slate-200 dark:border-slate-700">
+              <tr>
+                <td colSpan={2} className="p-5 text-right uppercase tracking-widest text-xs">Total Menunggu Verifikasi</td>
+                <td className="p-5 text-right text-blue-600 dark:text-blue-400 text-lg">
+                  {formatCurrency(filtered.reduce((sum, item) => sum + (item.amount || 0), 0))}
+                </td>
+                <td colSpan={3}></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

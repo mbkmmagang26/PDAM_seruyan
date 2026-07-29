@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { BarChart3, Loader2, Download, Printer, FileText, ChevronRight, Calculator, PieChart, Share2, Eye, Calendar, Settings, Layout, Layers, RefreshCw, Search, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import domtoimage from 'dom-to-image';
@@ -15,7 +15,7 @@ export default function LaporanKeuangan() {
   const [activeReport, setActiveReport] = useState<ReportType>('laba_rugi');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [theme, setTheme] = useState<'standard' | 'blue' | 'dark'>('standard');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [masterData, setMasterData] = useState({
     inventory: 0,
@@ -86,13 +86,26 @@ export default function LaporanKeuangan() {
       coa.forEach(c => { if (c.code) balances[c.code] = 0; });
       
       txList.forEach(t => {
-        if (!t.category) return;
-        if (balances[t.category] === undefined) balances[t.category] = 0;
-        const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
-        const debit = t.type === 'income' ? t.amount : 0;
-        const kredit = t.type === 'expense' ? t.amount : 0;
-        if (isAssetOrExpense) balances[t.category] += (debit - kredit);
-        else balances[t.category] += (kredit - debit);
+        // Entri Utama (Debit/Kredit)
+        if (t.category) {
+          if (balances[t.category] === undefined) balances[t.category] = 0;
+          const isAssetOrExpense = t.category.startsWith('1') || t.category.startsWith('5');
+          const debit = t.type === 'income' ? (t.amount || 0) : 0;
+          const kredit = t.type === 'expense' ? (t.amount || 0) : 0;
+          if (isAssetOrExpense) balances[t.category] += (debit - kredit);
+          else balances[t.category] += (kredit - debit);
+        }
+
+        // Entri Pasangan (Double-Entry Fix)
+        if (t.contraEntry && t.contraEntry.category) {
+          const cCat = t.contraEntry.category;
+          if (balances[cCat] === undefined) balances[cCat] = 0;
+          const cIsAssetOrExpense = cCat.startsWith('1') || cCat.startsWith('5');
+          const cDebit = t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0;
+          const cKredit = t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0;
+          if (cIsAssetOrExpense) balances[cCat] += (cDebit - cKredit);
+          else balances[cCat] += (cKredit - cDebit);
+        }
       });
       return balances;
     };
@@ -180,21 +193,8 @@ export default function LaporanKeuangan() {
     };
   }, [transactions, coa, selectedMonth, selectedYear]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleDownloadPDF = () => {
-    window.dispatchEvent(new CustomEvent('app-toast', {
-      detail: { 
-        title: 'Menyiapkan PDF', 
-        message: 'Pilih "Simpan sebagai PDF" pada menu printer untuk hasil terbaik.', 
-        type: 'info' 
-      }
-    }));
-    setTimeout(() => {
-      window.print();
-    }, 500);
+    handleExport();
   };
 
   const handleExport = () => {
@@ -224,7 +224,7 @@ export default function LaporanKeuangan() {
       data = [{ Pesan: 'Ekspor detail tersedia pada Buku Besar' }];
     }
 
-    exportToCSV(data, filename);
+    exportToPDF(data, filename);
   };
 
   if (loading) return <div className="p-8 text-center flex flex-col items-center gap-4"><Loader2 className="animate-spin text-blue-600" size={40} /><p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Menyusun Laporan Keuangan...</p></div>;
@@ -317,16 +317,7 @@ export default function LaporanKeuangan() {
              </div>
              
              <div className="flex items-center gap-4">
-                <div className="flex bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 shadow-sm">
-                   <button onClick={() => setTheme('standard')} className={`w-6 h-6 rounded ${theme === 'standard' ? 'bg-blue-600 ring-2 ring-blue-500/20' : 'bg-slate-100 dark:bg-slate-700 border border-slate-200'}`}></button>
-                   <button onClick={() => setTheme('blue')} className={`w-6 h-6 rounded mx-1 ${theme === 'blue' ? 'bg-blue-900 ring-2 ring-blue-900/20' : 'bg-blue-50 border border-blue-200'}`}></button>
-                   <button onClick={() => setTheme('dark')} className={`w-6 h-6 rounded ${theme === 'dark' ? 'bg-slate-900 ring-2 ring-slate-900/20' : 'bg-slate-800 border border-slate-700'}`}></button>
-                </div>
-
-                <div className="h-6 w-px bg-slate-200"></div>
-
                  <div className="flex gap-2">
-                    <button onClick={handlePrint} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white dark:bg-slate-800 rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100"><Printer size={18}/></button>
                     <button 
                       onClick={handleDownloadPDF}
                       disabled={loading}
@@ -354,9 +345,7 @@ export default function LaporanKeuangan() {
 
           {/* Actual Report Document */}
           <div className="flex-1 p-12 bg-slate-50  overflow-y-auto flex justify-center">
-            <div className={`print-area w-full max-w-4xl bg-white  shadow-2xl rounded-sm border border-slate-200 p-16 font-serif ${
-              theme === 'blue' ? 'border-t-8 border-blue-900' : theme === 'dark' ? 'border-t-8 border-slate-900' : 'border-t-8 border-blue-600'
-            }`}>
+            <div className={`print-area w-full max-w-4xl bg-white shadow-2xl rounded-sm border border-slate-200 p-16 font-serif border-t-8 border-blue-600`}>
                <div className="text-center mb-10">
                   <div className="flex justify-center mb-4">
                     <img src="/logo-pdam.png" alt="Logo PDAM" className="w-20 h-20 object-contain" />

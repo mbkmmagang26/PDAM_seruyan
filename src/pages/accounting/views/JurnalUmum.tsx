@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Plus, Search, Filter, Loader2, Save, X, FileText, Download, Calendar, Trash2, Lock } from 'lucide-react';
 import { sendNotification } from '../../../lib/notifications';
 import { useAuth } from '../../../authContext';
@@ -224,8 +224,8 @@ export default function JurnalUmum() {
       Kredit: t.type === 'expense' ? t.amount : 0,
       Status: t.status || 'pending'
     }));
-    exportToCSV(dataToExport, `Jurnal_Umum_${new Date().toISOString().split('T')[0]}`);
-    logActivity(currentUser, 'Export Jurnal', 'Mengekspor data jurnal ke CSV');
+    exportToPDF(dataToExport, `Jurnal_Umum_${new Date().toISOString().split('T')[0]}`);
+    logActivity(currentUser, 'Export Jurnal', 'Mengekspor data jurnal ke PDF');
   };
 
   const tabs = ["Semua Jurnal", "Kas Masuk (JKM)", "Bank Masuk (JBM)", "Kas Keluar (JKK)", "Bank Keluar (JBK)"];

@@ -59,7 +59,8 @@ export default function MeterReading() {
 
   const activeCustomer = useMemo(() => {
     if (assignedTask) {
-      return tbPelanggan.find(u => u.id === assignedTask.customerId || u.id === assignedTask.permohonanId);
+      const found = tbPelanggan.find(u => u.id === assignedTask.customerId || u.id === assignedTask.permohonanId);
+      if (found) return found;
     }
     return selectedUser;
   }, [assignedTask, selectedUser, tbPelanggan]);

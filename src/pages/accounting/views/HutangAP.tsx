@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Wallet, Loader2, Plus, X, Search, Filter, Download, UserPlus, History, LayoutDashboard, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -84,8 +84,8 @@ export default function HutangAP() {
       Saldo_Hutang: v.balance || 0,
       Status: (v.balance || 0) > 0 ? 'Hutang Aktif' : 'Lunas'
     }));
-    exportToCSV(data, 'Laporan_Hutang_Vendor');
-    logActivity(user, 'Export Hutang Vendor', 'Mengekspor laporan hutang vendor ke CSV');
+    exportToPDF(data, 'Laporan_Hutang_Vendor');
+    logActivity(user, 'Export Hutang Vendor', 'Mengekspor laporan hutang vendor ke PDF');
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Hutang...</div>;
@@ -132,8 +132,8 @@ export default function HutangAP() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
+          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <LayoutDashboard size={28} />
           </div>
           <div>
@@ -254,15 +254,70 @@ export default function HutangAP() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
-             <History size={32} />
-           </div>
-           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Modul Segera Hadir</h3>
-           <p className="text-slate-500 dark:text-slate-400 max-w-xs">Fitur riwayat pembayaran dan jadwal jatuh tempo sedang dalam tahap pengembangan.</p>
+      ) : activeTab === 'Riwayat Pembayaran' ? (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Riwayat Pelunasan Hutang</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Catatan pembayaran kepada pemasok/vendor.</p>
+              </div>
+              <button className="px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-rose-600/20 flex items-center gap-2 hover:bg-rose-700 transition-colors">
+                <Plus size={16} /> Catat Pembayaran
+              </button>
+            </div>
+            <div className="p-16 text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4 shadow-inner">
+                <History size={32} />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Belum ada riwayat pembayaran yang tercatat.</p>
+            </div>
+          </div>
         </div>
-      )}
+      ) : activeTab === 'Jadwal Hutang' ? (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Jadwal Jatuh Tempo Hutang</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Estimasi jadwal pelunasan berdasarkan termin.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-4 uppercase tracking-wider text-xs">Jadwal</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Total Kewajiban</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-center">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-rose-600">Jatuh Tempo Hari Ini / Lewat</td>
+                    <td className="p-4 text-right font-medium text-rose-600">Rp 0</td>
+                    <td className="p-4 text-center">
+                      <button className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Tinjau</button>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-amber-600">1 - 7 Hari Kedepan</td>
+                    <td className="p-4 text-right font-medium text-amber-600">Rp 0</td>
+                    <td className="p-4 text-center">
+                      <button className="bg-amber-50 text-amber-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Tinjau</button>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-slate-800 dark:text-white">8 - 30 Hari Kedepan</td>
+                    <td className="p-4 text-right font-medium text-slate-700 dark:text-slate-200">{formatCurrency(vendors.reduce((sum, v) => sum + (v.balance || 0), 0))}</td>
+                    <td className="p-4 text-center">
+                      <button className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-lg text-[10px] font-black uppercase">Tinjau</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Add Vendor Modal */}
       {showAddForm && (

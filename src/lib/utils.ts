@@ -24,24 +24,36 @@ export function formatDate(date: string | Date): string {
   });
 }
 
-export function exportToCSV(data: any[], filename: string) {
-  if (data.length === 0) return;
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+export function exportToPDF(data: any[], filename: string, title?: string) {
+  if (!data || data.length === 0) return;
+
+  const doc = new jsPDF('landscape');
   
-  const headers = Object.keys(data[0]).join(';');
-  const rows = data.map(obj => 
-    Object.values(obj).map(val => {
-      const stringVal = String(val).replace(/"/g, '""');
-      return `"${stringVal}"`;
-    }).join(';')
-  );
+  // Title
+  const documentTitle = title || filename.replace(/_/g, ' ').toUpperCase();
+  doc.setFontSize(14);
+  doc.text(documentTitle, 14, 15);
   
-  const csvContent = "\uFEFF" + [headers, ...rows].join("\n");
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `${filename}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // Tanggal cetak
+  doc.setFontSize(9);
+  doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 22);
+
+  // Prepare table data
+  const headers = Object.keys(data[0]);
+  const body = data.map(obj => Object.values(obj).map(val => String(val)));
+
+  autoTable(doc, {
+    head: [headers.map(h => h.replace(/_/g, ' ').toUpperCase())],
+    body: body,
+    startY: 28,
+    theme: 'grid',
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' }, // blue-600
+    alternateRowStyles: { fillColor: [248, 250, 252] }, // slate-50
+  });
+
+  doc.save(`${filename}.pdf`);
 }

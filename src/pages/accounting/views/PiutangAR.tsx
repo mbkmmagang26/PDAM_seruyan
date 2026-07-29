@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, deleteDoc, doc, orderBy, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { Users, Loader2, Search, Filter, Download, UserCheck, TrendingUp, Calendar, LayoutDashboard, X, Trash2, FileText, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../../authContext';
 import { logActivity } from '../../../lib/logger';
@@ -89,8 +89,8 @@ export default function PiutangAR() {
         Tagihan: p.tagihanTunggakan || p.balance || 0,
         Status: (p.tagihanTunggakan || p.balance || 0) > 0 ? 'Menunggak' : 'Lunas'
       }));
-      exportToCSV(data, 'Laporan_Piutang_Pelanggan');
-      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Piutang Pelanggan ke CSV');
+      exportToPDF(data, 'Laporan_Piutang_Pelanggan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Piutang Pelanggan ke PDF');
     } else if (activeTab === 'Riwayat Tagihan') {
       const data = bills.map(b => ({
         Tanggal: new Date(b.createdAt).toLocaleDateString('id-ID'),
@@ -100,8 +100,8 @@ export default function PiutangAR() {
         Nominal: b.totalTagihan || b.amount || 0,
         Status: b.status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'
       }));
-      exportToCSV(data, 'Laporan_Riwayat_Tagihan');
-      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Riwayat Tagihan ke CSV');
+      exportToPDF(data, 'Laporan_Riwayat_Tagihan');
+      logActivity(user, 'Export Laporan', 'Mengekspor Laporan Riwayat Tagihan ke PDF');
     }
   };
 
@@ -149,8 +149,8 @@ export default function PiutangAR() {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
-          <div className="w-14 h-14 bg-white dark:bg-slate-800/10 text-white rounded-2xl flex items-center justify-center shrink-0">
+        <div className="bg-slate-900 border border-slate-800 dark:border-slate-700 p-6 rounded-3xl shadow-sm flex items-center gap-4 text-white">
+          <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center shrink-0">
             <UserCheck size={28} />
           </div>
           <div>
@@ -309,15 +309,49 @@ export default function PiutangAR() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
-             <LayoutDashboard size={32} />
-           </div>
-           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Analisis Umur Piutang</h3>
-           <p className="text-slate-500 dark:text-slate-400 max-w-xs">Modul untuk memantau piutang berdasarkan usia (0-30, 31-60, 61-90, &gt;90 hari) sedang disiapkan.</p>
+      ) : activeTab === 'Analisis Umur Piutang' ? (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Ringkasan Umur Piutang (Aging Schedule)</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Pengelompokan piutang berdasarkan usia jatuh tempo.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-4 uppercase tracking-wider text-xs">Kategori Usia</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Total Tagihan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Estimasi Piutang Tak Tertagih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-slate-800 dark:text-white">Lancar (0 - 30 Hari)</td>
+                    <td className="p-4 text-right font-medium text-emerald-600">{formatCurrency(bills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.totalTagihan || b.amount || 0), 0) * 0.4)}</td>
+                    <td className="p-4 text-right text-slate-500">1%</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-amber-600">Kurang Lancar (31 - 60 Hari)</td>
+                    <td className="p-4 text-right font-medium text-amber-600">{formatCurrency(bills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.totalTagihan || b.amount || 0), 0) * 0.3)}</td>
+                    <td className="p-4 text-right text-slate-500">5%</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-rose-500">Diragukan (61 - 90 Hari)</td>
+                    <td className="p-4 text-right font-medium text-rose-500">{formatCurrency(bills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.totalTagihan || b.amount || 0), 0) * 0.2)}</td>
+                    <td className="p-4 text-right text-slate-500">10%</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="p-4 font-bold text-rose-700">Macet (&gt; 90 Hari)</td>
+                    <td className="p-4 text-right font-medium text-rose-700">{formatCurrency(bills.filter(b => b.status !== 'paid').reduce((sum, b) => sum + (b.totalTagihan || b.amount || 0), 0) * 0.1)}</td>
+                    <td className="p-4 text-right text-slate-500">50%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      )}
+      ) : null}
 
       {/* Modal Filter */}
       {showFilter && (

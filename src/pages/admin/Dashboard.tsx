@@ -162,11 +162,14 @@ export default function AdminDashboard() {
   const unreadRegistrations = pendingRegistrations.filter(r => !clickedNotifIds.includes(`reg-${r.id}`));
   const unreadNotifs = pendingRequestsList.length + pendingComplaints.length + unreadRegistrations.length;
 
-  const handleNotifClick = (id: string, targetView: AdminView) => {
+  const handleNotifClick = (id: string, targetView: AdminView, targetTab?: TaskTab) => {
     const updated = [...clickedNotifIds, id];
     setClickedNotifIds(updated);
     localStorage.setItem('clicked_admin_notifs', JSON.stringify(updated));
     setActiveView(targetView);
+    if (targetTab) {
+      setTaskTab(targetTab);
+    }
     setIsNotifOpen(false);
   };
 
@@ -379,8 +382,11 @@ export default function AdminDashboard() {
 
       let finalPermohonanId = newTaskForm.permohonanId;
 
-      // Jika sambungan baru manual (tidak pilih dari permohonan yang ada)
-      if (newTaskForm.type === 'new_connection' && !finalPermohonanId) {
+      // Buat dokumen sementara HANYA jika:
+      // 1. Tipe tugas = pemasangan baru
+      // 2. Tidak ada permohonan yang terhubung (bukan dari app pelanggan)
+      // 3. Admin TIDAK memilih pelanggan existing dari dropdown (tidak ada customerId)
+      if (newTaskForm.type === 'new_connection' && !finalPermohonanId && !newTaskForm.customerId) {
         const { addDoc, collection } = await import('firebase/firestore');
         const newPelangganRef = await addDoc(collection(db, 'data_pelanggan_meteran'), {
           nama: newTaskForm.customerName,
@@ -399,6 +405,7 @@ export default function AdminDashboard() {
         finalPermohonanId = newPelangganRef.id;
       }
 
+
       await createTask({
         title: taskTitle,
         type: newTaskForm.type,
@@ -409,6 +416,7 @@ export default function AdminDashboard() {
         assignedTo: newTaskForm.assignedTo || undefined,
         deadline: 'CYCLE',
         customerName: newTaskForm.customerName || undefined,
+        customerPhone: newTaskForm.customerPhone || undefined,
         customerId: newTaskForm.customerId || undefined,
         permohonanId: finalPermohonanId || undefined
       });
@@ -528,7 +536,8 @@ export default function AdminDashboard() {
         assignedTo: selectedStaffForComplaint,
         deadline: 'URGENT',
         pengaduanId: processComplaintData.id,
-        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan'
+        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan',
+        customerPhone: processComplaintData.userPhone || processComplaintData.phone || undefined
       });
 
       await updateDoc(doc(db, 'pengaduan_layanan_pelanggan', processComplaintData.id), { status: 'Diproses' });
@@ -727,18 +736,27 @@ export default function AdminDashboard() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {userFilter === 'customer' ? (
-                customers.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
-                      Tidak ada data pelanggan yang ditemukan
-                    </td>
-                  </tr>
-                ) : (
-                  customers.map((c: any) => (
+                (() => {
+                  const combinedCustomers = [
+                    ...pendingRegistrations,
+                    ...customers.filter(c => !pendingRegistrations.some(pr => pr.id === c.id))
+                  ];
+                  
+                  if (combinedCustomers.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic">
+                          Tidak ada data pelanggan yang ditemukan
+                        </td>
+                      </tr>
+                    );
+                  }
+                  
+                  return combinedCustomers.map((c: any) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {c.nama ? c.nama.substring(0, 2).toUpperCase() : 'PL'}
                           </div>
                           <div>
@@ -805,8 +823,8 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                     </tr>
-                  ))
-                )
+                  ));
+                })()
               ) : (
                 allUsers.filter((u: User) => u.role === userFilter).length === 0 ? (
                   <tr>
@@ -819,7 +837,7 @@ export default function AdminDashboard() {
                     <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {u.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -1243,37 +1261,7 @@ export default function AdminDashboard() {
           </button>
         </section>
 
-        <section className="bg-slate-900 rounded-[3.5rem] p-10 text-white border-l-[10px] border-[#00478d] relative overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-[#00478d]/10 rounded-full blur-[80px]" />
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-[#00478d]/20 rounded-xl flex items-center justify-center text-[#00478d]">
-              <History size={24} />
-            </div>
-            <h2 className="font-bold text-xl font-headline tracking-tight">{t('common.history')}</h2>
-          </div>
-          <div className="space-y-8 relative z-10">
-            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
-              <div className="w-2.5 h-2.5 mt-2 rounded-full bg-[#00478d] ring-4 ring-primary/20 shrink-0 group-hover:scale-125 transition-transform"></div>
-              <div className="flex-grow">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-sm font-bold text-slate-100">{t('admin.activity.tariff_update')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">14 MINS AGO</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.tariff_desc')}</p>
-              </div>
-            </div>
-            <div onClick={fetchHistoryLogs} className="flex gap-6 items-start group cursor-pointer hover:bg-slate-800/50 p-4 -mx-4 rounded-3xl transition-all">
-              <div className="w-2.5 h-2.5 mt-2 rounded-full bg-slate-700 shrink-0 group-hover:scale-125 transition-transform"></div>
-              <div className="flex-grow">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-sm font-bold text-slate-100">{t('admin.activity.new_staff')}</p>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">2 HOURS AGO</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{t('admin.activity.staff_desc')}</p>
-              </div>
-            </div>
-          </div>
-        </section>
+
       </div>
     );
   };
@@ -1465,7 +1453,7 @@ export default function AdminDashboard() {
                         {pendingComplaints.map(c => (
                           <button
                             key={`comp-${c.id}`}
-                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tugas_perbaikan_staf')}
+                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tugas_perbaikan_staf', 'complaints')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-white">Pengaduan Baru</p>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, 
@@ -7,7 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Wallet, LayoutGrid, Clock,
   Layers, MessageCircle
 } from 'lucide-react';
-import { formatCurrency, exportToCSV } from '../../../lib/utils';
+import { formatCurrency, exportToPDF } from '../../../lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useAuth } from '../../../authContext';
 import { Download } from 'lucide-react';
@@ -26,7 +26,8 @@ export default function DashboardUtama() {
     pengaduanPending: 0,
     cashTransit: 0,
     piutang: 0,
-    assetCategoriesCount: 0
+    assetCategoriesCount: 0,
+    penerimaanTagihan: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,44 +36,73 @@ export default function DashboardUtama() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
-    // Listen to Transactions of current budget year
-    const currentYearStart = `${selectedYear}-01-01`;
-    const currentYearEnd = `${selectedYear}-12-31`;
-    const unsubTx = onSnapshot(query(
+
+    // Ambil SEMUA transaksi lalu filter per tahun secara lokal
+    // (hindari where + orderBy bersamaan yang butuh Composite Index Firestore)
+    const unsubTx = onSnapshot(
       collection(db, 'jurnal_transaksi_keuangan'),
-      where('date', '>=', currentYearStart),
-      where('date', '<=', currentYearEnd)
-    ), (snapshot) => {
-      let totalInc = 0;
-      let totalExp = 0;
-      let transit = 0;
-      const monthly = new Map<string, { income: number; expense: number }>();
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-      monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
+      (snapshot) => {
+        let totalInc = 0;
+        let totalExp = 0;
+        let transit = 0;
+        let tagihanAir = 0;
+        const monthly = new Map<string, { income: number; expense: number }>();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+        monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.type === 'income') totalInc += data.amount || 0;
-        else totalExp += data.amount || 0;
+        snapshot.forEach(doc => {
+          const data = doc.data();
 
-        if (data.category === 'Kas Transit') transit += data.amount || 0;
+          // Filter per tahun secara lokal
+          const docYear = (data.date || '').substring(0, 4);
+          if (docYear !== selectedYear) return;
 
-        // For Chart
-        if (data.date) {
-          const dateObj = new Date(data.date);
-          const month = dateObj.toLocaleString('id-ID', { month: 'short' });
-          if (!monthly.has(month)) monthly.set(month, { income: 0, expense: 0 });
-          if (data.type === 'income') monthly.get(month)!.income += data.amount || 0;
-          else monthly.get(month)!.expense += data.amount || 0;
-        }
-      });
+          // Hitung penerimaan khusus dari tagihan air pelanggan
+          if (data.billId || data.authorId === 'system-billing' || (data.description && data.description.includes('Pembayaran Tagihan Air'))) {
+            // Hanya hitung jika statusnya verified atau completed
+            if (data.status !== 'rejected') {
+              tagihanAir += data.amount || 0;
+            }
+          }
 
-      const formattedChart = Array.from(monthly.entries())
-        .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
+          // Hitung hanya dari entri utama (bukan dari contraEntry)
+          // agar nilai tidak double-count akibat format double-entry
+          if (data.type === 'income') totalInc += data.amount || 0;
+          else if (data.type === 'expense' && !data.contraEntry) {
+            // Hanya hitung expense dari dokumen standalone (bukan jurnal auto-billing)
+            totalExp += data.amount || 0;
+          }
 
-      setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit }));
-      setChartData(formattedChart);
-    });
+          // Kas transit tetap dihitung dari entri income
+          if (data.category === 'Kas Transit' && data.type === 'income') {
+            transit += data.amount || 0;
+          }
+
+          // Untuk grafik bulanan
+          if (data.date) {
+            const dateObj = new Date(data.date);
+            const monthIdx = dateObj.getMonth();
+            const monthKey = monthNames[monthIdx];
+            if (monthly.has(monthKey)) {
+              if (data.type === 'income') {
+                monthly.get(monthKey)!.income += data.amount || 0;
+              } else if (data.type === 'expense' && !data.contraEntry) {
+                monthly.get(monthKey)!.expense += data.amount || 0;
+              }
+            }
+          }
+        });
+
+        const formattedChart = Array.from(monthly.entries())
+          .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
+
+        setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit, penerimaanTagihan: tagihanAir }));
+        setChartData(formattedChart);
+      },
+      (error) => {
+        console.error('Error loading transactions:', error);
+      }
+    );
 
     // Listen to Inventory
     const unsubInv = onSnapshot(collection(db, 'stok_material_pipa'), (snapshot) => {
@@ -141,7 +171,7 @@ export default function DashboardUtama() {
   }, [selectedYear]);
 
   const handleExportChart = () => {
-    exportToCSV(chartData, 'Analisis_Keuangan_Bulanan');
+    exportToPDF(chartData, 'Analisis_Keuangan_Bulanan');
   };
 
   if (loading) {
@@ -245,6 +275,13 @@ export default function DashboardUtama() {
                       <span className="text-xs font-bold text-slate-300">Kas Transit (1.1.6)</span>
                     </div>
                     <span className="text-xs font-black text-white">{formatCurrency(stats.cashTransit)}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
+                    <div className="flex items-center gap-3">
+                      <DollarSign size={16} className="text-emerald-400" />
+                      <span className="text-xs font-bold text-emerald-100">Tagihan Air Terbayar</span>
+                    </div>
+                    <span className="text-xs font-black text-emerald-400">+{formatCurrency(stats.penerimaanTagihan)}</span>
                   </div>
                 </div>
               </div>
@@ -461,7 +498,9 @@ export default function DashboardUtama() {
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-all">
+              <div 
+                 onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'operasional' } }))}
+                 className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-all">
                  <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
                        <CheckSquare size={32} />
@@ -473,7 +512,9 @@ export default function DashboardUtama() {
                  </div>
                  <ArrowUpRight size={24} className="text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
               </div>
-              <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-rose-300 dark:hover:border-rose-700 transition-all">
+              <div 
+                 onClick={() => window.dispatchEvent(new CustomEvent('app-change-module', { detail: { module: 'pengaduan_layanan_pelanggan' } }))}
+                 className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between group cursor-pointer hover:border-rose-300 dark:hover:border-rose-700 transition-all">
                  <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500">
                        <AlertCircle size={32} />

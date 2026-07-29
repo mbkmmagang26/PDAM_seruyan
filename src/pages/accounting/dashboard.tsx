@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import ThemeToggle from '../../components/ThemeToggle';
 
 // Subviews
@@ -27,6 +27,7 @@ import NeracaLajurView from './views/NeracaLajur';
 import LogAktivitas from './views/LogAktivitas';
 import ImportDataView from './views/ImportData';
 import Pengaduan from './views/Pengaduan';
+import Operasional from './views/Operasional';
 
 export type ModuleView = 
   | 'dashboard_utama'
@@ -83,7 +84,13 @@ export default function AccountingDashboard() {
         limit(10)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        docs.forEach((d: any) => {
+          if (d.title === 'DRD Berhasil Diposting' && d.message && d.message.includes('Rp 0')) {
+            deleteDoc(doc(db, 'notifikasi_pengguna', d.id)).catch(() => {});
+          }
+        });
+        setNotifications(docs.filter((d: any) => !(d.title === 'DRD Berhasil Diposting' && d.message && d.message.includes('Rp 0'))));
       });
       return () => unsubscribe();
     }
@@ -116,11 +123,35 @@ export default function AccountingDashboard() {
   }, []);
 
   const markNotifRead = async (id: string) => {
+    // Optimistic UI update
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     try {
       await updateDoc(doc(db, 'notifikasi_pengguna', id), { read: true });
     } catch (err) {
-      console.error(err);
+      console.error('Error marking notif read:', err);
     }
+  };
+
+  const handleNotifClick = (notif: any) => {
+    markNotifRead(notif.id);
+    setIsNotifOpen(false);
+    
+    if (notif.link) {
+      setActiveModule(notif.link as ModuleView);
+      return;
+    }
+    
+    const text = (notif.title + ' ' + notif.message).toLowerCase();
+    
+    if (text.includes('jurnal')) setActiveModule('jurnal_umum');
+    else if (text.includes('tagihan') || text.includes('piutang') || text.includes('bayar') || text.includes('meter')) setActiveModule('piutang_ar');
+    else if (text.includes('hutang') || text.includes('vendor')) setActiveModule('hutang_ap');
+    else if (text.includes('aset') || text.includes('inventaris')) setActiveModule('aset_tetap');
+    else if (text.includes('persediaan') || text.includes('barang')) setActiveModule('persediaan');
+    else if (text.includes('anggaran')) setActiveModule('anggaran');
+    else if (text.includes('laporan')) setActiveModule('laporan_keuangan');
+    else if (text.includes('verifikasi')) setActiveModule('verifikasi_data');
+    else setActiveModule('dashboard_utama');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -153,6 +184,8 @@ export default function AccountingDashboard() {
       { id: 'anggaran', label: 'Anggaran', icon: PieChart },
       { id: 'laporan_keuangan', label: 'Laporan Keuangan', icon: BarChart3 },
       { id: 'verifikasi_data', label: 'Verifikasi Data', icon: CheckSquare },
+      { id: 'operasional', label: 'Operasional', icon: CheckSquare },
+      { id: 'pengaduan_layanan_pelanggan', label: 'Pengaduan', icon: MessageCircle },
       { id: 'import_data', label: 'Import', icon: UploadCloud },
     ] as MenuItem[] : []),
     ...(isDirektur ? [
@@ -177,6 +210,7 @@ export default function AccountingDashboard() {
       case 'verifikasi_data': return <VerifikasiData />;
       case 'log_aktivitas': return <LogAktivitas />;
       case 'pengaduan_layanan_pelanggan': return <Pengaduan />;
+      case 'operasional': return <Operasional />;
       default: return <DashboardUtama />;
     }
   };
@@ -306,16 +340,16 @@ export default function AccountingDashboard() {
                       <span className="text-[10px] text-blue-600 font-bold">{unreadCount} Baru</span>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {notifications.filter(n => !n.read).length === 0 ? (
                         <div className="p-8 text-center text-slate-400 dark:text-slate-500">
                           <p className="text-[10px] font-bold uppercase tracking-widest">Tidak ada notifikasi</p>
                         </div>
                       ) : (
-                        notifications.map(n => (
+                        notifications.filter(n => !n.read).map(n => (
                           <button 
                             key={n.id} 
-                            onClick={() => { markNotifRead(n.id); setIsNotifOpen(false); }} 
-                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0 ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
+                            onClick={() => handleNotifClick(n)} 
+                            className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0 bg-blue-50/30 dark:bg-blue-900/10`}
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{n.title}</p>
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
