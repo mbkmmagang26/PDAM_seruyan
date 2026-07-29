@@ -351,7 +351,7 @@ export default function PiutangAR() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Modal Filter */}
       {showFilter && (
