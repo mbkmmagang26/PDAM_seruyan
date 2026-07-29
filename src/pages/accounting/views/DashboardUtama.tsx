@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, 
@@ -35,44 +35,64 @@ export default function DashboardUtama() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
-    // Listen to Transactions of current budget year
-    const currentYearStart = `${selectedYear}-01-01`;
-    const currentYearEnd = `${selectedYear}-12-31`;
-    const unsubTx = onSnapshot(query(
+
+    // Ambil SEMUA transaksi lalu filter per tahun secara lokal
+    // (hindari where + orderBy bersamaan yang butuh Composite Index Firestore)
+    const unsubTx = onSnapshot(
       collection(db, 'jurnal_transaksi_keuangan'),
-      where('date', '>=', currentYearStart),
-      where('date', '<=', currentYearEnd)
-    ), (snapshot) => {
-      let totalInc = 0;
-      let totalExp = 0;
-      let transit = 0;
-      const monthly = new Map<string, { income: number; expense: number }>();
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-      monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
+      (snapshot) => {
+        let totalInc = 0;
+        let totalExp = 0;
+        let transit = 0;
+        const monthly = new Map<string, { income: number; expense: number }>();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+        monthNames.forEach(m => monthly.set(m, { income: 0, expense: 0 }));
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.type === 'income') totalInc += data.amount || 0;
-        else totalExp += data.amount || 0;
+        snapshot.forEach(doc => {
+          const data = doc.data();
 
-        if (data.category === 'Kas Transit') transit += data.amount || 0;
+          // Filter per tahun secara lokal
+          const docYear = (data.date || '').substring(0, 4);
+          if (docYear !== selectedYear) return;
 
-        // For Chart
-        if (data.date) {
-          const dateObj = new Date(data.date);
-          const month = dateObj.toLocaleString('id-ID', { month: 'short' });
-          if (!monthly.has(month)) monthly.set(month, { income: 0, expense: 0 });
-          if (data.type === 'income') monthly.get(month)!.income += data.amount || 0;
-          else monthly.get(month)!.expense += data.amount || 0;
-        }
-      });
+          // Hitung hanya dari entri utama (bukan dari contraEntry)
+          // agar nilai tidak double-count akibat format double-entry
+          if (data.type === 'income') totalInc += data.amount || 0;
+          else if (data.type === 'expense' && !data.contraEntry) {
+            // Hanya hitung expense dari dokumen standalone (bukan jurnal auto-billing)
+            totalExp += data.amount || 0;
+          }
 
-      const formattedChart = Array.from(monthly.entries())
-        .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
+          // Kas transit tetap dihitung dari entri income
+          if (data.category === 'Kas Transit' && data.type === 'income') {
+            transit += data.amount || 0;
+          }
 
-      setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit }));
-      setChartData(formattedChart);
-    });
+          // Untuk grafik bulanan
+          if (data.date) {
+            const dateObj = new Date(data.date);
+            const monthIdx = dateObj.getMonth();
+            const monthKey = monthNames[monthIdx];
+            if (monthly.has(monthKey)) {
+              if (data.type === 'income') {
+                monthly.get(monthKey)!.income += data.amount || 0;
+              } else if (data.type === 'expense' && !data.contraEntry) {
+                monthly.get(monthKey)!.expense += data.amount || 0;
+              }
+            }
+          }
+        });
+
+        const formattedChart = Array.from(monthly.entries())
+          .map(([name, data]) => ({ name, Pemasukan: data.income, Pengeluaran: data.expense }));
+
+        setStats(s => ({ ...s, income: totalInc, expense: totalExp, cashTransit: transit }));
+        setChartData(formattedChart);
+      },
+      (error) => {
+        console.error('Error loading transactions:', error);
+      }
+    );
 
     // Listen to Inventory
     const unsubInv = onSnapshot(collection(db, 'stok_material_pipa'), (snapshot) => {
