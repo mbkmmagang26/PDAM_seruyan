@@ -70,6 +70,7 @@ export default function LaporanKeuangan() {
     
     const cumulativeTx = transactions.filter(t => {
       if (!t.date) return false;
+      if (t.status === 'pending' || t.status === 'rejected') return false;
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate <= endOfPeriod;
     });
@@ -77,6 +78,7 @@ export default function LaporanKeuangan() {
     // Filter transactions specifically for the selected month/year for Income Statement (Period-specific)
     const periodTx = transactions.filter(t => {
       if (!t.date) return false;
+      if (t.status === 'pending' || t.status === 'rejected') return false;
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
     });

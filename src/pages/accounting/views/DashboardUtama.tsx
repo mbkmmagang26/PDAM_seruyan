@@ -57,37 +57,37 @@ export default function DashboardUtama() {
           const docYear = (data.date || '').substring(0, 4);
           if (docYear !== selectedYear) return;
 
-          // Hitung penerimaan khusus dari tagihan air pelanggan
-          if (data.billId || data.authorId === 'system-billing' || (data.description && data.description.includes('Pembayaran Tagihan Air'))) {
-            // Hanya hitung jika statusnya verified atau completed
-            if (data.status !== 'rejected') {
+          // Filter out unverified transactions from the official balance
+          if (data.status !== 'pending' && data.status !== 'rejected') {
+            // Hitung penerimaan khusus dari tagihan air pelanggan
+            if (data.billId || data.authorId === 'system-billing' || (data.description && data.description.includes('Pembayaran Tagihan Air'))) {
               tagihanAir += data.amount || 0;
             }
-          }
 
-          // Hitung hanya dari entri utama (bukan dari contraEntry)
-          // agar nilai tidak double-count akibat format double-entry
-          if (data.type === 'income') totalInc += data.amount || 0;
-          else if (data.type === 'expense' && !data.contraEntry) {
-            // Hanya hitung expense dari dokumen standalone (bukan jurnal auto-billing)
-            totalExp += data.amount || 0;
-          }
+            // Hitung hanya dari entri utama (bukan dari contraEntry)
+            // agar nilai tidak double-count akibat format double-entry
+            if (data.type === 'income') totalInc += data.amount || 0;
+            else if (data.type === 'expense' && !data.contraEntry) {
+              // Hanya hitung expense dari dokumen standalone (bukan jurnal auto-billing)
+              totalExp += data.amount || 0;
+            }
 
-          // Kas transit tetap dihitung dari entri income
-          if (data.category === 'Kas Transit' && data.type === 'income') {
-            transit += data.amount || 0;
-          }
+            // Kas transit tetap dihitung dari entri income
+            if (data.category === 'Kas Transit' && data.type === 'income') {
+              transit += data.amount || 0;
+            }
 
-          // Untuk grafik bulanan
-          if (data.date) {
-            const dateObj = new Date(data.date);
-            const monthIdx = dateObj.getMonth();
-            const monthKey = monthNames[monthIdx];
-            if (monthly.has(monthKey)) {
-              if (data.type === 'income') {
-                monthly.get(monthKey)!.income += data.amount || 0;
-              } else if (data.type === 'expense' && !data.contraEntry) {
-                monthly.get(monthKey)!.expense += data.amount || 0;
+            // Untuk grafik bulanan
+            if (data.date) {
+              const dateObj = new Date(data.date);
+              const monthIdx = dateObj.getMonth();
+              const monthKey = monthNames[monthIdx];
+              if (monthly.has(monthKey)) {
+                if (data.type === 'income') {
+                  monthly.get(monthKey)!.income += data.amount || 0;
+                } else if (data.type === 'expense' && !data.contraEntry) {
+                  monthly.get(monthKey)!.expense += data.amount || 0;
+                }
               }
             }
           }
