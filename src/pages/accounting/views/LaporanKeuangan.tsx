@@ -72,7 +72,6 @@ export default function LaporanKeuangan() {
     const cumulativeTx = transactions.filter(t => {
       if (!t.date) return false;
       if (t.status === 'rejected') return false;
-      if (t.status === 'pending' && t.authorId !== 'system-billing') return false; // Accept billing's pending
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate <= endOfPeriod;
     });
@@ -81,7 +80,6 @@ export default function LaporanKeuangan() {
     const periodTx = transactions.filter(t => {
       if (!t.date) return false;
       if (t.status === 'rejected') return false;
-      if (t.status === 'pending' && t.authorId !== 'system-billing') return false; // Accept billing's pending
       const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
     });
@@ -255,16 +253,6 @@ export default function LaporanKeuangan() {
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Laporan standar SAK untuk audit dan manajemen</p>
         </div>
         <div className="flex items-center gap-4">
-            <div className="relative group">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500" size={16} />
-               <input 
-                 type="text" 
-                 placeholder="Cari laporan..." 
-                 value={searchTerm}
-                 onChange={e => setSearchTerm(e.target.value)}
-                 className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 transition-all w-48" 
-               />
-            </div>
         </div>
       </div>
 
@@ -278,7 +266,7 @@ export default function LaporanKeuangan() {
               { id: 'neraca', title: 'Neraca (Balance Sheet)', subtitle: 'POINT IN TIME', desc: 'Posisi keuangan: Aktiva, Kewajiban, dan Ekuitas', icon: <Layers size={20} /> },
               { id: 'arus_kas', title: 'Laporan Arus Kas', subtitle: 'MONTHLY', desc: 'Aliran dana masuk dan keluar dari operasional, investasi, pendanaan', icon: <RefreshCw size={20} /> },
               { id: 'rincian', title: 'Rincian Saldo Akun', subtitle: 'DETAIL SCHEDULE', desc: 'Rincian saldo buku pembantu per akun level 3', icon: <FileText size={20} /> }
-            ].filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase())).map(report => (
+            ].map(report => (
               <button
                 key={report.id}
                 onClick={() => setActiveReport(report.id as ReportType)}
@@ -338,7 +326,7 @@ export default function LaporanKeuangan() {
                 </select>
                 <div className="w-px h-3 bg-slate-200 mx-1"></div>
                 <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 outline-none">
-                   {Array.from({ length: Math.max(5, new Date().getFullYear() - 2024 + 5) }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                   {Array.from({ length: new Date().getFullYear() - 2024 + 21 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
              </div>
           </div>
