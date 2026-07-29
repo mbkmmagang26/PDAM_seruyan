@@ -123,10 +123,12 @@ export default function AccountingDashboard() {
   }, []);
 
   const markNotifRead = async (id: string) => {
+    // Optimistic UI update
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     try {
       await updateDoc(doc(db, 'notifikasi_pengguna', id), { read: true });
     } catch (err) {
-      console.error(err);
+      console.error('Error marking notif read:', err);
     }
   };
 
