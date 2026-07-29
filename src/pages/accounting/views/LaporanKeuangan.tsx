@@ -86,9 +86,13 @@ export default function LaporanKeuangan() {
       return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
     });
 
-    const calculateBalances = (txList: any[]) => {
+    const calculateBalances = (txList: any[], isForRevenue = false) => {
       const balances: Record<string, number> = {};
       coa.forEach(c => { if (c.code) balances[c.code] = 0; });
+      
+      // Cari akun Pendapatan utama (kode 4.x) untuk mencatat billing revenue
+      const revenueAccCode = coa.find(c => c.code && c.code.startsWith('4') && c.level === 3)?.code ||
+                             coa.find(c => c.code && c.code.startsWith('4'))?.code;
       
       txList.forEach(t => {
         // Entri Utama (Debit/Kredit)
@@ -106,6 +110,12 @@ export default function LaporanKeuangan() {
           if (t.authorId === 'system-billing') {
             debit = t.amount || 0; // Kas masuk (Debit)
             kredit = 0;
+
+            // Catat juga sebagai Pendapatan (Kredit akun Revenue) agar muncul di Laba Rugi
+            if (revenueAccCode) {
+              if (balances[revenueAccCode] === undefined) balances[revenueAccCode] = 0;
+              balances[revenueAccCode] += t.amount || 0; // Revenue bertambah
+            }
           }
           
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
