@@ -356,9 +356,11 @@ export default function LaporanKeuangan() {
              </div>
           </div>
 
-          {/* Actual Report Document */}
-          <div className="flex-1 p-12 bg-slate-50  overflow-y-auto flex justify-center">
-            <div className={`print-area w-full max-w-4xl bg-white shadow-2xl rounded-sm border border-slate-200 p-16 font-serif border-t-8 border-blue-600`}>
+          {/* Actual Report Document — Multi-page A4 Preview */}
+          <div className="flex-1 overflow-y-auto bg-slate-200 py-8 px-4 flex flex-col items-center gap-6">
+            {/* PAGE 1 — Header + Main Content */}
+            <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman 1</div>
+            <div className={`print-area w-full max-w-[794px] min-h-[1123px] bg-white shadow-2xl border border-slate-300 p-16 font-serif border-t-8 border-blue-600 flex flex-col`}>
                <div className="text-center mb-10">
                   <div className="flex justify-center mb-4">
                     <img src="/logo-pdam.png" alt="Logo PDAM" className="w-20 h-20 object-contain" />
@@ -603,18 +605,37 @@ export default function LaporanKeuangan() {
                  </div>
                )}
 
-               {/* Signature Section */}
-               <div className="mt-32 grid grid-cols-2 gap-20 text-center">
-                  <div className="space-y-20">
-                     <p className="text-sm text-slate-900 ">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
-                     <div className="border-t border-slate-900  w-48 mx-auto"></div>
-                  </div>
-                  <div className="space-y-20">
-                     <p className="text-sm text-slate-900 ">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
-                     <div className="border-t border-slate-900  w-48 mx-auto"></div>
-                  </div>
+               {/* Page footer */}
+               <div className="mt-auto pt-8 border-t border-slate-200 flex justify-between text-[10px] text-slate-400 font-mono">
+                 <span>PDAM Seruyan — Laporan Keuangan</span>
+                 <span>Halaman 1</span>
                </div>
             </div>
+
+            {/* PAGE 2 — Tanda Tangan */}
+            <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman 2</div>
+            <div className="w-full max-w-[794px] min-h-[1123px] bg-white shadow-2xl border border-slate-300 p-16 font-serif flex flex-col">
+              <div className="text-center mb-8">
+                <h2 className="text-base font-bold text-slate-700 tracking-wider uppercase">Lembar Pengesahan</h2>
+                <p className="text-sm text-slate-500 italic mt-1">Laporan Keuangan PDAM Seruyan — Periode {months[selectedMonth]} {selectedYear}</p>
+                <div className="w-16 h-0.5 bg-slate-900 mx-auto mt-4"></div>
+              </div>
+              <div className="mt-auto grid grid-cols-2 gap-20 text-center pb-24">
+                <div className="space-y-20">
+                  <p className="text-sm text-slate-900">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
+                  <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                </div>
+                <div className="space-y-20">
+                  <p className="text-sm text-slate-900">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
+                  <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                </div>
+              </div>
+              <div className="border-t border-slate-200 pt-4 flex justify-between text-[10px] text-slate-400 font-mono">
+                <span>PDAM Seruyan — Laporan Keuangan</span>
+                <span>Halaman 2</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
