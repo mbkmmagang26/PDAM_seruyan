@@ -421,8 +421,21 @@ export default function LaporanKeuangan() {
                  </div>
                );
 
-               const ReportFooter = ({ pageNum }: { pageNum: number }) => (
-                 <div className="mt-auto pt-8 border-t border-slate-200 flex justify-between text-[10px] text-slate-400 font-mono">
+               const ReportSignature = () => (
+                 <div className="mt-auto grid grid-cols-2 gap-12 text-center pt-8 pb-2">
+                   <div className="space-y-16">
+                     <p className="text-sm text-slate-900">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
+                     <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                   </div>
+                   <div className="space-y-16">
+                     <p className="text-sm text-slate-900">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
+                     <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                   </div>
+                 </div>
+               );
+
+               const ReportFooter = ({ pageNum, hasSignature }: { pageNum: number, hasSignature?: boolean }) => (
+                 <div className={`${hasSignature ? 'mt-4' : 'mt-auto'} pt-6 border-t border-slate-200 flex justify-between text-[10px] text-slate-400 font-mono`}>
                    <span>PDAM Seruyan — Laporan Keuangan</span>
                    <span>Halaman {pageNum}</span>
                  </div>
@@ -481,7 +494,7 @@ export default function LaporanKeuangan() {
                                                  <div key="laba" className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1 italic mt-4">
                                                    <span className="text-[11px] text-blue-600">{p.name}</span>
                                                    <span className="text-[11px] font-bold text-blue-700">{formatCurrency(p.amount)}</span>
-                                                 </div>
+                                                </div>
                                               );
                                               return (
                                                   <div key={p.id || i} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
@@ -500,7 +513,8 @@ export default function LaporanKeuangan() {
                                    </section>
                                </div>
 
-                               <ReportFooter pageNum={pageIdx + 1} />
+                               {isLast && <ReportSignature />}
+                               <ReportFooter pageNum={pageIdx + 1} hasSignature={isLast} />
                            </div>
                         </div>
                      );
@@ -509,11 +523,12 @@ export default function LaporanKeuangan() {
 
                // RINCIAN REPORT (Paginated)
                if (activeReport === 'rincian') {
-                  const ITEMS_PER_PAGE = 35;
+                  const ITEMS_PER_PAGE = 32;
                   const rincianItems = coa.filter(c => c.level === 3);
                   const pagesCount = Math.ceil(rincianItems.length / ITEMS_PER_PAGE) || 1;
                   
                   return Array.from({ length: pagesCount }).map((_, pageIdx) => {
+                     const isLast = pageIdx === pagesCount - 1;
                      const chunk = rincianItems.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
 
                      return (
@@ -550,7 +565,8 @@ export default function LaporanKeuangan() {
                                  </div>
                                </div>
 
-                               <ReportFooter pageNum={pageIdx + 1} />
+                               {isLast && <ReportSignature />}
+                               <ReportFooter pageNum={pageIdx + 1} hasSignature={isLast} />
                            </div>
                         </div>
                      );
@@ -695,47 +711,8 @@ export default function LaporanKeuangan() {
                           </div>
                         )}
 
-                        <ReportFooter pageNum={1} />
-                     </div>
-                  </div>
-               );
-            })()}
-
-            {/* --- SIGNATURE PAGE --- */}
-            {(() => {
-               // Calculate the page number for the signature page
-               let totalContentPages = 1;
-               if (activeReport === 'neraca') {
-                  const pasivaCount = reportData.kewajiban.length + reportData.ekuitas.length + 3;
-                  totalContentPages = Math.ceil(Math.max(reportData.aset.length, pasivaCount) / 25) || 1;
-               } else if (activeReport === 'rincian') {
-                  totalContentPages = Math.ceil(coa.filter(c => c.level === 3).length / 35) || 1;
-               }
-               const signaturePageNum = totalContentPages + 1;
-
-               return (
-                  <div className="w-full max-w-[794px] flex flex-col gap-2 mt-4">
-                     <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman {signaturePageNum}</div>
-                     <div className="print-area w-full h-[1123px] bg-white shadow-2xl border border-slate-300 p-16 font-serif flex flex-col">
-                       <div className="text-center mb-8">
-                         <h2 className="text-base font-bold text-slate-700 tracking-wider uppercase">Lembar Pengesahan</h2>
-                         <p className="text-sm text-slate-500 italic mt-1">Laporan Keuangan PDAM Seruyan — Periode {months[selectedMonth]} {selectedYear}</p>
-                         <div className="w-16 h-0.5 bg-slate-900 mx-auto mt-4"></div>
-                       </div>
-                       <div className="mt-auto grid grid-cols-2 gap-20 text-center pb-24">
-                         <div className="space-y-20">
-                           <p className="text-sm text-slate-900">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
-                           <div className="border-t border-slate-900 w-48 mx-auto"></div>
-                         </div>
-                         <div className="space-y-20">
-                           <p className="text-sm text-slate-900">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
-                           <div className="border-t border-slate-900 w-48 mx-auto"></div>
-                         </div>
-                       </div>
-                       <div className="border-t border-slate-200 pt-4 flex justify-between text-[10px] text-slate-400 font-mono">
-                         <span>PDAM Seruyan — Laporan Keuangan</span>
-                         <span>Halaman {signaturePageNum}</span>
-                       </div>
+                        <ReportSignature />
+                        <ReportFooter pageNum={1} hasSignature={true} />
                      </div>
                   </div>
                );
