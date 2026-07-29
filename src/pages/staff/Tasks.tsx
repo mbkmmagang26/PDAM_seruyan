@@ -626,7 +626,7 @@ export default function StaffDashboard() {
                                   <div className="p-2 flex flex-col gap-1">
                                     <button
                                       onClick={() => {
-                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        const phone = (task as any).customerPhone || (task as any).noHp || (task as any).phone;
                                         if (phone) {
                                           navigator.clipboard.writeText(phone);
                                           alert('Nomor HP berhasil disalin!');
@@ -642,7 +642,7 @@ export default function StaffDashboard() {
                                     </button>
                                     <button
                                       onClick={() => {
-                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        const phone = (task as any).customerPhone || (task as any).noHp || (task as any).phone;
                                         if (phone) {
                                           let formatted = phone.replace(/\D/g, '');
                                           if (formatted.startsWith('0')) formatted = '62' + formatted.substring(1);
