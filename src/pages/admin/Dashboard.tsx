@@ -741,7 +741,7 @@ export default function AdminDashboard() {
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {c.nama ? c.nama.substring(0, 2).toUpperCase() : 'PL'}
                           </div>
                           <div>
@@ -822,7 +822,7 @@ export default function AdminDashboard() {
                     <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
+                          <div className="w-12 h-12 rounded-2xl bg-[#00478d]/10 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
                             {u.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>

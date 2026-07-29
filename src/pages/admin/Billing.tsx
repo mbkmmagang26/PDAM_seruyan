@@ -213,7 +213,7 @@ export default function Billing() {
               <span className="font-bold">+12.4%</span> {t('admin.stats.vs_last_month')}
             </p>
           </div>
-          <div className="p-4 bg-white dark:bg-slate-800/20 rounded-3xl backdrop-blur-md">
+          <div className="p-4 bg-white/20 dark:bg-slate-800/20 rounded-3xl backdrop-blur-md">
             <CreditCard size={32} />
           </div>
         </div>
