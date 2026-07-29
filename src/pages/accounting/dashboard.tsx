@@ -123,6 +123,28 @@ export default function AccountingDashboard() {
     }
   };
 
+  const handleNotifClick = (notif: any) => {
+    markNotifRead(notif.id);
+    setIsNotifOpen(false);
+    
+    if (notif.link) {
+      setActiveModule(notif.link as ModuleView);
+      return;
+    }
+    
+    const text = (notif.title + ' ' + notif.message).toLowerCase();
+    
+    if (text.includes('jurnal')) setActiveModule('jurnal_umum');
+    else if (text.includes('tagihan') || text.includes('piutang') || text.includes('bayar') || text.includes('meter')) setActiveModule('piutang_ar');
+    else if (text.includes('hutang') || text.includes('vendor')) setActiveModule('hutang_ap');
+    else if (text.includes('aset') || text.includes('inventaris')) setActiveModule('aset_tetap');
+    else if (text.includes('persediaan') || text.includes('barang')) setActiveModule('persediaan');
+    else if (text.includes('anggaran')) setActiveModule('anggaran');
+    else if (text.includes('laporan')) setActiveModule('laporan_keuangan');
+    else if (text.includes('verifikasi')) setActiveModule('verifikasi_data');
+    else setActiveModule('dashboard_utama');
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   if (authLoading || !user) {
@@ -314,7 +336,7 @@ export default function AccountingDashboard() {
                         notifications.map(n => (
                           <button 
                             key={n.id} 
-                            onClick={() => { markNotifRead(n.id); setIsNotifOpen(false); }} 
+                            onClick={() => handleNotifClick(n)} 
                             className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0 ${!n.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{n.title}</p>
