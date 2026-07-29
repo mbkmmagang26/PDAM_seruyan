@@ -382,8 +382,11 @@ export default function AdminDashboard() {
 
       let finalPermohonanId = newTaskForm.permohonanId;
 
-      // Jika sambungan baru manual (tidak pilih dari permohonan yang ada)
-      if (newTaskForm.type === 'new_connection' && !finalPermohonanId) {
+      // Buat dokumen sementara HANYA jika:
+      // 1. Tipe tugas = pemasangan baru
+      // 2. Tidak ada permohonan yang terhubung (bukan dari app pelanggan)
+      // 3. Admin TIDAK memilih pelanggan existing dari dropdown (tidak ada customerId)
+      if (newTaskForm.type === 'new_connection' && !finalPermohonanId && !newTaskForm.customerId) {
         const { addDoc, collection } = await import('firebase/firestore');
         const newPelangganRef = await addDoc(collection(db, 'data_pelanggan_meteran'), {
           nama: newTaskForm.customerName,
@@ -401,6 +404,7 @@ export default function AdminDashboard() {
         });
         finalPermohonanId = newPelangganRef.id;
       }
+
 
       await createTask({
         title: taskTitle,

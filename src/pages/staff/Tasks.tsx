@@ -174,95 +174,82 @@ export default function StaffDashboard() {
         // Update status pengaduan jadi selesai (jika tugas ini berasal dari pengaduan)
         if (task.pengaduanId) {
           const pengaduanRef = doc(db, 'pengaduan_layanan_pelanggan', task.pengaduanId);
-          await updateDoc(pengaduanRef, {
-            status: 'Selesai'
-          });
+          await updateDoc(pengaduanRef, { status: 'Selesai' });
         }
 
-        // Update status permohonan jadi selesai (jika tugas ini berasal dari permohonan baru)
-        if (task.permohonanId) {
-          const permohonanRef = doc(db, 'permohonan_pasang_baru', task.permohonanId);
-          
-          // Fetch the form data to overwrite the old profile info
-          const permohonanSnap = await getDoc(permohonanRef);
-          let permData: any = null;
-          if (permohonanSnap.exists()) {
-            permData = permohonanSnap.data();
-          }
-
-          await updateDoc(permohonanRef, {
-            status: 'Selesai',
-            no_meter: updates.meterNumber || ''
-          });
-
-          // Update data_pelanggan_meteran (sinkronisasi data pelanggan baru)
-          const targetUserId = task.userId || (permData ? permData.userId : null);
-          if (targetUserId) {
-            const newMeterData = {
-              idPelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+        // ─── LOGIKA BARU: Update data_pelanggan_meteran ───────────────────────────
+        if (task.type === 'new_connection') {
+          const meterNumber = updates.meterNumber;
+          const meterData = {
+            no_meter: meterNumber,
+            id_pelanggan: `PLG-${meterNumber}`,
+            status: 'Aktif',
+            status_akun: 'active',
+            meters: arrayUnion({
+              idPelanggan: `PLG-${meterNumber}`,
               lokasi: task.location || 'Alamat Baru',
               status: 'Aktif',
               addedAt: new Date().toISOString()
-            };
-            
-            const payloadToUpdate: any = {
-              no_meter: updates.meterNumber || '',
-              id_pelanggan: newMeterData.idPelanggan,
-              status: 'Aktif',
-              status_akun: 'active',
-              meters: arrayUnion(newMeterData)
-            };
+            })
+          };
 
-            // Jika ada data formulir terbaru, timpa data profil lama sesuai request
-            if (permData) {
-              const newName = permData.name || permData.nama || task.customerName;
-              if (newName) {
-                payloadToUpdate.nama = newName;
-                payloadToUpdate.nama_search = String(newName).toLowerCase();
-              }
-              const newAddress = permData.address || permData.alamat || task.location;
-              if (newAddress) {
-                payloadToUpdate.alamat = newAddress;
-              }
-              const newPhone = permData.phone || permData.noHp;
-              if (newPhone) {
-                payloadToUpdate.noHp = newPhone;
-              }
-              const rawGolongan = permData.jenisBangunan || permData.golongan;
-              if (rawGolongan) {
-                // Mapping dari value form pelanggan ke Master Tarif Admin
-                const golonganMap: Record<string, string> = {
-                  'rumah_tangga': 'Rumah Tangga 2 (R2)',
-                  'niaga': 'Niaga Kecil (NK)',
-                  'industri': 'Industri & Niaga Besar',
-                  'sosial': 'Sosial Umum - Tempat Ibadah',
-                  'pemerintah': 'Instansi Pemerintah (PRT 2)',
-                  'sosial_umum': 'Sosial Umum - Tempat Ibadah',
-                  'sosial_khusus': 'Sosial Khusus - Sekolah (S)'
-                };
-                
-                const finalGolongan = golonganMap[rawGolongan] || rawGolongan;
-                payloadToUpdate.golongan = finalGolongan;
-                payloadToUpdate.gol = finalGolongan;
-              }
+          // KASUS 1: Ada customerId (admin pilih pelanggan existing dari dropdown)
+          // → Update langsung dokumen pelanggan tersebut, hapus dokumen sementara jika ada
+          if (task.customerId) {
+            await updateDoc(doc(db, 'data_pelanggan_meteran', task.customerId), meterData);
+
+            // Hapus dokumen sementara yang dibuat saat admin buat task manual
+            // (permohonanId di kasus ini menunjuk ke data_pelanggan_meteran temp doc)
+            if (task.permohonanId && task.permohonanId !== task.customerId) {
+              try {
+                const { deleteDoc } = await import('firebase/firestore');
+                await deleteDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId));
+              } catch (_) { /* Tidak apa-apa jika tidak ada */ }
             }
 
-            try {
-              await updateDoc(doc(db, 'data_pelanggan_meteran', targetUserId), payloadToUpdate);
-            } catch (updateErr) {
-              console.error("Gagal update profil:", updateErr);
-            }
+          // KASUS 2: Ada permohonanId dari permohonan_pasang_baru (request dari app pelanggan)
+          // → Periksa dokumen di permohonan_pasang_baru, lalu update data_pelanggan_meteran by userId
           } else if (task.permohonanId) {
-             // Fallback for extremely old tasks with no user relation
-             try {
-               await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
-                no_meter: updates.meterNumber || '',
-                id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
-              });
-             } catch (e) { console.error("Fallback update failed:", e); }
+            const permohonanRef = doc(db, 'permohonan_pasang_baru', task.permohonanId);
+            const permohonanSnap = await getDoc(permohonanRef);
+
+            if (permohonanSnap.exists()) {
+              // Ini memang request dari aplikasi pelanggan
+              const permData = permohonanSnap.data();
+              await updateDoc(permohonanRef, { status: 'Selesai', no_meter: meterNumber });
+
+              const targetUserId = task.userId || permData.userId;
+              if (targetUserId) {
+                const profilePayload: any = { ...meterData };
+                const newName = permData.name || permData.nama || task.customerName;
+                if (newName) { profilePayload.nama = newName; profilePayload.nama_search = String(newName).toLowerCase(); }
+                const newAddress = permData.address || permData.alamat;
+                if (newAddress) profilePayload.alamat = newAddress;
+                const newPhone = permData.phone || permData.noHp;
+                if (newPhone) profilePayload.noHp = newPhone;
+                const rawGolongan = permData.jenisBangunan || permData.golongan;
+                if (rawGolongan) {
+                  const golonganMap: Record<string, string> = {
+                    'rumah_tangga': 'Rumah Tangga 2 (R2)', 'niaga': 'Niaga Kecil (NK)',
+                    'industri': 'Industri & Niaga Besar', 'sosial': 'Sosial Umum - Tempat Ibadah',
+                    'pemerintah': 'Instansi Pemerintah (PRT 2)', 'sosial_umum': 'Sosial Umum - Tempat Ibadah',
+                    'sosial_khusus': 'Sosial Khusus - Sekolah (S)'
+                  };
+                  const finalGolongan = golonganMap[rawGolongan] || rawGolongan;
+                  profilePayload.golongan = finalGolongan;
+                  profilePayload.gol = finalGolongan;
+                }
+                await updateDoc(doc(db, 'data_pelanggan_meteran', targetUserId), profilePayload);
+              }
+            } else {
+              // KASUS 3: permohonanId menunjuk ke data_pelanggan_meteran temp doc (admin manual, tanpa pilih customer)
+              // → Update dokumen temp tersebut langsung menjadi aktif
+              await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), meterData);
+            }
           }
         }
-        
+        // ─────────────────────────────────────────────────────────────────────────
+
         logActivity(user, 'Selesai Pekerjaan', `Menyelesaikan tugas ${task.type} - ID: ${task.id}`);
         alert('Kerja bagus! Tugas berhasil diselesaikan.');
       } catch (error) {
@@ -271,6 +258,7 @@ export default function StaffDashboard() {
       }
     }
   };
+
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-surface dark:bg-slate-900 pb-12">
