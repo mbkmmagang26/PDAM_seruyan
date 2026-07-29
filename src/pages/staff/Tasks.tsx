@@ -27,7 +27,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import ThemeToggle from '../../components/ThemeToggle';
-import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, getDoc, getDocs, query, collection, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -162,9 +162,31 @@ export default function StaffDashboard() {
           completedAt: new Date().toISOString()
         };
 
-        // Gunakan nomor meter yang sudah di-generate oleh admin
+        // Generate nomor meter: gunakan nomor dari admin jika ada,
+        // jika tidak ada (tugas manual), generate otomatis secara berurutan
         if (task.type === 'new_connection') {
-          updates.meterNumber = task.meterNumber || `MTR-${Math.floor(1000 + Math.random() * 9000)}`;
+          if (task.meterNumber) {
+            updates.meterNumber = task.meterNumber;
+          } else {
+            // Query nomor meter terakhir untuk generate berikutnya secara urut
+            const qMeter = query(
+              collection(db, 'data_pelanggan_meteran'),
+              orderBy('no_meter', 'desc'),
+              limit(1)
+            );
+            const meterSnapshot = await getDocs(qMeter);
+            let nextMeterNumber = 'MTR-0001';
+            if (!meterSnapshot.empty) {
+              const lastMeter = meterSnapshot.docs[0].data().no_meter;
+              if (lastMeter && lastMeter.startsWith('MTR-')) {
+                const lastNum = parseInt(lastMeter.split('-')[1]);
+                if (!isNaN(lastNum)) {
+                  nextMeterNumber = `MTR-${String(lastNum + 1).padStart(4, '0')}`;
+                }
+              }
+            }
+            updates.meterNumber = nextMeterNumber;
+          }
         }
 
         // Update status perintah kerja jadi selesai
