@@ -146,7 +146,7 @@ export const processMeterReadingAndBilling = async (
       });
 
       // Kirim Notifikasi ke Pelanggan
-      const userUid = currentData.userId || '';
+      const userUid = userData.userId || userData.uid || '';
       if (userUid) {
         await addDoc(collection(db, 'notifikasi_pengguna'), {
           title: 'Tagihan Air Baru Diterbitkan',
