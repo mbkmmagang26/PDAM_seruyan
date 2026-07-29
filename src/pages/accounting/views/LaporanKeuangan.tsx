@@ -65,6 +65,9 @@ export default function LaporanKeuangan() {
   }, []);
 
   const reportData = useMemo(() => {
+    // Buat salinan lokal COA agar tidak memutasi state React secara langsung di dalam useMemo
+    const localCoa = [...coa];
+
     // Filter transactions up to the end of the selected month/year for Balance Sheet (Cumulative)
     const endOfPeriod = new Date(selectedYear, selectedMonth + 1, 0); // Last day of month
     endOfPeriod.setHours(23, 59, 59, 999);
@@ -86,18 +89,18 @@ export default function LaporanKeuangan() {
 
     const calculateBalances = (txList: any[], isForRevenue = false) => {
       const balances: Record<string, number> = {};
-      coa.forEach(c => { if (c.code) balances[c.code] = 0; });
+      localCoa.forEach(c => { if (c.code) balances[c.code] = 0; });
       
       // Cari akun Pendapatan utama (kode 4.x) untuk mencatat billing revenue
-      const revenueAccCode = coa.find(c => c.code && c.code.startsWith('4') && c.level === 3)?.code ||
-                             coa.find(c => c.code && c.code.startsWith('4'))?.code;
+      const revenueAccCode = localCoa.find(c => c.code && c.code.startsWith('4') && c.level === 3)?.code ||
+                             localCoa.find(c => c.code && c.code.startsWith('4'))?.code;
       
       txList.forEach(t => {
         // Entri Utama (Debit/Kredit)
         if (t.category) {
           if (balances[t.category] === undefined) balances[t.category] = 0;
           
-          const acc = coa.find(c => c.code === t.category);
+          const acc = localCoa.find(c => c.code === t.category);
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
@@ -131,7 +134,7 @@ export default function LaporanKeuangan() {
           const cCat = t.contraEntry.category;
           if (balances[cCat] === undefined) balances[cCat] = 0;
           
-          const acc = coa.find(c => c.code === cCat);
+          const acc = localCoa.find(c => c.code === cCat);
           const typeStr = acc ? acc.type : (cCat.startsWith('1') ? 'ASSET' : cCat.startsWith('2') ? 'LIABILITY' : cCat.startsWith('3') ? 'EQUITY' : cCat.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const cIsAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
@@ -172,7 +175,7 @@ export default function LaporanKeuangan() {
     let assetsInjected = 0;
 
     // Coba injeksi ke akun yang sudah ada di COA
-    coa.forEach(c => {
+    localCoa.forEach(c => {
       const name = (c.name || '').toLowerCase();
       const code = (c.code || '');
       
@@ -242,8 +245,8 @@ export default function LaporanKeuangan() {
     // Menyeimbangkan Neraca akibat injeksi Master Data
     const netInjection = totalInjectedAssets - totalInjectedLiabilities;
     if (netInjection > 0) {
-      const equityCode = coa.find(c => c.code && c.code.startsWith('3') && c.level === 3)?.code || 
-                         coa.find(c => c.code && c.code.startsWith('3'))?.code || '3.1.1';
+      const equityCode = localCoa.find(c => c.code && c.code.startsWith('3') && c.level === 3)?.code || 
+                         localCoa.find(c => c.code && c.code.startsWith('3'))?.code || '3.1.1';
       cumulativeBalances[equityCode] = (cumulativeBalances[equityCode] || 0) + netInjection;
     } else if (netInjection < 0) {
       // Jika liabilities lebih besar (jarang terjadi di master data murni), seimbangkan ke Aset Lainnya
@@ -265,8 +268,8 @@ export default function LaporanKeuangan() {
     };
 
     Object.keys(cumulativeBalances).forEach(code => {
-      if (!coa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
-        coa.push({
+      if (!localCoa.find(c => c.code === code) && Math.abs(cumulativeBalances[code]) > 0.01) {
+        localCoa.push({
           id: code,
           code: code,
           name: standardNames[code] || `Akun ${code} (Perlu Didaftarkan di COA)`,
@@ -278,16 +281,16 @@ export default function LaporanKeuangan() {
     // Laba Rugi Data (Period-specific)
     const getAccType = (c: any) => c.type || (c.code?.startsWith('1') ? 'ASSET' : c.code?.startsWith('2') ? 'LIABILITY' : c.code?.startsWith('3') ? 'EQUITY' : c.code?.startsWith('4') ? 'REVENUE' : 'EXPENSE');
 
-    const pendapatan = coa.filter(c => c.code && getAccType(c) === 'REVENUE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
-    const beban = coa.filter(c => c.code && getAccType(c) === 'EXPENSE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
+    const pendapatan = localCoa.filter(c => c.code && getAccType(c) === 'REVENUE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
+    const beban = localCoa.filter(c => c.code && getAccType(c) === 'EXPENSE').map(c => ({ ...c, amount: periodBalances[c.code] || 0 }));
     const totalPendapatan = pendapatan.reduce((sum, item) => sum + item.amount, 0);
     const totalBeban = beban.reduce((sum, item) => sum + item.amount, 0);
     const labaBersih = totalPendapatan - totalBeban;
 
     // Neraca Data (Cumulative)
-    const aset = coa.filter(c => c.code && getAccType(c) === 'ASSET').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
-    const kewajiban = coa.filter(c => c.code && getAccType(c) === 'LIABILITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
-    const ekuitas = coa.filter(c => c.code && getAccType(c) === 'EQUITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const aset = localCoa.filter(c => c.code && getAccType(c) === 'ASSET').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const kewajiban = localCoa.filter(c => c.code && getAccType(c) === 'LIABILITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
+    const ekuitas = localCoa.filter(c => c.code && getAccType(c) === 'EQUITY').map(c => ({ ...c, amount: cumulativeBalances[c.code] || 0 }));
     const totalAset = aset.reduce((sum, item) => sum + item.amount, 0);
     const totalKewajiban = kewajiban.reduce((sum, item) => sum + item.amount, 0);
     
@@ -301,7 +304,7 @@ export default function LaporanKeuangan() {
     const arusOperasional = labaBersih; 
     
     // 2. Arus Kas Investasi = Perubahan Aset Tetap (1.3.x)
-    const asetTetapCodes = coa.filter(c => c.code && c.code.startsWith('1.3')).map(c => c.code);
+    const asetTetapCodes = localCoa.filter(c => c.code && c.code.startsWith('1.3')).map(c => c.code);
     const totalAsetTetap = asetTetapCodes.reduce((sum, code) => sum + (cumulativeBalances[code] || 0), 0);
     // Note: Simplified logic for "change" in assets
     const arusInvestasi = -totalAsetTetap; 
@@ -314,9 +317,10 @@ export default function LaporanKeuangan() {
     return {
       pendapatan, beban, totalPendapatan, totalBeban, labaBersih,
       aset, kewajiban, ekuitas, totalAset, totalKewajiban, totalEkuitas,
-      arusOperasional, arusInvestasi, arusPendanaan, kenaikanKas
+      arusOperasional, arusInvestasi, arusPendanaan, kenaikanKas,
+      localCoa
     };
-  }, [transactions, coa, selectedMonth, selectedYear]);
+  }, [transactions, coa, selectedMonth, selectedYear, masterData]);
 
   const handleDownloadPDF = () => {
     handleExport();
@@ -599,7 +603,7 @@ export default function LaporanKeuangan() {
                // RINCIAN REPORT (Paginated)
                if (activeReport === 'rincian') {
                   const ITEMS_PER_PAGE = 32;
-                  const rincianItems = coa.filter(c => c.level === 3);
+                  const rincianItems = (reportData?.localCoa || []).filter((c: any) => c.level === 3);
                   const pagesCount = Math.ceil(rincianItems.length / ITEMS_PER_PAGE) || 1;
                   
                   return Array.from({ length: pagesCount }).map((_, pageIdx) => {
