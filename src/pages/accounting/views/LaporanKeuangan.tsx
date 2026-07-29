@@ -378,7 +378,7 @@ export default function LaporanKeuangan() {
                 </select>
                 <div className="w-px h-3 bg-slate-200 mx-1"></div>
                 <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 outline-none">
-                   {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                   {Array.from({ length: Math.max(5, new Date().getFullYear() - 2024 + 5) }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
              </div>
           </div>
@@ -470,14 +470,14 @@ export default function LaporanKeuangan() {
                                    <section>
                                        {pageIdx === 0 && <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Aktiva (Aset)</h3>}
                                        <div className="space-y-3 px-2">
-                                          {asetChunk.map(a => (
+                                           {asetChunk.map(a => (
                                               <div key={a.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                                <span className="text-[11px] text-slate-700 truncate pr-2" title={a.name}>{a.name}</span>
-                                                <span className="text-[11px] font-bold text-slate-800">{formatCurrency(a.amount)}</span>
+                                                <span className="text-[11px] text-black truncate pr-2" title={a.name}>{a.name}</span>
+                                                <span className="text-[11px] font-bold text-black">{formatCurrency(a.amount)}</span>
                                               </div>
                                           ))}
                                           {isLast && (
-                                              <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900 mt-4">
+                                              <div className="flex justify-between font-bold text-black pt-4 border-t border-black mt-4">
                                                  <span className="text-[11px] uppercase">Total Aktiva</span>
                                                  <span className="text-[11px] underline decoration-double">{formatCurrency(reportData.totalAset)}</span>
                                               </div>
@@ -489,22 +489,22 @@ export default function LaporanKeuangan() {
                                        {pageIdx === 0 && <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Pasiva (Kewajiban & Ekuitas)</h3>}
                                        <div className="space-y-3 px-2">
                                           {pasivaChunk.map((p, i) => {
-                                              if (p.type === 'header') return <p key={`h-${i}`} className="text-[10px] font-bold text-slate-400 italic mt-4 mb-1">{p.name}</p>;
+                                              if (p.type === 'header') return <p key={`h-${i}`} className="text-[10px] font-bold text-black italic mt-4 mb-1">{p.name}</p>;
                                               if (p.type === 'laba') return (
                                                  <div key="laba" className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1 italic mt-4">
-                                                   <span className="text-[11px] text-blue-600">{p.name}</span>
-                                                   <span className="text-[11px] font-bold text-blue-700">{formatCurrency(p.amount)}</span>
+                                                   <span className="text-[11px] font-bold text-black">{p.name}</span>
+                                                   <span className={`text-[11px] font-bold ${p.amount >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(p.amount)}</span>
                                                 </div>
                                               );
                                               return (
                                                   <div key={p.id || i} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                                    <span className="text-[11px] text-slate-700 truncate pr-2" title={p.name}>{p.name}</span>
-                                                    <span className="text-[11px] font-bold text-slate-800">{formatCurrency(p.amount)}</span>
+                                                    <span className="text-[11px] text-black truncate pr-2" title={p.name}>{p.name}</span>
+                                                    <span className="text-[11px] font-bold text-black">{formatCurrency(p.amount)}</span>
                                                   </div>
                                               )
                                           })}
                                           {isLast && (
-                                              <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900 mt-4">
+                                              <div className="flex justify-between font-bold text-black pt-4 border-t border-black mt-4">
                                                  <span className="text-[11px] uppercase">Total Pasiva</span>
                                                  <span className="text-[11px] underline decoration-double">{formatCurrency(reportData.totalKewajiban + reportData.totalEkuitas)}</span>
                                               </div>
@@ -587,11 +587,11 @@ export default function LaporanKeuangan() {
                               <div className="space-y-3 px-4">
                                 {reportData.pendapatan.map(p => (
                                   <div key={p.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                    <span className="text-sm text-slate-700">{p.name}</span>
-                                    <span className="text-sm font-bold text-slate-800">{formatCurrency(p.amount)}</span>
+                                    <span className="text-sm text-black">{p.name}</span>
+                                    <span className="text-sm font-bold text-black">{formatCurrency(p.amount)}</span>
                                   </div>
                                 ))}
-                                <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                <div className="flex justify-between font-bold text-black pt-4 border-t border-black">
                                   <span className="text-sm uppercase">Total Pendapatan</span>
                                   <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalPendapatan)}</span>
                                 </div>
@@ -603,11 +603,11 @@ export default function LaporanKeuangan() {
                               <div className="space-y-3 px-4">
                                 {reportData.beban.map(b => (
                                   <div key={b.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                    <span className="text-sm text-slate-700">{b.name}</span>
-                                    <span className="text-sm font-bold text-slate-800">-{formatCurrency(b.amount)}</span>
+                                    <span className="text-sm text-black">{b.name}</span>
+                                    <span className="text-sm font-bold text-black">-{formatCurrency(b.amount)}</span>
                                   </div>
                                 ))}
-                                <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                <div className="flex justify-between font-bold text-black pt-4 border-t border-black">
                                   <span className="text-sm uppercase">Total Beban Operasional</span>
                                   <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalBeban)}</span>
                                 </div>
@@ -615,9 +615,9 @@ export default function LaporanKeuangan() {
                             </section>
 
                             <div className="pt-12">
-                               <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
-                                  <h4 className="text-lg font-bold uppercase tracking-widest">Laba/Rugi Berjalan</h4>
-                                  <span className={`text-xl font-bold ${reportData.labaBersih >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                               <div className="flex justify-between items-center py-6 px-8 border-2 border-black bg-slate-50">
+                                  <h4 className="text-lg font-bold uppercase tracking-widest text-black">Laba/Rugi Berjalan</h4>
+                                  <span className={`text-xl font-bold ${reportData.labaBersih >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                     {formatCurrency(reportData.labaBersih)}
                                   </span>
                                </div>
@@ -675,9 +675,9 @@ export default function LaporanKeuangan() {
                             </section>
 
                             <div className="pt-12">
-                               <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-blue-50">
-                                  <h4 className="text-lg font-bold uppercase tracking-widest">Kenaikan/Penurunan Kas Bersih</h4>
-                                  <span className={`text-xl font-bold ${reportData.kenaikanKas >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                               <div className="flex justify-between items-center py-6 px-8 border-2 border-black bg-slate-50">
+                                  <h4 className="text-lg font-bold uppercase tracking-widest text-black">Kenaikan/Penurunan Kas Bersih</h4>
+                                  <span className={`text-xl font-bold ${reportData.kenaikanKas >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                     {formatCurrency(reportData.kenaikanKas)}
                                   </span>
                                </div>
@@ -688,26 +688,26 @@ export default function LaporanKeuangan() {
                         {activeReport === 'ekuitas' && (
                           <div className="space-y-12">
                             <section>
-                               <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Rincian Perubahan Ekuitas</h3>
+                               <h3 className="font-bold text-sm uppercase tracking-wider text-black border-b border-slate-200 pb-2 mb-4">Rincian Perubahan Ekuitas</h3>
                                <div className="space-y-6 px-4">
                                  <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                   <span className="text-sm text-slate-700">Saldo Awal Ekuitas</span>
-                                   <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.totalEkuitas - reportData.labaBersih)}</span>
+                                   <span className="text-sm text-black">Saldo Awal Ekuitas</span>
+                                   <span className="text-sm font-bold text-black">{formatCurrency(reportData.totalEkuitas - reportData.labaBersih)}</span>
                                  </div>
                                  <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                   <span className="text-sm text-slate-700">Laba Bersih Periode Berjalan</span>
-                                   <span className="text-sm font-bold text-emerald-600">+{formatCurrency(reportData.labaBersih)}</span>
+                                   <span className="text-sm text-black">Laba/Rugi Periode Berjalan</span>
+                                   <span className={`text-sm font-bold ${reportData.labaBersih >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{reportData.labaBersih >= 0 ? '+' : ''}{formatCurrency(reportData.labaBersih)}</span>
                                  </div>
                                  <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                   <span className="text-sm text-slate-700">Prive / Penarikan Modal</span>
-                                   <span className="text-sm font-bold text-slate-400">(Rp 0)</span>
+                                   <span className="text-sm text-black">Prive / Penarikan Modal</span>
+                                   <span className="text-sm font-bold text-black">(Rp 0)</span>
                                  </div>
-                                 <div className="pt-8 flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
-                                   <h4 className="text-lg font-bold uppercase tracking-widest">Saldo Akhir Ekuitas</h4>
-                                   <span className="text-xl font-bold text-slate-900">{formatCurrency(reportData.totalEkuitas)}</span>
+                                 <div className="pt-8 flex justify-between items-center py-6 px-8 border-2 border-black bg-slate-50">
+                                   <h4 className="text-lg font-bold uppercase tracking-widest text-black">Saldo Akhir Ekuitas</h4>
+                                   <span className="text-xl font-bold text-black">{formatCurrency(reportData.totalEkuitas)}</span>
                                  </div>
                                </div>
-                            </section>
+                             </section>
                           </div>
                         )}
 
