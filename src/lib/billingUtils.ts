@@ -52,10 +52,10 @@ export const processMeterReadingAndBilling = async (
     // 2. Dapatkan data Golongan berdasarkan nama
     let golQ;
     if (userGolongan) {
-      golQ = query(collection(db, 'master_tarif_air'), where('name', '==', userGolongan), limit(1));
+      golQ = query(collection(db, 'tb_golongan'), where('name', '==', userGolongan), limit(1));
     } else {
       // Fallback: pakai tarif pertama yang tersedia jika golongan belum diset admin
-      golQ = query(collection(db, 'master_tarif_air'), limit(1));
+      golQ = query(collection(db, 'tb_golongan'), limit(1));
     }
     const golSnap = await getDocs(golQ);
     

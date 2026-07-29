@@ -24,7 +24,7 @@ export default function TarifGolongan() {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'master_tarif_air'), (snapshot) => {
+    const unsub = onSnapshot(collection(db, 'tb_golongan'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Golongan));
       setGolongan(data);
       setLoading(false);
@@ -52,7 +52,7 @@ export default function TarifGolongan() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Yakin ingin menghapus golongan ini?')) {
-      await deleteDoc(doc(db, 'master_tarif_air', id));
+      await deleteDoc(doc(db, 'tb_golongan', id));
     }
   };
 
@@ -60,9 +60,9 @@ export default function TarifGolongan() {
     e.preventDefault();
     try {
       if (editingId) {
-        await setDoc(doc(db, 'master_tarif_air', editingId), formData, { merge: true });
+        await setDoc(doc(db, 'tb_golongan', editingId), formData, { merge: true });
       } else {
-        await addDoc(collection(db, 'master_tarif_air'), formData);
+        await addDoc(collection(db, 'tb_golongan'), formData);
       }
       resetForm();
     } catch (err) {
@@ -95,7 +95,7 @@ export default function TarifGolongan() {
 
     try {
       for (const item of defaults) {
-        await addDoc(collection(db, 'master_tarif_air'), item);
+        await addDoc(collection(db, 'tb_golongan'), item);
       }
       alert('Berhasil menambahkan data tarif default!');
     } catch (err: any) {

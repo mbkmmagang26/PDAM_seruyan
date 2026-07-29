@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { formatCurrency, exportToCSV } from '../../../lib/utils';
-import { HardDrive, Loader2, Plus, X, Search, Filter, Download, Activity, PieChart, LayoutDashboard, Briefcase, Calculator, Trash2 } from 'lucide-react';
+import { HardDrive, Loader2, Plus, X, Search, Filter, Download, Activity, PieChart, LayoutDashboard, Briefcase, Calculator, Trash2, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../../../authContext';
 
 export default function AsetTetap() {
@@ -93,6 +94,48 @@ export default function AsetTetap() {
       Kondisi: a.condition
     }));
     exportToCSV(data, 'Daftar_Aset_Tetap');
+  };
+
+  const handleImportXLS = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<any>(sheet);
+
+        for (const row of jsonData) {
+          const name = row['Nama_Aset'] || row['Nama Aset'] || row['name'];
+          if (!name) continue;
+
+          await addDoc(collection(db, 'inventaris_aset_tetap'), {
+            name: name,
+            category: row['Kategori'] || row['category'] || 'Peralatan & Mesin',
+            acquisitionDate: row['Tgl_Perolehan'] || row['Tgl Perolehan'] || new Date().toISOString().split('T')[0],
+            acquisitionCost: Number(row['Harga_Perolehan'] || row['Harga Perolehan'] || 0),
+            bookValue: Number(row['Nilai_Buku'] || row['Nilai Buku'] || row['Harga_Perolehan'] || 0),
+            usefulLife: Number(row['Masa_Manfaat'] || row['Masa Manfaat'] || 5),
+            residualValue: Number(row['Nilai_Residu'] || row['Nilai Residu'] || 0),
+            depreciationMethod: row['Metode'] || 'Garis Lurus',
+            condition: row['Kondisi'] || 'baik',
+            createdAt: serverTimestamp(),
+            authorId: user?.id || 'system',
+            authorName: user?.name || 'Unknown'
+          });
+        }
+        alert('Data aset berhasil diimport!');
+        e.target.value = '';
+      } catch (err: any) {
+        console.error(err);
+        alert('Gagal mengimport data: ' + err.message);
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-4" />Memuat Data Aset...</div>;
@@ -197,9 +240,13 @@ export default function AsetTetap() {
               >
                 <Filter size={18} /> {filterCategory !== 'Semua' ? `Kat: ${filterCategory}` : 'Filter'}
               </button>
+              <label className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800 cursor-pointer transition-all">
+                <Upload size={18} /> Import XLS
+                <input type="file" accept=".xls,.xlsx" className="hidden" onChange={handleImportXLS} />
+              </label>
               <button 
                 onClick={handleExport}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 flex items-center justify-center gap-2 font-bold text-sm bg-white dark:bg-slate-800 transition-all"
               >
                 <Download size={18} /> Export
               </button>
@@ -269,13 +316,78 @@ export default function AsetTetap() {
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 border-dashed rounded-3xl p-20 text-center flex flex-col items-center">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4">
-              <PieChart size={32} />
-           </div>
-           <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Analisis Aset & Penyusutan</h3>
-           <p className="text-slate-500 dark:text-slate-400 max-w-xs font-medium">Modul perhitungan penyusutan otomatis dan laporan mutasi aset sedang disiapkan.</p>
+      {activeTab === 'Penyusutan' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100">
+                  <tr>
+                    <th className="p-4 uppercase tracking-wider text-xs">Nama Aset</th>
+                    <th className="p-4 uppercase tracking-wider text-xs">Harga Perolehan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs">Metode</th>
+                    <th className="p-4 uppercase tracking-wider text-xs">Umur Ekonomis</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Penyusutan / Tahun</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Akumulasi Penyusutan</th>
+                    <th className="p-4 uppercase tracking-wider text-xs text-right">Nilai Buku</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan').map(a => {
+                    const currentYear = new Date().getFullYear();
+                    const acqYear = new Date(a.acquisitionDate).getFullYear();
+                    const yearsUsed = Math.min(Math.max(0, currentYear - acqYear), a.usefulLife || 0);
+                    let depPerYear = 0;
+                    if (a.depreciationMethod === 'Garis Lurus' && a.usefulLife > 0) {
+                      depPerYear = (Number(a.acquisitionCost) - Number(a.residualValue || 0)) / a.usefulLife;
+                    } else if (a.depreciationMethod === 'Saldo Menurun' && a.usefulLife > 0) {
+                      const rate = 2 / a.usefulLife;
+                      depPerYear = Number(a.acquisitionCost) * rate; 
+                    }
+                    const accumulated = Math.min(depPerYear * yearsUsed, Number(a.acquisitionCost) - Number(a.residualValue || 0));
+                    const bookValue = Number(a.acquisitionCost) - accumulated;
+
+                    return (
+                      <tr key={`dep-${a.id}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <td className="p-4 font-bold text-slate-800 dark:text-white">{a.name}</td>
+                        <td className="p-4 text-slate-600 dark:text-slate-300">{formatCurrency(a.acquisitionCost || 0)}</td>
+                        <td className="p-4"><span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-bold uppercase">{a.depreciationMethod}</span></td>
+                        <td className="p-4 text-slate-600 dark:text-slate-300">{a.usefulLife} Tahun</td>
+                        <td className="p-4 text-right text-rose-500 font-medium">{formatCurrency(depPerYear)}</td>
+                        <td className="p-4 text-right text-rose-600 font-bold">{formatCurrency(accumulated)}</td>
+                        <td className="p-4 text-right text-blue-600 font-black">{formatCurrency(bookValue)}</td>
+                      </tr>
+                    );
+                  })}
+                  {assets.filter(a => a.depreciationMethod !== 'Tanpa Penyusutan').length === 0 && (
+                     <tr><td colSpan={7} className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium">Tidak ada data aset yang disusutkan.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'Mutasi Aset' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Riwayat Mutasi Aset</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Catatan perpindahan, penjualan, atau penghapusan aset tetap.</p>
+              </div>
+              <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                <Plus size={16} /> Catat Mutasi
+              </button>
+            </div>
+            <div className="p-16 text-center flex flex-col items-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 mb-4 shadow-inner">
+                <Activity size={32} />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Belum ada riwayat mutasi aset yang tercatat.</p>
+            </div>
+          </div>
         </div>
       )}
 

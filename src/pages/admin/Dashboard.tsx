@@ -47,9 +47,9 @@ import { logActivity } from '../../lib/logger';
 import { generateSearchTokens } from '../../lib/searchUtils';
 
 
-type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tasks' | 'users' | 'requests' | 'tarif';
+type AdminView = 'dashboard' | 'waterflow' | 'billing' | 'tugas_perbaikan_staf' | 'users' | 'requests' | 'tarif';
 type UserFilter = 'staff' | 'customer' | 'direktur';
-type TaskTab = 'tasks' | 'complaints';
+type TaskTab = 'tugas_perbaikan_staf' | 'complaints';
 
 export default function AdminDashboard() {
   const { user, logout, allUsers, updateUserStatus, register } = useAuth();
@@ -58,11 +58,12 @@ export default function AdminDashboard() {
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
   const [userFilter, setUserFilter] = useState<UserFilter>('staff');
-  const [taskTab, setTaskTab] = useState<TaskTab>('tasks');
+  const [taskTab, setTaskTab] = useState<TaskTab>('tugas_perbaikan_staf');
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [complaints, setComplaints] = useState<any[]>([]);
   const [golonganList, setGolonganList] = useState<any[]>([]);
+  const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
 
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -153,12 +154,13 @@ export default function AdminDashboard() {
     }
   });
 
-  const pendingRequests = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
+  const pendingRequestsList = requests.filter(req => req.status === 'pending' && !clickedNotifIds.includes(`req-${req.id}`));
   const pendingComplaints = complaints.filter(c => 
     (!c.status || c.status === 'Menunggu Respon' || c.status === 'Menunggu' || c.status === 'Menunggu Respons') &&
     !clickedNotifIds.includes(`comp-${c.id}`)
   );
-  const unreadNotifs = pendingRequests.length + pendingComplaints.length;
+  const unreadRegistrations = pendingRegistrations.filter(r => !clickedNotifIds.includes(`reg-${r.id}`));
+  const unreadNotifs = pendingRequestsList.length + pendingComplaints.length + unreadRegistrations.length;
 
   const handleNotifClick = (id: string, targetView: AdminView) => {
     const updated = [...clickedNotifIds, id];
@@ -187,13 +189,13 @@ export default function AdminDashboard() {
     
     tasks.forEach(t => {
       if (t.customerName?.toLowerCase().includes(lowerQuery) || t.id?.toLowerCase().includes(lowerQuery) || t.reason?.toLowerCase().includes(lowerQuery)) {
-        res.push({ id: `task-${t.id}`, type: 'Tugas', title: t.customerName || t.id, sub: t.type, onClick: () => { setActiveView('tasks'); setTaskTab('tasks'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+        res.push({ id: `task-${t.id}`, type: 'Tugas', title: t.customerName || t.id, sub: t.type, onClick: () => { setActiveView('tugas_perbaikan_staf'); setTaskTab('tugas_perbaikan_staf'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
       }
     });
 
     complaints.forEach(c => {
       if (c.userName?.toLowerCase().includes(lowerQuery) || c.description?.toLowerCase().includes(lowerQuery) || c.userNoMeter?.toLowerCase().includes(lowerQuery)) {
-        res.push({ id: `comp-${c.id}`, type: 'Pengaduan', title: c.userName || 'Tanpa Nama', sub: c.category || 'Keluhan Pelanggan', onClick: () => { setActiveView('tasks'); setTaskTab('complaints'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
+        res.push({ id: `comp-${c.id}`, type: 'Pengaduan', title: c.userName || 'Tanpa Nama', sub: c.category || 'Keluhan Pelanggan', onClick: () => { setActiveView('tugas_perbaikan_staf'); setTaskTab('complaints'); setIsGlobalSearchOpen(false); setGlobalSearchQuery(''); } });
       }
     });
 
@@ -257,8 +259,18 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    // Ambil pendaftaran baru (pelanggan yang statusnya belum aktif atau status_akun pending)
+    const unsub = onSnapshot(collection(db, 'data_pelanggan_meteran'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const newRegs = data.filter((c: any) => c.status_akun === 'pending' || c.status === 'Nonaktif');
+      setPendingRegistrations(newRegs);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
     const unsub = onSnapshot(
-      collection(db, 'master_tarif_air'), 
+      collection(db, 'tb_golongan'), 
       (snapshot) => {
         setGolonganList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       },
@@ -315,21 +327,28 @@ export default function AdminDashboard() {
   const handleToggleCustomerStatus = async (customerId: string, currentStatus: string) => {
     try {
       if (currentStatus === 'Nonaktif' || !currentStatus) {
-        const noMeter = window.prompt("Masukkan Nomor Meter untuk mengaktifkan pelanggan:");
-        if (noMeter === null) return; // User cancelled
-
-        if (!noMeter.trim()) {
-          showNotification('Nomor Meter wajib diisi untuk mengaktifkan pelanggan', 'error');
-          return;
+        // Auto-generate nomor meter
+        const qMeter = query(collection(db, 'data_pelanggan_meteran'), orderBy('no_meter', 'desc'), limit(1));
+        const meterSnapshot = await getDocs(qMeter);
+        
+        let nextMeterNumber = 'MTR-0001';
+        if (!meterSnapshot.empty) {
+          const lastMeter = meterSnapshot.docs[0].data().no_meter;
+          if (lastMeter && lastMeter.startsWith('MTR-')) {
+             const lastNum = parseInt(lastMeter.split('-')[1]);
+             if (!isNaN(lastNum)) {
+                nextMeterNumber = `MTR-${String(lastNum + 1).padStart(4, '0')}`;
+             }
+          }
         }
 
         const docRef = doc(db, 'data_pelanggan_meteran', customerId);
         await updateDoc(docRef, {
           status: 'Aktif',
-          no_meter: noMeter.trim()
+          no_meter: nextMeterNumber
         });
-        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${noMeter.trim()}`);
-        showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter: ${noMeter}`, 'success');
+        logActivity(user, 'Aktifkan Pelanggan', `Mengaktifkan pelanggan ${customerId} dengan no meter ${nextMeterNumber}`);
+        showNotification(`Pelanggan berhasil diaktifkan dengan No. Meter Otomatis: ${nextMeterNumber}`, 'success');
       } else {
         if (window.confirm('Yakin ingin menonaktifkan pelanggan ini?')) {
           const docRef = doc(db, 'data_pelanggan_meteran', customerId);
@@ -508,7 +527,8 @@ export default function AdminDashboard() {
         reason: `${processComplaintData.category} - ${processComplaintData.description}`,
         assignedTo: selectedStaffForComplaint,
         deadline: 'URGENT',
-        pengaduanId: processComplaintData.id
+        pengaduanId: processComplaintData.id,
+        customerName: processComplaintData.userName || processComplaintData.name || 'Pelanggan'
       });
 
       await updateDoc(doc(db, 'pengaduan_layanan_pelanggan', processComplaintData.id), { status: 'Diproses' });
@@ -868,7 +888,7 @@ export default function AdminDashboard() {
       );
     }
 
-    if (activeView === 'tasks') {
+    if (activeView === 'tugas_perbaikan_staf') {
       return (
         <section className="space-y-6">
           <div className="flex justify-between items-center">
@@ -879,8 +899,8 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-4">
               <div className="flex gap-2 bg-slate-100 rounded-2xl p-1">
                 <button
-                  onClick={() => setTaskTab('tasks')}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${taskTab === 'tasks' ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  onClick={() => setTaskTab('tugas_perbaikan_staf')}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${taskTab === 'tugas_perbaikan_staf' ? 'bg-white dark:bg-slate-800 text-[#00478d] shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                     }`}
                 >
                   Perintah Kerja
@@ -908,7 +928,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {taskTab === 'tasks' ? (
+          {taskTab === 'tugas_perbaikan_staf' ? (
             <>
               <div className="grid grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
@@ -929,15 +949,15 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-visible">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700">
                     <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      <th className="px-8 py-4">{t('admin.tasks.table.details')}</th>
+                      <th className="px-8 py-4 first:rounded-tl-[2.5rem]">{t('admin.tasks.table.details')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.reason')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.assignee')}</th>
                       <th className="px-8 py-4">{t('admin.tasks.table.status')}</th>
-                      <th className="px-8 py-4 text-right">{t('admin.tasks.table.actions')}</th>
+                      <th className="px-8 py-4 text-right last:rounded-tr-[2.5rem]">{t('admin.tasks.table.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1026,26 +1046,32 @@ export default function AdminDashboard() {
                                     >
                                       <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('admin.tasks.available_staff')}</div>
                                       <div className="max-h-48 overflow-y-auto">
-                                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
-                                          <button
-                                            key={staff.id}
-                                            onClick={() => {
-                                              assignTask(task.id, staff.id);
-                                              setSelectedTaskForAssignment(null);
-                                              showNotification(`${t('admin.user.msg.assigned')} ${staff.name}`, 'success');
-                                            }}
-                                            className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
-                                          >
-                                            <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
-                                              {staff.name.substring(0, 2).toUpperCase()}
-                                            </div>
-                                            <div className="flex-1">
-                                              <p className="text-xs font-bold text-slate-700">{staff.name}</p>
-                                              <p className="text-[10px] text-slate-400">{staff.phone}</p>
-                                            </div>
-                                            {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
-                                          </button>
-                                        ))}
+                                        {allUsers.filter(u => u.role === 'staff' && u.status === 'active').length === 0 ? (
+                                          <div className="px-4 py-3 text-xs text-slate-500 text-center">
+                                            Tidak ada staf aktif
+                                          </div>
+                                        ) : (
+                                          allUsers.filter(u => u.role === 'staff' && u.status === 'active').map(staff => (
+                                            <button
+                                              key={staff.id}
+                                              onClick={() => {
+                                                assignTask(task.id, staff.id);
+                                                setSelectedTaskForAssignment(null);
+                                                showNotification(`${t('admin.user.msg.assigned') || 'Berhasil menugaskan ke'} ${staff.name}`, 'success');
+                                              }}
+                                              className="w-full px-4 py-3 text-left hover:bg-[#00478d]/5 flex items-center gap-3 transition-colors"
+                                            >
+                                              <div className="w-8 h-8 rounded-lg bg-[#00478d]/10 text-[#00478d] flex items-center justify-center font-bold text-[10px]">
+                                                {staff.name.substring(0, 2).toUpperCase()}
+                                              </div>
+                                              <div className="flex-1">
+                                                <p className="text-xs font-bold text-slate-700">{staff.name}</p>
+                                                <p className="text-[10px] text-slate-400">{staff.phone}</p>
+                                              </div>
+                                              {task.assignedTo === staff.id && <Check size={14} className="text-[#00478d]" />}
+                                            </button>
+                                          ))
+                                        )}
                                       </div>
                                     </motion.div>
                                   )}
@@ -1161,9 +1187,9 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <h3 className={`text-3xl font-headline font-extrabold mt-1 ${stat.color}`}>{stat.value}</h3>
+                  <h3 className={`text-3xl font-headline font-extrabold mt-1 ${stat.color} dark:text-white`}>{stat.value}</h3>
                 </div>
-                <div className={`p-4 rounded-2xl ${stat.color === 'text-[#00478d]' ? 'bg-[#00478d]/5 text-[#00478d]' : stat.color === 'text-[#005051]' ? 'bg-[#005051]/5 text-[#005051]' : 'bg-[#4b6175]/5 text-[#4b6175]'} group-hover:scale-110 transition-transform`}>
+                <div className={`p-4 rounded-2xl ${stat.color === 'text-[#00478d]' ? 'bg-[#00478d]/5 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400' : stat.color === 'text-[#005051]' ? 'bg-[#005051]/5 text-[#005051] dark:bg-teal-400/10 dark:text-teal-400' : 'bg-[#4b6175]/5 text-[#4b6175] dark:bg-slate-300/10 dark:text-slate-300'} group-hover:scale-110 transition-transform`}>
                   <stat.icon size={28} />
                 </div>
               </div>
@@ -1185,33 +1211,33 @@ export default function AdminDashboard() {
             className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#00478d]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#00478d]/5 text-[#00478d] dark:bg-blue-400/10 dark:text-blue-400 flex items-center justify-center group-hover:bg-[#00478d] group-hover:text-white dark:group-hover:bg-blue-500 transition-all">
                 <Users size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.user.management')}</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">{t('admin.user.management')}</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.user.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#00478d]/10 group-hover:text-[#00478d] dark:group-hover:bg-blue-400/10 dark:group-hover:text-blue-400 transition-all">
               <Plus size={20} />
             </div>
           </button>
 
           <button
-            onClick={() => setActiveView('tasks')}
+            onClick={() => setActiveView('tugas_perbaikan_staf')}
             className="flex-1 bg-white dark:bg-slate-800 dark:bg-slate-800 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 dark:border-slate-700 shadow-sm flex items-center justify-between hover:bg-[#4b6175]/5 transition-colors group"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#4b6175]/5 text-[#4b6175] dark:bg-slate-300/10 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#4b6175] group-hover:text-white dark:group-hover:bg-slate-500 transition-all">
                 <Wrench size={24} />
               </div>
               <div className="text-left">
-                <h4 className="font-bold text-slate-800 dark:text-white dark:text-white">{t('admin.tasks.management')}</h4>
+                <h4 className="font-bold text-slate-800 dark:text-white">{t('admin.tasks.management')}</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('admin.tasks.management_sub')}</p>
               </div>
             </div>
-            <div className="p-2 bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] transition-all">
+            <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-400 group-hover:bg-[#4b6175]/10 group-hover:text-[#4b6175] dark:group-hover:bg-slate-400/10 dark:group-hover:text-slate-300 transition-all">
               <Plus size={20} />
             </div>
           </button>
@@ -1303,15 +1329,15 @@ export default function AdminDashboard() {
           </button>
 
           <button
-            onClick={() => setActiveView('tasks')}
-            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'tasks' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+            onClick={() => setActiveView('tugas_perbaikan_staf')}
+            className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all group ${activeView === 'tugas_perbaikan_staf' ? 'bg-[#00478d] text-white font-bold shadow-xl shadow-primary/20' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
           >
             <div className="flex items-center gap-4">
               <Wrench size={20} />
               <span className="text-sm">{t('admin.sidebar.tasks')}</span>
             </div>
-            {activeView === 'tasks' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
+            {activeView === 'tugas_perbaikan_staf' && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-800 shadow-[0_0_8px_white]"></div>}
           </button>
 
           <div className="pt-4 pb-2 px-5">
@@ -1439,21 +1465,31 @@ export default function AdminDashboard() {
                         {pendingComplaints.map(c => (
                           <button
                             key={`comp-${c.id}`}
-                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tasks')}
+                            onClick={() => handleNotifClick(`comp-${c.id}`, 'tugas_perbaikan_staf')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
                           >
                             <p className="text-xs font-bold text-slate-800 dark:text-white">Pengaduan Baru</p>
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{c.userName || 'Tanpa Nama'} - {c.category}</p>
                           </button>
                         ))}
-                        {pendingRequests.map(r => (
+                        {pendingRequestsList.map(r => (
                           <button
                             key={`req-${r.id}`}
                             onClick={() => handleNotifClick(`req-${r.id}`, 'requests')}
                             className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
                           >
-                            <p className="text-xs font-bold text-slate-800 dark:text-white">Permohonan Baru</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.name}</p>
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Penyambungan Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.name || (r as any).nama || 'Pelanggan'} - {r.address || (r as any).alamat}</p>
+                          </button>
+                        ))}
+                        {unreadRegistrations.map(r => (
+                          <button
+                            key={`reg-${r.id}`}
+                            onClick={() => handleNotifClick(`reg-${r.id}`, 'users')}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 transition-colors"
+                          >
+                            <p className="text-xs font-bold text-slate-800 dark:text-white">Pendaftaran Baru</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{r.nama || r.name || 'Tanpa Nama'} - {r.email || r.username}</p>
                           </button>
                         ))}
                       </>

@@ -100,7 +100,8 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         assignedTo: staffId,
         deadline: 'CYCLE',
         permohonanId: id,
-        userId: req.userId || ''
+        userId: req.userId || '',
+        meterNumber: nextMeterNumber
       });
 
     } catch (error: any) {

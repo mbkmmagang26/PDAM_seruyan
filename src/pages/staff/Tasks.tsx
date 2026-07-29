@@ -16,7 +16,9 @@ import {
   Scissors,
   CheckCircle2,
   AlertTriangle,
-  Gauge
+  Gauge,
+  Phone,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +27,7 @@ import { useTasks } from '../../taskContext';
 import { useLanguage } from '../../languageContext';
 import LanguageToggle from '../../components/LanguageToggle';
 import ThemeToggle from '../../components/ThemeToggle';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logActivity } from '../../lib/logger';
 
@@ -37,6 +39,7 @@ export default function StaffDashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('repair');
+  const [activeContactMenu, setActiveContactMenu] = useState<string | null>(null);
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
@@ -139,16 +142,9 @@ export default function StaffDashboard() {
           completedAt: new Date().toISOString()
         };
 
-        // Jika pemasangan baru, minta nomor meter
+        // Gunakan nomor meter yang sudah di-generate oleh admin
         if (task.type === 'new_connection') {
-          const noMeter = window.prompt("Masukkan Nomor Meter yang terpasang:");
-          if (noMeter === null) return; // Batal
-          
-          if (!noMeter.trim()) {
-            alert("Nomor Meter wajib diisi untuk menyelesaikan pemasangan baru!");
-            return;
-          }
-          updates.meterNumber = noMeter.trim();
+          updates.meterNumber = task.meterNumber || `MTR-${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
         // Update status perintah kerja jadi selesai
@@ -166,25 +162,84 @@ export default function StaffDashboard() {
         // Update status permohonan jadi selesai (jika tugas ini berasal dari permohonan baru)
         if (task.permohonanId) {
           const permohonanRef = doc(db, 'permohonan_pasang_baru', task.permohonanId);
+          
+          // Fetch the form data to overwrite the old profile info
+          const permohonanSnap = await getDoc(permohonanRef);
+          let permData: any = null;
+          if (permohonanSnap.exists()) {
+            permData = permohonanSnap.data();
+          }
+
           await updateDoc(permohonanRef, {
             status: 'Selesai',
             no_meter: updates.meterNumber || ''
           });
 
           // Update data_pelanggan_meteran (sinkronisasi data pelanggan baru)
-          if (task.userId) {
-            await updateDoc(doc(db, 'data_pelanggan_meteran', task.userId), {
-              no_meter: updates.meterNumber || '',
-              id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+          const targetUserId = task.userId || (permData ? permData.userId : null);
+          if (targetUserId) {
+            const newMeterData = {
+              idPelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              lokasi: task.location || 'Alamat Baru',
               status: 'Aktif',
-              status_akun: 'active'
-            });
-          } else if (task.permohonanId) {
-             // Fallback for older tasks
-             await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
+              addedAt: new Date().toISOString()
+            };
+            
+            const payloadToUpdate: any = {
               no_meter: updates.meterNumber || '',
-              id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
-            });
+              id_pelanggan: newMeterData.idPelanggan,
+              status: 'Aktif',
+              status_akun: 'active',
+              meters: arrayUnion(newMeterData)
+            };
+
+            // Jika ada data formulir terbaru, timpa data profil lama sesuai request
+            if (permData) {
+              const newName = permData.name || permData.nama || task.customerName;
+              if (newName) {
+                payloadToUpdate.nama = newName;
+                payloadToUpdate.nama_search = String(newName).toLowerCase();
+              }
+              const newAddress = permData.address || permData.alamat || task.location;
+              if (newAddress) {
+                payloadToUpdate.alamat = newAddress;
+              }
+              const newPhone = permData.phone || permData.noHp;
+              if (newPhone) {
+                payloadToUpdate.noHp = newPhone;
+              }
+              const rawGolongan = permData.jenisBangunan || permData.golongan;
+              if (rawGolongan) {
+                // Mapping dari value form pelanggan ke Master Tarif Admin
+                const golonganMap: Record<string, string> = {
+                  'rumah_tangga': 'Rumah Tangga 2 (R2)',
+                  'niaga': 'Niaga Kecil (NK)',
+                  'industri': 'Industri & Niaga Besar',
+                  'sosial': 'Sosial Umum - Tempat Ibadah',
+                  'pemerintah': 'Instansi Pemerintah (PRT 2)',
+                  'sosial_umum': 'Sosial Umum - Tempat Ibadah',
+                  'sosial_khusus': 'Sosial Khusus - Sekolah (S)'
+                };
+                
+                const finalGolongan = golonganMap[rawGolongan] || rawGolongan;
+                payloadToUpdate.golongan = finalGolongan;
+                payloadToUpdate.gol = finalGolongan;
+              }
+            }
+
+            try {
+              await updateDoc(doc(db, 'data_pelanggan_meteran', targetUserId), payloadToUpdate);
+            } catch (updateErr) {
+              console.error("Gagal update profil:", updateErr);
+            }
+          } else if (task.permohonanId) {
+             // Fallback for extremely old tasks with no user relation
+             try {
+               await updateDoc(doc(db, 'data_pelanggan_meteran', task.permohonanId), {
+                no_meter: updates.meterNumber || '',
+                id_pelanggan: `PLG-${updates.meterNumber || task.permohonanId.substring(0,5)}`,
+              });
+             } catch (e) { console.error("Fallback update failed:", e); }
           }
         }
         
@@ -416,7 +471,7 @@ export default function StaffDashboard() {
                         {task.type === 'reading' && t('admin.tasks.type.reading')}
                         {task.type === 'new_connection' && `Sambungan Baru: ${task.customerName}`}
                         {task.type === 'disconnection' && `${t('admin.tasks.type.disconnection_prefix')} ${task.customerName}`}
-                        {task.type === 'repair' && `Perbaikan: ${task.reason?.split('-')[0] || 'Laporan Masuk'}`}
+                        {task.type === 'repair' && `Perbaikan: ${task.customerName ? `${task.customerName} (${task.reason?.split('-')[0]?.trim() || 'Laporan'})` : (task.reason?.split('-')[0] || 'Laporan Masuk')}`}
                       </h4>
                       <div className="mt-2 space-y-1">
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-wider">
@@ -529,11 +584,64 @@ export default function StaffDashboard() {
                            </button>
                         )}
                         
-                        {/* Tombol Tiga Titik hanya muncul jika belum dikerjakan */}
+                        {/* Menu Kontak Pelanggan */}
                         {task.status !== 'in-progress' && (
-                          <button className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all">
-                            <MoreHorizontal size={24} />
-                          </button>
+                          <div className="relative">
+                            <button 
+                              onClick={() => setActiveContactMenu(activeContactMenu === task.id ? null : task.id)}
+                              className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 active:scale-95 transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400"
+                              title="Opsi Kontak Pelanggan"
+                            >
+                              <MoreHorizontal size={24} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {activeContactMenu === task.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  className="absolute bottom-16 right-0 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50"
+                                >
+                                  <div className="p-2 flex flex-col gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        if (phone) {
+                                          navigator.clipboard.writeText(phone);
+                                          alert('Nomor HP berhasil disalin!');
+                                        } else {
+                                          alert('Nomor HP pelanggan tidak tersedia.');
+                                        }
+                                        setActiveContactMenu(null);
+                                      }}
+                                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors text-left"
+                                    >
+                                      <Copy size={16} className="text-slate-400" />
+                                      Salin Nomor
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const phone = task.customerPhone || (task as any).noHp || (task as any).phone;
+                                        if (phone) {
+                                          let formatted = phone.replace(/\D/g, '');
+                                          if (formatted.startsWith('0')) formatted = '62' + formatted.substring(1);
+                                          window.open(`https://wa.me/${formatted}`, '_blank');
+                                        } else {
+                                          alert('Nomor HP pelanggan tidak tersedia.');
+                                        }
+                                        setActiveContactMenu(null);
+                                      }}
+                                      className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors text-left"
+                                    >
+                                      <Phone size={16} className="text-emerald-500" />
+                                      Hubungi via WA
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         )}
                       </div>
                     )}
