@@ -129,8 +129,8 @@ export default function BukuBesar() {
     });
     
     return accountTx.map(t => {
-      const debit = t.type === 'income' ? t.amount : 0;
-      const kredit = t.type === 'expense' ? t.amount : 0;
+      const debit = t.type === 'expense' ? t.amount : 0;
+      const kredit = t.type === 'income' ? t.amount : 0;
       
       // Saldo Normal: Aset & Beban bertambah di Debit. Kewajiban, Ekuitas, Pendapatan bertambah di Kredit.
       if (isAssetOrExpense) {

@@ -97,8 +97,8 @@ export default function LaporanKeuangan() {
           const typeStr = acc ? acc.type : (t.category.startsWith('1') ? 'ASSET' : t.category.startsWith('2') ? 'LIABILITY' : t.category.startsWith('3') ? 'EQUITY' : t.category.startsWith('4') ? 'REVENUE' : 'EXPENSE');
           const isAssetOrExpense = typeStr === 'ASSET' || typeStr === 'EXPENSE';
 
-          const debit = t.type === 'income' ? (t.amount || 0) : 0;
-          const kredit = t.type === 'expense' ? (t.amount || 0) : 0;
+          const debit = t.type === 'expense' ? (t.amount || 0) : 0;
+          const kredit = t.type === 'income' ? (t.amount || 0) : 0;
           if (isAssetOrExpense) balances[t.category] += (debit - kredit);
           else balances[t.category] += (kredit - debit);
         }
