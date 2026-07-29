@@ -386,265 +386,364 @@ export default function LaporanKeuangan() {
              </div>
           </div>
 
-          {/* Actual Report Document */}
-          <div className="flex-1 p-12 bg-slate-50  overflow-y-auto flex justify-center">
-            <div className={`print-area w-full max-w-4xl bg-white shadow-2xl rounded-sm border border-slate-200 p-16 font-serif border-t-8 border-blue-600`}>
-               <div className="text-center mb-10">
-                  <div className="flex justify-center mb-4">
-                    <img src="/logo-pdam.png" alt="Logo PDAM" className="w-20 h-20 object-contain" />
-                  </div>
-                  <h1 className="text-2xl font-bold text-slate-900  tracking-widest uppercase">PDAM SERUYAN</h1>
-                  <h2 className="text-lg font-bold text-slate-700  tracking-wider mt-2">
-                    {activeReport === 'laba_rugi' && 'Laporan Laba Rugi'}
-                    {activeReport === 'ekuitas' && 'Laporan Perubahan Ekuitas'}
-                    {activeReport === 'neraca' && 'Neraca'}
-                    {activeReport === 'arus_kas' && 'Laporan Arus Kas'}
-                    {activeReport === 'rincian' && 'Rincian Saldo Akun'}
-                  </h2>
-                  <p className="text-sm text-slate-500  italic mt-2">Periode {months[selectedMonth]} {selectedYear}</p>
-                  <div className="w-24 h-1 bg-slate-900  mx-auto mt-6 mb-6"></div>
-                  
-                  {/* Balance Integrity Check */}
-                  <div className="no-print flex justify-center">
-                    {Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)) < 0.1 ? (
-                      <span className="px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <CheckCircle size={14} /> STATUS INTEGRITAS: NERACA VALID & SEIMBANG
-                      </span>
-                    ) : (
-                      <span className="px-4 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                        <AlertTriangle size={14} /> PERINGATAN INTEGRITAS: SELISIH BALANCE ({formatCurrency(Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)))})
-                      </span>
-                    )}
-                  </div>
-               </div>
-
-               {activeReport === 'laba_rugi' && (
-                 <div className="space-y-12">
-                   <section>
-                     <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Pendapatan Operasional</h3>
-                     <div className="space-y-3 px-4">
-                       {reportData.pendapatan.map(p => (
-                         <div key={p.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                           <span className="text-sm text-slate-700 ">{p.name}</span>
-                           <span className="text-sm font-bold text-slate-800 ">{formatCurrency(p.amount)}</span>
-                         </div>
-                       ))}
-                       <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                         <span className="text-sm uppercase">Total Pendapatan</span>
-                         <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalPendapatan)}</span>
-                       </div>
-                     </div>
-                   </section>
-
-                   <section>
-                     <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Beban Operasional</h3>
-                     <div className="space-y-3 px-4">
-                       {reportData.beban.map(b => (
-                         <div key={b.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                           <span className="text-sm text-slate-700 ">{b.name}</span>
-                           <span className="text-sm font-bold text-slate-800 ">-{formatCurrency(b.amount)}</span>
-                         </div>
-                       ))}
-                       <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                         <span className="text-sm uppercase">Total Beban Operasional</span>
-                         <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalBeban)}</span>
-                       </div>
-                     </div>
-                   </section>
-
-                   <div className="pt-12">
-                      <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900  bg-slate-50 ">
-                         <h4 className="text-lg font-bold uppercase tracking-widest">Laba/Rugi Berjalan</h4>
-                         <span className={`text-xl font-bold ${reportData.labaBersih >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
-                           {formatCurrency(reportData.labaBersih)}
-                         </span>
+          {/* Actual Report Document — Multi-page A4 Preview */}
+          <div className="flex-1 overflow-y-auto bg-slate-200 py-8 px-4 flex flex-col items-center gap-6">
+            
+            {/* --- REPORT PAGES --- */}
+            {(() => {
+               // HELPER COMPONENTS
+               const ReportHeader = () => (
+                 <div className="text-center mb-10">
+                    <div className="flex justify-center mb-4">
+                      <img src="/logo-pdam.png" alt="Logo PDAM" className="w-20 h-20 object-contain" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-widest uppercase">PDAM SERUYAN</h1>
+                    <h2 className="text-lg font-bold text-slate-700 tracking-wider mt-2">
+                      {activeReport === 'laba_rugi' && 'Laporan Laba Rugi'}
+                      {activeReport === 'ekuitas' && 'Laporan Perubahan Ekuitas'}
+                      {activeReport === 'neraca' && 'Neraca'}
+                      {activeReport === 'arus_kas' && 'Laporan Arus Kas'}
+                      {activeReport === 'rincian' && 'Rincian Saldo Akun'}
+                    </h2>
+                    <p className="text-sm text-slate-500 italic mt-2">Periode {months[selectedMonth]} {selectedYear}</p>
+                    <div className="w-24 h-1 bg-slate-900 mx-auto mt-6 mb-6"></div>
+                    
+                    {activeReport === 'neraca' && (
+                      <div className="no-print flex justify-center">
+                        {Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)) < 0.1 ? (
+                          <span className="px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle size={14} /> STATUS INTEGRITAS: NERACA VALID & SEIMBANG
+                          </span>
+                        ) : (
+                          <span className="px-4 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                            <AlertTriangle size={14} /> PERINGATAN INTEGRITAS: SELISIH BALANCE ({formatCurrency(Math.abs(reportData.totalAset - (reportData.totalKewajiban + reportData.totalEkuitas)))})
+                          </span>
+                        )}
                       </div>
-                   </div>
+                    )}
                  </div>
-               )}
+               );
 
-               {activeReport === 'neraca' && (
-                 <div className="space-y-12">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      <section>
-                         <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Aktiva (Aset)</h3>
-                         <div className="space-y-3 px-2">
-                           {reportData.aset.map(a => (
-                             <div key={a.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                               <span className="text-xs text-slate-700 ">{a.name}</span>
-                               <span className="text-xs font-bold text-slate-800 ">{formatCurrency(a.amount)}</span>
-                             </div>
-                           ))}
-                           <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                             <span className="text-xs uppercase">Total Aktiva</span>
-                             <span className="text-xs underline decoration-double">{formatCurrency(reportData.totalAset)}</span>
+               const ReportFooter = ({ pageNum }: { pageNum: number }) => (
+                 <div className="mt-auto pt-8 border-t border-slate-200 flex justify-between text-[10px] text-slate-400 font-mono">
+                   <span>PDAM Seruyan — Laporan Keuangan</span>
+                   <span>Halaman {pageNum}</span>
+                 </div>
+               );
+
+               // NERACA REPORT (Paginated)
+               if (activeReport === 'neraca') {
+                  const ITEMS_PER_PAGE = 25;
+                  const pasivaItems = [
+                     { type: 'header', name: 'Kewajiban' },
+                     ...reportData.kewajiban.map(k => ({...k, type: 'kewajiban'})),
+                     { type: 'header', name: 'Ekuitas' },
+                     ...reportData.ekuitas.map(e => ({...e, type: 'ekuitas'})),
+                     { type: 'laba', name: 'Laba Berjalan', amount: reportData.labaBersih }
+                  ];
+                  
+                  const maxLen = Math.max(reportData.aset.length, pasivaItems.length);
+                  const pagesCount = Math.ceil(maxLen / ITEMS_PER_PAGE) || 1;
+                  
+                  return Array.from({ length: pagesCount }).map((_, pageIdx) => {
+                     const isLast = pageIdx === pagesCount - 1;
+                     const asetChunk = reportData.aset.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
+                     const pasivaChunk = pasivaItems.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
+
+                     return (
+                        <div key={`neraca-${pageIdx}`} className="w-full max-w-[794px] flex flex-col gap-2">
+                           <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman {pageIdx + 1}</div>
+                           <div className="print-area w-full h-[1123px] bg-white shadow-2xl border border-slate-300 p-12 font-serif border-t-8 border-blue-600 flex flex-col relative overflow-hidden">
+                               {pageIdx === 0 && <ReportHeader />}
+                               
+                               <div className={`grid grid-cols-1 md:grid-cols-2 gap-12 ${pageIdx > 0 ? 'mt-4' : 'mt-8'}`}>
+                                   <section>
+                                       {pageIdx === 0 && <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Aktiva (Aset)</h3>}
+                                       <div className="space-y-3 px-2">
+                                          {asetChunk.map(a => (
+                                              <div key={a.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                                <span className="text-[11px] text-slate-700 truncate pr-2" title={a.name}>{a.name}</span>
+                                                <span className="text-[11px] font-bold text-slate-800">{formatCurrency(a.amount)}</span>
+                                              </div>
+                                          ))}
+                                          {isLast && (
+                                              <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900 mt-4">
+                                                 <span className="text-[11px] uppercase">Total Aktiva</span>
+                                                 <span className="text-[11px] underline decoration-double">{formatCurrency(reportData.totalAset)}</span>
+                                              </div>
+                                          )}
+                                       </div>
+                                   </section>
+
+                                   <section>
+                                       {pageIdx === 0 && <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Pasiva (Kewajiban & Ekuitas)</h3>}
+                                       <div className="space-y-3 px-2">
+                                          {pasivaChunk.map((p, i) => {
+                                              if (p.type === 'header') return <p key={`h-${i}`} className="text-[10px] font-bold text-slate-400 italic mt-4 mb-1">{p.name}</p>;
+                                              if (p.type === 'laba') return (
+                                                 <div key="laba" className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1 italic mt-4">
+                                                   <span className="text-[11px] text-blue-600">{p.name}</span>
+                                                   <span className="text-[11px] font-bold text-blue-700">{formatCurrency(p.amount)}</span>
+                                                 </div>
+                                              );
+                                              return (
+                                                  <div key={p.id || i} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                                    <span className="text-[11px] text-slate-700 truncate pr-2" title={p.name}>{p.name}</span>
+                                                    <span className="text-[11px] font-bold text-slate-800">{formatCurrency(p.amount)}</span>
+                                                  </div>
+                                              )
+                                          })}
+                                          {isLast && (
+                                              <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900 mt-4">
+                                                 <span className="text-[11px] uppercase">Total Pasiva</span>
+                                                 <span className="text-[11px] underline decoration-double">{formatCurrency(reportData.totalKewajiban + reportData.totalEkuitas)}</span>
+                                              </div>
+                                          )}
+                                       </div>
+                                   </section>
+                               </div>
+
+                               <ReportFooter pageNum={pageIdx + 1} />
                            </div>
-                         </div>
-                      </section>
+                        </div>
+                     );
+                  });
+               }
 
-                      <section>
-                         <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Pasiva (Kewajiban & Ekuitas)</h3>
-                         <div className="space-y-6">
-                            <div className="space-y-3 px-2">
-                               <p className="text-[10px] font-bold text-slate-400 italic">Kewajiban</p>
-                               {reportData.kewajiban.map(k => (
-                                 <div key={k.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                   <span className="text-xs text-slate-700 ">{k.name}</span>
-                                   <span className="text-xs font-bold text-slate-800 ">{formatCurrency(k.amount)}</span>
+               // RINCIAN REPORT (Paginated)
+               if (activeReport === 'rincian') {
+                  const ITEMS_PER_PAGE = 35;
+                  const rincianItems = coa.filter(c => c.level === 3);
+                  const pagesCount = Math.ceil(rincianItems.length / ITEMS_PER_PAGE) || 1;
+                  
+                  return Array.from({ length: pagesCount }).map((_, pageIdx) => {
+                     const chunk = rincianItems.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
+
+                     return (
+                        <div key={`rincian-${pageIdx}`} className="w-full max-w-[794px] flex flex-col gap-2">
+                           <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman {pageIdx + 1}</div>
+                           <div className="print-area w-full h-[1123px] bg-white shadow-2xl border border-slate-300 p-12 font-serif border-t-8 border-blue-600 flex flex-col relative overflow-hidden">
+                               {pageIdx === 0 && <ReportHeader />}
+                               
+                               <div className={`flex-1 ${pageIdx > 0 ? 'mt-4' : 'mt-8'}`}>
+                                 <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Rincian Saldo Akun (Buku Pembantu) {pageIdx > 0 && '(Lanjutan)'}</h3>
+                                 <div className="space-y-3 px-4">
+                                   {pageIdx === 0 && (
+                                       <div className="flex justify-between font-bold text-slate-400 border-b border-slate-200 pb-2 text-xs uppercase tracking-wider">
+                                         <span>Akun (COA)</span>
+                                         <span>Saldo Akhir</span>
+                                       </div>
+                                   )}
+                                   {chunk.map(c => {
+                                     const val = reportData.aset.find(a => a.code === c.code)?.amount ||
+                                                 reportData.kewajiban.find(k => k.code === c.code)?.amount ||
+                                                 reportData.ekuitas.find(e => e.code === c.code)?.amount ||
+                                                 reportData.pendapatan.find(p => p.code === c.code)?.amount ||
+                                                 reportData.beban.find(b => b.code === c.code)?.amount || 0;
+                                     return (
+                                       <div key={c.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                         <div className="text-sm truncate pr-4">
+                                           <span className="font-mono text-slate-400 mr-2">{c.code}</span>
+                                           <span className="text-slate-700 font-medium">{c.name}</span>
+                                         </div>
+                                         <span className="text-sm font-bold text-slate-800 shrink-0">{formatCurrency(val)}</span>
+                                       </div>
+                                     );
+                                   })}
                                  </div>
-                               ))}
-                            </div>
-                            <div className="space-y-3 px-2">
-                               <p className="text-[10px] font-bold text-slate-400 italic">Ekuitas</p>
-                               {reportData.ekuitas.map(e => (
-                                 <div key={e.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                                   <span className="text-xs text-slate-700 ">{e.name}</span>
-                                   <span className="text-xs font-bold text-slate-800 ">{formatCurrency(e.amount)}</span>
-                                 </div>
-                               ))}
-                               <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1 italic">
-                                 <span className="text-xs text-blue-600">Laba Berjalan</span>
-                                 <span className="text-xs font-bold text-blue-700">{formatCurrency(reportData.labaBersih)}</span>
+                               </div>
+
+                               <ReportFooter pageNum={pageIdx + 1} />
+                           </div>
+                        </div>
+                     );
+                  });
+               }
+
+               // OTHER REPORTS (Single Page)
+               return (
+                  <div className="w-full max-w-[794px] flex flex-col gap-2">
+                     <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman 1</div>
+                     <div className="print-area w-full min-h-[1123px] bg-white shadow-2xl border border-slate-300 p-16 font-serif border-t-8 border-blue-600 flex flex-col relative overflow-hidden">
+                        <ReportHeader />
+
+                        {activeReport === 'laba_rugi' && (
+                          <div className="space-y-12">
+                            <section>
+                              <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Pendapatan Operasional</h3>
+                              <div className="space-y-3 px-4">
+                                {reportData.pendapatan.map(p => (
+                                  <div key={p.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                    <span className="text-sm text-slate-700">{p.name}</span>
+                                    <span className="text-sm font-bold text-slate-800">{formatCurrency(p.amount)}</span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                  <span className="text-sm uppercase">Total Pendapatan</span>
+                                  <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalPendapatan)}</span>
+                                </div>
+                              </div>
+                            </section>
+
+                            <section>
+                              <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Beban Operasional</h3>
+                              <div className="space-y-3 px-4">
+                                {reportData.beban.map(b => (
+                                  <div key={b.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                    <span className="text-sm text-slate-700">{b.name}</span>
+                                    <span className="text-sm font-bold text-slate-800">-{formatCurrency(b.amount)}</span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                  <span className="text-sm uppercase">Total Beban Operasional</span>
+                                  <span className="text-sm underline decoration-double">{formatCurrency(reportData.totalBeban)}</span>
+                                </div>
+                              </div>
+                            </section>
+
+                            <div className="pt-12">
+                               <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
+                                  <h4 className="text-lg font-bold uppercase tracking-widest">Laba/Rugi Berjalan</h4>
+                                  <span className={`text-xl font-bold ${reportData.labaBersih >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                                    {formatCurrency(reportData.labaBersih)}
+                                  </span>
                                </div>
                             </div>
-                            <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900  px-2">
-                               <span className="text-xs uppercase">Total Pasiva</span>
-                               <span className="text-xs underline decoration-double">{formatCurrency(reportData.totalKewajiban + reportData.totalEkuitas)}</span>
+                          </div>
+                        )}
+
+                        {activeReport === 'arus_kas' && (
+                          <div className="space-y-12">
+                            <section>
+                               <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Operasional</h3>
+                               <div className="space-y-3 px-4">
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Laba Bersih Berjalan</span>
+                                   <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.labaBersih)}</span>
+                                 </div>
+                                 <p className="text-[10px] font-bold text-slate-400 italic mt-4">Penyesuaian non-kas:</p>
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Depresiasi & Amortisasi (Estimasi)</span>
+                                   <span className="text-sm font-bold text-slate-800">Rp 0</span>
+                                 </div>
+                                 <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                   <span className="text-sm uppercase">Total Kas dari Operasional</span>
+                                   <span className="text-sm underline">{formatCurrency(reportData.arusOperasional)}</span>
+                                 </div>
+                               </div>
+                            </section>
+
+                            <section>
+                               <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Investasi</h3>
+                               <div className="space-y-3 px-4">
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Perolehan Aset Tetap</span>
+                                   <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.arusInvestasi)}</span>
+                                 </div>
+                                 <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                   <span className="text-sm uppercase">Total Kas dari Investasi</span>
+                                   <span className="text-sm underline">{formatCurrency(reportData.arusInvestasi)}</span>
+                                 </div>
+                               </div>
+                            </section>
+
+                            <section>
+                               <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Pendanaan</h3>
+                               <div className="space-y-3 px-4">
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Perubahan Kewajiban & Ekuitas</span>
+                                   <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.arusPendanaan)}</span>
+                                 </div>
+                                 <div className="flex justify-between font-bold text-slate-900 pt-4 border-t border-slate-900">
+                                   <span className="text-sm uppercase">Total Kas dari Pendanaan</span>
+                                   <span className="text-sm underline">{formatCurrency(reportData.arusPendanaan)}</span>
+                                 </div>
+                               </div>
+                            </section>
+
+                            <div className="pt-12">
+                               <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-blue-50">
+                                  <h4 className="text-lg font-bold uppercase tracking-widest">Kenaikan/Penurunan Kas Bersih</h4>
+                                  <span className={`text-xl font-bold ${reportData.kenaikanKas >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                                    {formatCurrency(reportData.kenaikanKas)}
+                                  </span>
+                               </div>
                             </div>
+                          </div>
+                        )}
+
+                        {activeReport === 'ekuitas' && (
+                          <div className="space-y-12">
+                            <section>
+                               <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2 mb-4">Rincian Perubahan Ekuitas</h3>
+                               <div className="space-y-6 px-4">
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Saldo Awal Ekuitas</span>
+                                   <span className="text-sm font-bold text-slate-800">{formatCurrency(reportData.totalEkuitas - reportData.labaBersih)}</span>
+                                 </div>
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Laba Bersih Periode Berjalan</span>
+                                   <span className="text-sm font-bold text-emerald-600">+{formatCurrency(reportData.labaBersih)}</span>
+                                 </div>
+                                 <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
+                                   <span className="text-sm text-slate-700">Prive / Penarikan Modal</span>
+                                   <span className="text-sm font-bold text-slate-400">(Rp 0)</span>
+                                 </div>
+                                 <div className="pt-8 flex justify-between items-center py-6 px-8 border-2 border-slate-900 bg-slate-50">
+                                   <h4 className="text-lg font-bold uppercase tracking-widest">Saldo Akhir Ekuitas</h4>
+                                   <span className="text-xl font-bold text-slate-900">{formatCurrency(reportData.totalEkuitas)}</span>
+                                 </div>
+                               </div>
+                            </section>
+                          </div>
+                        )}
+
+                        <ReportFooter pageNum={1} />
+                     </div>
+                  </div>
+               );
+            })()}
+
+            {/* --- SIGNATURE PAGE --- */}
+            {(() => {
+               // Calculate the page number for the signature page
+               let totalContentPages = 1;
+               if (activeReport === 'neraca') {
+                  const pasivaCount = reportData.kewajiban.length + reportData.ekuitas.length + 3;
+                  totalContentPages = Math.ceil(Math.max(reportData.aset.length, pasivaCount) / 25) || 1;
+               } else if (activeReport === 'rincian') {
+                  totalContentPages = Math.ceil(coa.filter(c => c.level === 3).length / 35) || 1;
+               }
+               const signaturePageNum = totalContentPages + 1;
+
+               return (
+                  <div className="w-full max-w-[794px] flex flex-col gap-2 mt-4">
+                     <div className="text-xs text-slate-400 font-bold tracking-widest uppercase self-start ml-4">Halaman {signaturePageNum}</div>
+                     <div className="print-area w-full h-[1123px] bg-white shadow-2xl border border-slate-300 p-16 font-serif flex flex-col">
+                       <div className="text-center mb-8">
+                         <h2 className="text-base font-bold text-slate-700 tracking-wider uppercase">Lembar Pengesahan</h2>
+                         <p className="text-sm text-slate-500 italic mt-1">Laporan Keuangan PDAM Seruyan — Periode {months[selectedMonth]} {selectedYear}</p>
+                         <div className="w-16 h-0.5 bg-slate-900 mx-auto mt-4"></div>
+                       </div>
+                       <div className="mt-auto grid grid-cols-2 gap-20 text-center pb-24">
+                         <div className="space-y-20">
+                           <p className="text-sm text-slate-900">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
+                           <div className="border-t border-slate-900 w-48 mx-auto"></div>
                          </div>
-                      </section>
-                   </div>
-                 </div>
-               )}
-
-               {activeReport === 'arus_kas' && (
-                 <div className="space-y-12">
-                   <section>
-                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Operasional</h3>
-                      <div className="space-y-3 px-4">
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Laba Bersih Berjalan</span>
-                          <span className="text-sm font-bold text-slate-800 ">{formatCurrency(reportData.labaBersih)}</span>
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 italic mt-4">Penyesuaian non-kas:</p>
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Depresiasi & Amortisasi (Estimasi)</span>
-                          <span className="text-sm font-bold text-slate-800 ">Rp 0</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                          <span className="text-sm uppercase">Total Kas dari Operasional</span>
-                          <span className="text-sm underline">{formatCurrency(reportData.arusOperasional)}</span>
-                        </div>
-                      </div>
-                   </section>
-
-                   <section>
-                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Investasi</h3>
-                      <div className="space-y-3 px-4">
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Perolehan Aset Tetap</span>
-                          <span className="text-sm font-bold text-slate-800 ">{formatCurrency(reportData.arusInvestasi)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                          <span className="text-sm uppercase">Total Kas dari Investasi</span>
-                          <span className="text-sm underline">{formatCurrency(reportData.arusInvestasi)}</span>
-                        </div>
-                      </div>
-                   </section>
-
-                   <section>
-                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Arus Kas dari Aktivitas Pendanaan</h3>
-                      <div className="space-y-3 px-4">
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Perubahan Kewajiban & Ekuitas</span>
-                          <span className="text-sm font-bold text-slate-800 ">{formatCurrency(reportData.arusPendanaan)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-slate-900  pt-4 border-t border-slate-900 ">
-                          <span className="text-sm uppercase">Total Kas dari Pendanaan</span>
-                          <span className="text-sm underline">{formatCurrency(reportData.arusPendanaan)}</span>
-                        </div>
-                      </div>
-                   </section>
-
-                   <div className="pt-12">
-                      <div className="flex justify-between items-center py-6 px-8 border-2 border-slate-900  bg-blue-50 ">
-                         <h4 className="text-lg font-bold uppercase tracking-widest">Kenaikan/Penurunan Kas Bersih</h4>
-                         <span className={`text-xl font-bold ${reportData.kenaikanKas >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
-                           {formatCurrency(reportData.kenaikanKas)}
-                         </span>
-                      </div>
-                   </div>
-                 </div>
-               )}
-
-               {activeReport === 'rincian' && (
-                  <div className="space-y-12">
-                    <section>
-                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Rincian Saldo Akun (Buku Pembantu)</h3>
-                      <div className="space-y-3 px-4">
-                        <div className="flex justify-between font-bold text-slate-400 border-b border-slate-200 pb-2 text-xs uppercase tracking-wider">
-                          <span>Akun (COA)</span>
-                          <span>Saldo Akhir</span>
-                        </div>
-                        {coa.filter(c => c.level === 3).map(c => {
-                          const val = reportData.aset.find(a => a.code === c.code)?.amount ||
-                                      reportData.kewajiban.find(k => k.code === c.code)?.amount ||
-                                      reportData.ekuitas.find(e => e.code === c.code)?.amount ||
-                                      reportData.pendapatan.find(p => p.code === c.code)?.amount ||
-                                      reportData.beban.find(b => b.code === c.code)?.amount || 0;
-                          return (
-                            <div key={c.id} className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                              <div className="text-sm">
-                                <span className="font-mono text-slate-400 mr-2">{c.code}</span>
-                                <span className="text-slate-700  font-medium">{c.name}</span>
-                              </div>
-                              <span className="text-sm font-bold text-slate-800 ">{formatCurrency(val)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
+                         <div className="space-y-20">
+                           <p className="text-sm text-slate-900">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
+                           <div className="border-t border-slate-900 w-48 mx-auto"></div>
+                         </div>
+                       </div>
+                       <div className="border-t border-slate-200 pt-4 flex justify-between text-[10px] text-slate-400 font-mono">
+                         <span>PDAM Seruyan — Laporan Keuangan</span>
+                         <span>Halaman {signaturePageNum}</span>
+                       </div>
+                     </div>
                   </div>
-                )}
+               );
+            })()}
 
-               {activeReport === 'ekuitas' && (
-                 <div className="space-y-12">
-                   <section>
-                      <h3 className="font-bold text-sm uppercase tracking-wider text-slate-900  border-b border-slate-200 pb-2 mb-4">Rincian Perubahan Ekuitas</h3>
-                      <div className="space-y-6 px-4">
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Saldo Awal Ekuitas</span>
-                          <span className="text-sm font-bold text-slate-800 ">{formatCurrency(reportData.totalEkuitas - reportData.labaBersih)}</span>
-                        </div>
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Laba Bersih Periode Berjalan</span>
-                          <span className="text-sm font-bold text-emerald-600">+{formatCurrency(reportData.labaBersih)}</span>
-                        </div>
-                        <div className="flex justify-between items-end border-b border-slate-100 border-dotted pb-1">
-                          <span className="text-sm text-slate-700 ">Prive / Penarikan Modal</span>
-                          <span className="text-sm font-bold text-slate-400">(Rp 0)</span>
-                        </div>
-                        <div className="pt-8 flex justify-between items-center py-6 px-8 border-2 border-slate-900  bg-slate-50 ">
-                          <h4 className="text-lg font-bold uppercase tracking-widest">Saldo Akhir Ekuitas</h4>
-                          <span className="text-xl font-bold text-slate-900 ">{formatCurrency(reportData.totalEkuitas)}</span>
-                        </div>
-                      </div>
-                   </section>
-                 </div>
-               )}
-
-               {/* Signature Section */}
-               <div className="mt-32 grid grid-cols-2 gap-20 text-center">
-                  <div className="space-y-20">
-                     <p className="text-sm text-slate-900 ">Menyetujui,<br/><span className="font-bold">DIREKTUR UTAMA</span></p>
-                     <div className="border-t border-slate-900  w-48 mx-auto"></div>
-                  </div>
-                  <div className="space-y-20">
-                     <p className="text-sm text-slate-900 ">Kuala Pembuang, {new Date().toLocaleDateString('id-ID')}<br/><span className="font-bold">MANAGER KEUANGAN</span></p>
-                     <div className="border-t border-slate-900  w-48 mx-auto"></div>
-                  </div>
-               </div>
-            </div>
           </div>
         </div>
       </div>
