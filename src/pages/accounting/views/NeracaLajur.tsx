@@ -39,12 +39,12 @@ export default function NeracaLajurView() {
     // Filter transactions up to the end of the selected period
     const filteredTx = transactions.filter(t => {
       if (!t.date) return false;
-      const txDate = new Date(t.date);
+      if (t.status === 'rejected') return false;
+      const txDate = t.date.toDate ? t.date.toDate() : new Date(t.date);
       return txDate <= endOfPeriod;
     });
 
     // Separate normal vs adjustment transactions
-    // In our system, transactions with reference containing "ADJ" or description containing "Penyesuaian" are adjustments.
     const balances: Record<string, {
       nsDebit: number; nsKredit: number;
       adjDebit: number; adjKredit: number;
@@ -56,20 +56,52 @@ export default function NeracaLajurView() {
       }
     });
 
+    // Cari kode akun Revenue (4.x) untuk mapping system-billing
+    const revenueAccCode = coa.find(c => c.code && c.code.startsWith('4') && c.level === 3)?.code ||
+                           coa.find(c => c.code && c.code.startsWith('4'))?.code;
+
     filteredTx.forEach(t => {
-      if (!t.category || balances[t.category] === undefined) return;
       const isAdjustment = (t.reference || '').toUpperCase().includes('ADJ') || 
                            (t.description || '').toLowerCase().includes('penyesuaian');
 
-      const debit = t.type === 'income' ? t.amount : 0;
-      const kredit = t.type === 'expense' ? t.amount : 0;
+      // Tentukan debit/kredit berdasarkan tipe transaksi (standar akuntansi)
+      let debit = t.type === 'expense' ? (t.amount || 0) : 0;
+      let kredit = t.type === 'income' ? (t.amount || 0) : 0;
 
-      if (isAdjustment) {
-        balances[t.category].adjDebit += debit;
-        balances[t.category].adjKredit += kredit;
-      } else {
-        balances[t.category].nsDebit += debit;
-        balances[t.category].nsKredit += kredit;
+      // Override untuk system-billing: Kas (Debit) + Pendapatan (Kredit)
+      if (t.authorId === 'system-billing') {
+        debit = t.amount || 0; // Kas masuk (Debit)
+        kredit = 0;
+        // Catat pendapatan ke akun revenue
+        if (revenueAccCode) {
+          if (!balances[revenueAccCode]) balances[revenueAccCode] = { nsDebit: 0, nsKredit: 0, adjDebit: 0, adjKredit: 0 };
+          if (isAdjustment) balances[revenueAccCode].adjKredit += t.amount || 0;
+          else balances[revenueAccCode].nsKredit += t.amount || 0;
+        }
+      }
+
+      // Catat ke akun kategori utama
+      if (t.category && balances[t.category] !== undefined) {
+        if (isAdjustment) {
+          balances[t.category].adjDebit += debit;
+          balances[t.category].adjKredit += kredit;
+        } else {
+          balances[t.category].nsDebit += debit;
+          balances[t.category].nsKredit += kredit;
+        }
+      }
+
+      // Catat ke akun contra (lawan)
+      if (t.contraEntry && t.contraEntry.category && balances[t.contraEntry.category] !== undefined) {
+        const cDebit = t.authorId === 'system-billing' ? 0 : (t.contraEntry.type === 'income' ? (t.contraEntry.amount || 0) : 0);
+        const cKredit = t.authorId === 'system-billing' ? (t.contraEntry.amount || 0) : (t.contraEntry.type === 'expense' ? (t.contraEntry.amount || 0) : 0);
+        if (isAdjustment) {
+          balances[t.contraEntry.category].adjDebit += cDebit;
+          balances[t.contraEntry.category].adjKredit += cKredit;
+        } else {
+          balances[t.contraEntry.category].nsDebit += cDebit;
+          balances[t.contraEntry.category].nsKredit += cKredit;
+        }
       }
     });
 
@@ -224,7 +256,7 @@ export default function NeracaLajurView() {
             </select>
             <div className="w-px h-3 bg-slate-200 mx-1"></div>
             <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-300 outline-none">
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              {Array.from({ length: new Date().getFullYear() - 2024 + 21 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <button 

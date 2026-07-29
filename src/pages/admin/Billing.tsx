@@ -385,7 +385,7 @@ export default function Billing() {
                       onChange={e => setNewBillForm({ ...newBillForm, periodeTahun: e.target.value })}
                       className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                     >
-                      {[2023, 2024, 2025, 2026, 2027].map(y => (
+                      {Array.from({ length: new Date().getFullYear() - 2023 + 21 }, (_, i) => 2023 + i).map(y => (
                         <option key={y} value={y}>{y}</option>
                       ))}
                     </select>

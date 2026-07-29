@@ -152,7 +152,7 @@ export default function Anggaran() {
               onChange={e => setSelectedYear(Number(e.target.value))}
               className="bg-white dark:bg-slate-800 border border-slate-200 text-slate-600 dark:text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm outline-none focus:border-blue-500"
             >
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              {Array.from({ length: new Date().getFullYear() - 2024 + 21 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
             </select>
             <button 
               onClick={() => {
