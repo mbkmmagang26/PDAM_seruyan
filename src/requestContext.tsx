@@ -78,15 +78,6 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
         no_meter_baru: nextMeterNumber
       });
 
-      // 3. Update Data Pelanggan dengan nomor meteran yang baru di-generate
-      if (req.userId) {
-          const userDocRef = doc(db, 'data_pelanggan_meteran', req.userId);
-          try {
-            await updateDoc(userDocRef, { no_meter: nextMeterNumber });
-          } catch (e) {
-            console.log("Customer document might not be ready, skipping meter update...", e);
-          }
-      }
 
       // 4. Buat penugasan baru (Task) untuk Staff Lapangan beserta info Nomor Meter baru
       await createTask({
